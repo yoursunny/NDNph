@@ -1,5 +1,5 @@
-#ifndef NDNPH_COMMON_HPP
-#define NDNPH_COMMON_HPP
+#ifndef NDNPH_CORE_COMMON_HPP
+#define NDNPH_CORE_COMMON_HPP
 
 #include <algorithm>
 #include <cstddef>
@@ -23,23 +23,4 @@
   inline bool operator<=(const T& lhs, const T& rhs) { return !(lhs > rhs); }  \
   inline bool operator>=(const T& lhs, const T& rhs) { return !(lhs < rhs); }
 
-namespace ndnph {
-namespace detail {
-
-template<typename T>
-class InputIteratorPointerProxy
-{
-public:
-  InputIteratorPointerProxy(T&& item)
-    : m_item(item)
-  {}
-  T* operator->() const { return &m_item; }
-
-private:
-  T m_item;
-};
-
-} // namespace detail
-} // namespace ndnph
-
-#endif // NDNPH_COMMON_HPP
+#endif // NDNPH_CORE_COMMON_HPP

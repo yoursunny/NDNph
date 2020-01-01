@@ -1,6 +1,6 @@
-#include "ndnph/name.hpp"
+#include "ndnph/packet/name.hpp"
 
-#include "test-common.hpp"
+#include "../test-common.hpp"
 
 namespace ndnph {
 namespace {
@@ -39,9 +39,9 @@ TEST(Name, Decode)
   comp2 = name[-2];
   EXPECT_TRUE(!comp2);
 
-  StaticBuffer<60> buffer;
+  StaticRegion<60> region;
   wire.assign({ 0x09, 0x01, 0x41, 0x08, 0x01, 0x42 });
-  name = Name(buffer, wire.data(), wire.size());
+  name = Name(region, wire.data(), wire.size());
   EXPECT_FALSE(!name);
   EXPECT_NE(name.value(), wire.data());
   EXPECT_EQ(name.length(), 6);
@@ -120,18 +120,18 @@ TEST(Name, Slice)
 
 TEST(Name, Append)
 {
-  StaticBuffer<60> buffer;
+  StaticRegion<60> region;
   std::vector<uint8_t> wire({ 0x81, 0x01, 0x41, 0x82, 0x01, 0x42, 0x83, 0x01,
                               0x43, 0x82, 0x01, 0x42, 0x08, 0x01, 0x44 });
-  Name name(buffer, wire.data(), 3);
+  Name name(region, wire.data(), 3);
 
-  Name name2 = name.append(buffer, {});
+  Name name2 = name.append(region, {});
   EXPECT_THAT(name2, T::SizeIs(1));
 
   Component comp1(&wire[3], 3);
-  Component comp2(buffer, wire[6], wire[7], &wire[8]);
-  Component comp3(buffer, wire[13], &wire[14]);
-  name2 = name.append(buffer, { comp1, comp2, comp1, comp3 });
+  Component comp2(region, wire[6], wire[7], &wire[8]);
+  Component comp3(region, wire[13], &wire[14]);
+  name2 = name.append(region, { comp1, comp2, comp1, comp3 });
   EXPECT_THAT(
     std::vector<uint8_t>(name2.value(), name2.value() + name2.length()),
     T::ElementsAreArray(wire));
@@ -139,9 +139,9 @@ TEST(Name, Append)
 
 TEST(Name, CompareComponent)
 {
-  StaticBuffer<60> buffer;
+  StaticRegion<60> region;
   std::vector<uint8_t> wire({ 0xF0, 0x02, 0x41, 0x42 });
-  Name name(buffer, wire.data(), wire.size());
+  Name name(region, wire.data(), wire.size());
 
   wire.assign({ 0xF1, 0x02, 0x41, 0x42 });
   EXPECT_LT(name, Name(wire.data(), wire.size()));
@@ -168,17 +168,17 @@ TEST(Name, CompareComponent)
 
 TEST(Name, Compare)
 {
-  StaticBuffer<60> buffer;
+  StaticRegion<60> region;
   std::vector<uint8_t> wire({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x42 });
-  Name nameAB(buffer, wire.data(), wire.size());
+  Name nameAB(region, wire.data(), wire.size());
   wire.assign({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x43 });
-  Name nameAC(buffer, wire.data(), wire.size());
+  Name nameAC(region, wire.data(), wire.size());
   wire.assign({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x42, 0x08, 0x01, 0x43 });
-  Name nameABC(buffer, wire.data(), wire.size());
+  Name nameABC(region, wire.data(), wire.size());
   wire.assign({ 0x08, 0x01, 0x41 });
-  Name nameA(buffer, wire.data(), wire.size());
+  Name nameA(region, wire.data(), wire.size());
   wire.assign({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x41 });
-  Name nameAA(buffer, wire.data(), wire.size());
+  Name nameAA(region, wire.data(), wire.size());
 
   EXPECT_EQ(nameAB.compare(nameAC), Name::CMP_LT);
   EXPECT_EQ(nameAB.compare(nameABC), Name::CMP_LPREFIX);

@@ -1,6 +1,7 @@
-#ifndef NDNPH_NAME_HPP
-#define NDNPH_NAME_HPP
+#ifndef NDNPH_PACKET_NAME_HPP
+#define NDNPH_PACKET_NAME_HPP
 
+#include "../core/input-iterator-pointer-proxy.hpp"
 #include "component.hpp"
 
 namespace ndnph {
@@ -24,11 +25,11 @@ public:
   }
 
   /** @brief Construct Name, making copy of TLV-VALUE. */
-  explicit Name(Buffer& buffer, const uint8_t* value = nullptr,
+  explicit Name(Region& region, const uint8_t* value = nullptr,
                 size_t length = 0)
     : Name(value, length)
   {
-    m_value = buffer.dup(m_value, m_length);
+    m_value = region.dup(m_value, m_length);
   }
 
   /** @brief Return true if Name is invalid. */
@@ -116,14 +117,14 @@ public:
    * If you need to append multiple components, it's recommended to append them all at once,
    * so that memory is allocated and copied only once.
    */
-  Name append(Buffer& buffer, std::initializer_list<Component> comps) const
+  Name append(Region& region, std::initializer_list<Component> comps) const
   {
     size_t nComps = m_nComps, length = m_length;
     for (const auto& comp : comps) {
       ++nComps;
       length += comp.size();
     }
-    uint8_t* value = buffer.alloc(length);
+    uint8_t* value = region.alloc(length);
     if (value != nullptr) {
       uint8_t* pos = value;
       pos = std::copy_n(m_value, m_length, pos);
@@ -223,4 +224,4 @@ NDNPH_DECLARE_GT_LE_GE(Name)
 
 } // namespace ndnph
 
-#endif // NDNPH_NAME_HPP
+#endif // NDNPH_PACKET_NAME_HPP

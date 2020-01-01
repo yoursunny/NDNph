@@ -1,46 +1,11 @@
-#include "ndnph/tlv.hpp"
+#include "ndnph/tlv/decoder.hpp"
 
-#include "test-common.hpp"
+#include "../test-common.hpp"
 
 namespace ndnph {
 namespace {
 
-#if NDNPH_HAS_BOOST_CONCEPT
-BOOST_CONCEPT_ASSERT((boost::ForwardIterator<tlv::Decoder::Iterator>));
-#endif
-
-TEST(Tlv, VarNum)
-{
-  EXPECT_EQ(tlv::sizeofVarNum(0x01), 1);
-  EXPECT_EQ(tlv::sizeofVarNum(0xFC), 1);
-  EXPECT_EQ(tlv::sizeofVarNum(0xFD), 3);
-  EXPECT_EQ(tlv::sizeofVarNum(0x0100), 3);
-  EXPECT_EQ(tlv::sizeofVarNum(0xFFFF), 3);
-  EXPECT_EQ(tlv::sizeofVarNum(0x00010000), 5);
-  EXPECT_EQ(tlv::sizeofVarNum(0xFFFFFFFF), 5);
-
-  std::vector<uint8_t> room(1);
-  tlv::writeVarNum(room.data(), 0x01);
-  EXPECT_THAT(room, T::ElementsAre(0x01));
-  tlv::writeVarNum(room.data(), 0xFC);
-  EXPECT_THAT(room, T::ElementsAre(0xFC));
-
-  room.resize(3);
-  tlv::writeVarNum(room.data(), 0xFD);
-  EXPECT_THAT(room, T::ElementsAre(0xFD, 0x00, 0xFD));
-  tlv::writeVarNum(room.data(), 0x0100);
-  EXPECT_THAT(room, T::ElementsAre(0xFD, 0x01, 0x00));
-  tlv::writeVarNum(room.data(), 0xFFFF);
-  EXPECT_THAT(room, T::ElementsAre(0xFD, 0xFF, 0xFF));
-
-  room.resize(5);
-  tlv::writeVarNum(room.data(), 0x00010000);
-  EXPECT_THAT(room, T::ElementsAre(0xFE, 0x00, 0x01, 0x00, 0x00));
-  tlv::writeVarNum(room.data(), 0xFFFFFFFF);
-  EXPECT_THAT(room, T::ElementsAre(0xFE, 0xFF, 0xFF, 0xFF, 0xFF));
-}
-
-TEST(Tlv, Decoder)
+TEST(Tlv, DecoderGood)
 {
   std::vector<uint8_t> wire({
     0x01, 0x00,                               // 0100
@@ -86,7 +51,10 @@ TEST(Tlv, Decoder)
 
   ++it;
   ASSERT_TRUE(it == end);
+}
 
+TEST(Tlv, DecoderBad)
+{
   // missing TLV-TYPE
   std::vector<uint8_t> wire1({});
   tlv::Decoder decoder1(wire1.data(), wire1.size());

@@ -1,9 +1,9 @@
-#ifndef NDNPH_COMPONENT_HPP
-#define NDNPH_COMPONENT_HPP
+#ifndef NDNPH_PACKET_COMPONENT_HPP
+#define NDNPH_PACKET_COMPONENT_HPP
 
-#include "an.hpp"
-#include "buffer.hpp"
-#include "tlv.hpp"
+#include "../an.hpp"
+#include "../core/region.hpp"
+#include "../tlv/decoder.hpp"
 
 namespace ndnph {
 
@@ -31,14 +31,14 @@ public:
   }
 
   /** @brief Construct from T-L-V, copying TLV-VALUE. */
-  explicit Component(Buffer& buffer, uint16_t type, uint16_t length,
+  explicit Component(Region& region, uint16_t type, uint16_t length,
                      const uint8_t* value)
     : m_type(type)
     , m_length(length)
   {
     size_t sizeofT = tlv::sizeofVarNum(type);
     size_t sizeofL = tlv::sizeofVarNum(length);
-    uint8_t* tlv = buffer.alloc(sizeofT + sizeofL + length);
+    uint8_t* tlv = region.alloc(sizeofT + sizeofL + length);
     if (tlv == nullptr) {
       return;
     }
@@ -51,8 +51,8 @@ public:
   }
 
   /** @brief Construct GenericNameComponent from L-V, copying TLV-VALUE. */
-  explicit Component(Buffer& buffer, uint16_t length, const uint8_t* value)
-    : Component(buffer, TT::GenericNameComponent, length, value)
+  explicit Component(Region& region, uint16_t length, const uint8_t* value)
+    : Component(region, TT::GenericNameComponent, length, value)
   {}
 
   /** @brief Return true if Component is invalid. */
@@ -85,4 +85,4 @@ private:
 
 } // namespace ndnph
 
-#endif // NDNPH_COMPONENT_HPP
+#endif // NDNPH_PACKET_COMPONENT_HPP

@@ -1,17 +1,15 @@
-#ifndef NDNPH_BUFFER_HPP
-#define NDNPH_BUFFER_HPP
+#ifndef NDNPH_CORE_REGION_HPP
+#define NDNPH_CORE_REGION_HPP
 
 #include "common.hpp"
 
 namespace ndnph {
 
-/**
- * @brief Memory owner of NDN elements.
- */
-class Buffer
+/** @brief Region-based memory allocator thats owns memory of NDNph objects. */
+class Region
 {
 public:
-  /** @brief Allocate a buffer with no alignment requirement. */
+  /** @brief Allocate a region with no alignment requirement. */
   uint8_t* alloc(size_t size)
   {
     if (m_right - m_left < static_cast<ssize_t>(size)) {
@@ -31,7 +29,7 @@ public:
     return copy;
   }
 
-  /** @brief Allocate a buffer aligned to multiple of sizeof(void*). */
+  /** @brief Allocate a region aligned to multiple of sizeof(void*). */
   uint8_t* allocA(size_t size)
   {
     if (size % NDNPH_ALIGNMENT != 0) {
@@ -45,9 +43,7 @@ public:
     return room;
   }
 
-  /**
-   * @brief Allocate and create an object.
-   */
+  /** @brief Allocate and create an object. */
   template<typename ObjType, typename... Arg>
   ObjType* createObj(size_t sizeofObj, const Arg&... arg)
   {
@@ -58,9 +54,7 @@ public:
     return new (ptr) ObjType(*this, arg...);
   }
 
-  /**
-   * @brief Allocate and create an object, and make its reference.
-   */
+  /** @brief Allocate and create an object, and make its reference. */
   template<typename RefType, typename ObjType, typename... Arg>
   RefType createRef(size_t sizeofObj, const Arg&... arg)
   {
@@ -71,9 +65,7 @@ public:
     return RefType{ *obj };
   }
 
-  /**
-   * @brief Allocate and create an object, and return its reference.
-   */
+  /** @brief Allocate and create an object, and return its reference. */
   template<typename RefType, typename... Arg>
   RefType create(const Arg&... arg)
   {
@@ -96,14 +88,14 @@ public:
   size_t size() const { return (m_left - m_begin) + (m_end - m_right); }
 
 protected:
-  Buffer(uint8_t* buf, size_t cap)
+  Region(uint8_t* buf, size_t cap)
     : m_begin(buf)
     , m_end(buf + cap)
   {
     reset();
   }
 
-  ~Buffer() = default;
+  ~Region() = default;
 
 protected:
   uint8_t* const m_begin;
@@ -112,59 +104,35 @@ protected:
   uint8_t* m_right;
 };
 
-namespace detail {
-
-class InBuffer
-{
-public:
-  InBuffer(InBuffer&&) = default;
-  InBuffer& operator=(InBuffer&&) = default;
-
-protected:
-  explicit InBuffer(Buffer& buffer)
-    : buffer(buffer)
-  {}
-
-  InBuffer(const InBuffer&) = delete;
-  InBuffer& operator=(const InBuffer&) = delete;
-
-protected:
-  Buffer& buffer;
-};
-
-} // namespace detail
-
 /**
- * @brief Statically allocated buffer.
+ * @brief Region with statically allocated memory.
  * @tparam C capacity.
  */
 template<int C>
-class StaticBuffer : public Buffer
+class StaticRegion : public Region
 {
 public:
-  StaticBuffer()
-    : Buffer(m_array, sizeof(m_array))
+  StaticRegion()
+    : Region(m_array, sizeof(m_array))
   {}
 
-  ~StaticBuffer() = default;
+  ~StaticRegion() = default;
 
 private:
   uint8_t m_array[C];
 };
 
-/**
- * @brief Dynamically allocated buffer.
- */
-class DynamicBuffer : public Buffer
+/** @brief Region with dynamically allocated memory. */
+class DynamicRegion : public Region
 {
 public:
-  DynamicBuffer(size_t capacity)
-    : Buffer(new uint8_t[capacity], capacity)
+  DynamicRegion(size_t capacity)
+    : Region(new uint8_t[capacity], capacity)
   {}
 
-  ~DynamicBuffer() { delete[] m_begin; }
+  ~DynamicRegion() { delete[] m_begin; }
 };
 
 } // namespace ndnph
 
-#endif // NDNPH_BUFFER_HPP
+#endif // NDNPH_CORE_REGION_HPP
