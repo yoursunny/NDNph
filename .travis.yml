@@ -10,11 +10,14 @@ addons:
       - build-essential
       - clang-format-6.0
       - cmake
+      - lcov
       - libboost-dev
       - ninja-build
 
+before_install:
+  - pip install cpp-coveralls meson
+
 install:
-  - pip install meson
   - |
     : install googletest
     cd $HOME
@@ -30,3 +33,9 @@ script:
   - mk/update-list.sh
   - meson build -Db_coverage=true
   - cd build && ninja test
+
+after_success:
+  - cd $TRAVIS_BUILD_DIR/build
+  - ninja coverage-html
+  - lcov --extract meson-logs/coverage.info $(readlink -f ../src)'/*' > $HOME/coverage.lcov
+  - coveralls -l $HOME/coverage.lcov -r .. -n
