@@ -1,0 +1,32 @@
+---
+dist: bionic
+
+language: python
+python: "3.7"
+
+addons:
+  apt:
+    packages:
+      - build-essential
+      - clang-format-6.0
+      - cmake
+      - libboost-dev
+      - ninja-build
+
+install:
+  - pip install meson
+  - |
+    : install googletest
+    cd $HOME
+    curl -L https://github.com/google/googletest/archive/release-1.10.0.tar.gz | tar -xz
+    mkdir gtest
+    cd gtest
+    cmake -G Ninja ../googletest-release-1.10.0
+    ninja
+    sudo ninja install
+
+script:
+  - cd $TRAVIS_BUILD_DIR
+  - mk/update-list.sh
+  - meson build -Db_coverage=true
+  - cd build && ninja test

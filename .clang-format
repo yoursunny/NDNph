@@ -1,0 +1,5 @@
+---
+BasedOnStyle: Mozilla
+BinPackArguments: true
+BinPackParameters: true
+ReflowComments: false
