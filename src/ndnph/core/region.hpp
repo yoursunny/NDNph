@@ -9,7 +9,7 @@ namespace ndnph {
 class Region
 {
 public:
-  /** @brief Allocate a region with no alignment requirement. */
+  /** @brief Allocate a buffer with no alignment requirement. */
   uint8_t* alloc(size_t size)
   {
     if (m_right - m_left < static_cast<ssize_t>(size)) {
@@ -17,6 +17,16 @@ public:
     }
     m_right -= size;
     return m_right;
+  }
+
+  /** @brief Deallocate (front part of) last buffer from alloc(). */
+  bool free(uint8_t* ptr, size_t size)
+  {
+    if (ptr != m_right || m_end - m_right < static_cast<ssize_t>(size)) {
+      return false;
+    }
+    m_right += size;
+    return true;
   }
 
   /** @brief Duplicate an input string. */
@@ -60,9 +70,9 @@ public:
   {
     ObjType* obj = createObj<ObjType>(sizeofObj, arg...);
     if (obj == nullptr) {
-      return RefType{};
+      return RefType();
     }
-    return RefType{ *obj };
+    return RefType(obj);
   }
 
   /** @brief Allocate and create an object, and return its reference. */
@@ -70,7 +80,6 @@ public:
   RefType create(const Arg&... arg)
   {
     using ObjType = typename RefType::ObjType;
-    static_assert(std::is_same<RefType, typename ObjType::RefType>::value, "");
     return createRef<RefType, ObjType>(sizeof(ObjType), arg...);
   }
 
@@ -84,8 +93,11 @@ public:
     m_right = m_end;
   }
 
+  /** @brief Compute remaining space. */
+  size_t available() const { return m_right - m_left; }
+
   /** @brief Compute utilized space. */
-  size_t size() const { return (m_left - m_begin) + (m_end - m_right); }
+  size_t size() const { return m_end - m_begin - available(); }
 
 protected:
   Region(uint8_t* buf, size_t cap)

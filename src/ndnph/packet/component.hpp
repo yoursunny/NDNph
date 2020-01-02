@@ -18,12 +18,12 @@ public:
   explicit Component() = default;
 
   /** @brief Construct from decoder result, keeping reference to TLV. */
-  explicit Component(const tlv::Decoder::Tlv& d) { fromDecoded(d); }
+  explicit Component(const Decoder::Tlv& d) { fromDecoded(d); }
 
   /** @brief Decode, keeping reference to TLV. */
   explicit Component(const uint8_t* tlv, size_t size)
   {
-    tlv::Decoder decoder(tlv, size);
+    Decoder decoder(tlv, size);
     auto it = decoder.begin();
     if (it != decoder.end()) {
       fromDecoded(*it);
@@ -66,7 +66,7 @@ public:
   size_t size() const { return m_value - m_tlv + m_length; }
 
 private:
-  void fromDecoded(const tlv::Decoder::Tlv& d)
+  void fromDecoded(const Decoder::Tlv& d)
   {
     if (d.type > 0 && d.type <= 0xFFFF) {
       m_tlv = d.tlv;

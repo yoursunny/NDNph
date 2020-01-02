@@ -24,6 +24,25 @@ protected:
   Region& region;
 };
 
+template<typename Obj>
+class RefRegion
+{
+public:
+  using ObjType = Obj;
+
+  explicit RefRegion(ObjType* obj = nullptr)
+    : obj(obj)
+  {}
+
+  bool operator!() const { return obj == nullptr; }
+
+protected:
+  ~RefRegion() = default;
+
+protected:
+  ObjType* obj = nullptr;
+};
+
 } // namespace detail
 } // namespace ndnph
 

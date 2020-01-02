@@ -2,6 +2,7 @@
 #define NDNPH_PACKET_NAME_HPP
 
 #include "../core/input-iterator-pointer-proxy.hpp"
+#include "../tlv/encoder.hpp"
 #include "component.hpp"
 
 namespace ndnph {
@@ -41,10 +42,10 @@ public:
   /** @brief Get number of components. */
   size_t size() const { return m_nComps; }
 
-  class Iterator : public tlv::Decoder::Iterator
+  class Iterator : public Decoder::Iterator
   {
   public:
-    using super = tlv::Decoder::Iterator;
+    using super = Decoder::Iterator;
     using iterator_category = std::input_iterator_tag;
     using value_type = const Component;
     using difference_type = std::ptrdiff_t;
@@ -60,8 +61,8 @@ public:
     pointer operator->() { return pointer(this->operator*()); }
   };
 
-  Iterator begin() const { return tlv::Decoder(m_value, m_length).begin(); }
-  Iterator end() const { return tlv::Decoder(m_value, m_length).end(); }
+  Iterator begin() const { return Decoder(m_value, m_length).begin(); }
+  Iterator end() const { return Decoder(m_value, m_length).end(); }
 
   /** @brief Access i-th component. */
   Component operator[](int i) const
@@ -172,6 +173,11 @@ public:
     return cmp == CMP_LPREFIX || cmp == CMP_EQUAL;
   }
 
+  void encodeTo(Encoder& encoder) const
+  {
+    encoder.prependTlv(TT::Name, Encoder::Value(m_value, m_length));
+  }
+
 private:
   explicit Name(const uint8_t* value, size_t length, size_t nComps)
     : m_value(value)
@@ -181,7 +187,7 @@ private:
 
   bool decodeComps(size_t length)
   {
-    tlv::Decoder decoder(m_value, length);
+    Decoder decoder(m_value, length);
     auto it = decoder.begin(), end = decoder.end();
     for (; it != end; ++it) {
       Component comp(*it);

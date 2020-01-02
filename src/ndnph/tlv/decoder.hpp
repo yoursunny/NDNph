@@ -4,7 +4,6 @@
 #include "varnum.hpp"
 
 namespace ndnph {
-namespace tlv {
 
 /** @brief TLV decoder. */
 class Decoder
@@ -27,13 +26,13 @@ public:
       d = Tlv{};
       return true;
     }
-    int sizeofT = readVarNum(input, end - input, d.type);
+    int sizeofT = tlv::readVarNum(input, end - input, d.type);
     if (sizeofT == 0) {
       return false;
     }
     const uint8_t* posL = input + sizeofT;
     uint32_t length;
-    int sizeofL = readVarNum(posL, end - posL, length);
+    int sizeofL = tlv::readVarNum(posL, end - posL, length);
     if (sizeofL == 0) {
       return false;
     }
@@ -117,7 +116,6 @@ private:
 
 NDNPH_DECLARE_NE(Decoder::Iterator)
 
-} // namespace tlv
 } // namespace ndnph
 
 #endif // NDNPH_TLV_DECODER_HPP
