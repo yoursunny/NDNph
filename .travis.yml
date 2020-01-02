@@ -29,13 +29,13 @@ install:
     sudo ninja install
 
 script:
-  - cd $TRAVIS_BUILD_DIR
-  - mk/update-list.sh
-  - meson build -Db_coverage=true
-  - cd build && ninja test
+  - cd $TRAVIS_BUILD_DIR && mk/update-list.sh
+  - meson build.coverage -Db_coverage=true
+  - meson build.sanitize -Db_sanitize=address,undefined
+  - cd $TRAVIS_BUILD_DIR/build.coverage && ninja test
+  - cd $TRAVIS_BUILD_DIR/build.sanitize && ninja test
 
 after_success:
-  - cd $TRAVIS_BUILD_DIR/build
-  - ninja coverage-html
+  - cd $TRAVIS_BUILD_DIR/build.coverage && ninja coverage
   - lcov --extract meson-logs/coverage.info $(readlink -f ../src)'/*' > $HOME/coverage.lcov
   - coveralls -l $HOME/coverage.lcov -r .. -n
