@@ -7,9 +7,6 @@
 #include "name.hpp"
 
 namespace ndnph {
-
-class Interest;
-
 namespace detail {
 
 class InterestObj : public detail::InRegion
@@ -19,21 +16,19 @@ public:
     : InRegion(region)
   {}
 
-public:
   enum
   {
     DefaultLifetime = 4000,
+    MaxHopLimit = 0xFF,
   };
 
-private:
-  Name m_name;
-  uint32_t m_nonce = 0;
-  uint16_t m_lifetime = DefaultLifetime;
-  uint8_t m_hopLimit = 0xFF;
-  bool m_canBePrefix = false;
-  bool m_mustBeFresh = false;
-
-  friend Interest;
+public:
+  Name name;
+  uint32_t nonce = 0;
+  uint16_t lifetime = DefaultLifetime;
+  uint8_t hopLimit = MaxHopLimit;
+  bool canBePrefix = false;
+  bool mustBeFresh = false;
 };
 
 } // namespace detail
@@ -43,23 +38,23 @@ class Interest : public detail::RefRegion<detail::InterestObj>
 public:
   using RefRegion::RefRegion;
 
-  const Name& getName() const { return obj->m_name; }
-  void setName(const Name& v) { obj->m_name = v; }
+  const Name& getName() const { return obj->name; }
+  void setName(const Name& v) { obj->name = v; }
 
-  bool getCanBePrefix() const { return obj->m_canBePrefix; }
-  void setCanBePrefix(bool v) { obj->m_canBePrefix = v; }
+  bool getCanBePrefix() const { return obj->canBePrefix; }
+  void setCanBePrefix(bool v) { obj->canBePrefix = v; }
 
-  bool getMustBeFresh() const { return obj->m_mustBeFresh; }
-  void setMustBeFresh(bool v) { obj->m_mustBeFresh = v; }
+  bool getMustBeFresh() const { return obj->mustBeFresh; }
+  void setMustBeFresh(bool v) { obj->mustBeFresh = v; }
 
-  uint32_t getNonce() const { return obj->m_nonce; }
-  void setNonce(uint32_t v) { obj->m_nonce = v; }
+  uint32_t getNonce() const { return obj->nonce; }
+  void setNonce(uint32_t v) { obj->nonce = v; }
 
-  uint16_t getLifetime() const { return obj->m_lifetime; }
-  void setLifetime(uint16_t v) { obj->m_lifetime = v; }
+  uint16_t getLifetime() const { return obj->lifetime; }
+  void setLifetime(uint16_t v) { obj->lifetime = v; }
 
-  uint8_t getHopLimit() const { return obj->m_hopLimit; }
-  void setHopLimit(uint8_t v) { obj->m_hopLimit = v; }
+  uint8_t getHopLimit() const { return obj->hopLimit; }
+  void setHopLimit(uint8_t v) { obj->hopLimit = v; }
 
   void encodeTo(Encoder& encoder) const
   {
@@ -79,24 +74,16 @@ public:
         encoder.prependTlv(TT::Nonce, tlv::NNI4(getNonce()));
       },
       [this](Encoder& encoder) {
-        uint16_t lifetime = getLifetime();
-        if (lifetime != Interest::DefaultLifetime) {
-          encoder.prependTlv(TT::InterestLifetime, tlv::NNI(lifetime));
+        if (getLifetime() != detail::InterestObj::DefaultLifetime) {
+          encoder.prependTlv(TT::InterestLifetime, tlv::NNI(getLifetime()));
         }
       },
       [this](Encoder& encoder) {
-        uint8_t hopLimit = getHopLimit();
-        if (hopLimit != 0xFF) {
-          encoder.prependTlv(TT::HopLimit, tlv::NNI1(hopLimit));
+        if (getHopLimit() != detail::InterestObj::MaxHopLimit) {
+          encoder.prependTlv(TT::HopLimit, tlv::NNI1(getHopLimit()));
         }
       });
   }
-
-public:
-  enum
-  {
-    DefaultLifetime = detail::InterestObj::DefaultLifetime,
-  };
 };
 
 } // namespace ndnph

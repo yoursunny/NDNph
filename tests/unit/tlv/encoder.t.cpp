@@ -1,4 +1,5 @@
 #include "ndnph/tlv/encoder.hpp"
+#include "ndnph/tlv/value.hpp"
 
 #include "../test-common.hpp"
 
@@ -141,19 +142,17 @@ TEST(Encoder, Prepend)
                             [](Encoder& encoder) { encoder.prependTlv(0xA1); },
                             MyEncodable<0xA2>());
   ok = ok && encoder.prependTlv(0xC0, Encoder::OmitEmpty,
-                                Encoder::Value(value0.data(), value0.size()),
-                                Encoder::Value(value0.data(), value0.size()));
+                                tlv::Value(value0.data(), value0.size()),
+                                tlv::Value(value0.data(), value0.size()));
+  ok = ok && encoder.prependTlv(0xC1, tlv::Value(value0.data(), value0.size()),
+                                tlv::Value(value0.data(), value0.size()));
   ok =
-    ok && encoder.prependTlv(0xC1, Encoder::Value(value0.data(), value0.size()),
-                             Encoder::Value(value0.data(), value0.size()));
-  ok =
-    ok &&
-    encoder.prependTlv(
-      0xC2, Encoder::OmitEmpty, Encoder::Value(valueE.data(), valueE.size()),
-      Encoder::Value(valueF.data(), valueF.size()), [=](Encoder& encoder) {
-        encoder.prependTlv(0xC3, Encoder::Value(valueE.data(), valueE.size()),
-                           Encoder::Value(valueF.data(), valueF.size()));
-      });
+    ok && encoder.prependTlv(
+            0xC2, Encoder::OmitEmpty, tlv::Value(valueE.data(), valueE.size()),
+            tlv::Value(valueF.data(), valueF.size()), [=](Encoder& encoder) {
+              encoder.prependTlv(0xC3, tlv::Value(valueE.data(), valueE.size()),
+                                 tlv::Value(valueF.data(), valueF.size()));
+            });
 
   EXPECT_TRUE(ok);
   EXPECT_FALSE(!encoder);

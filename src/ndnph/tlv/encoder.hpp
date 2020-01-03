@@ -111,28 +111,6 @@ public:
     return !!*this;
   }
 
-  /** @brief Raw buffer to prepend. */
-  class Value
-  {
-  public:
-    explicit Value(const uint8_t* value, size_t length)
-      : m_value(value)
-      , m_length(length)
-    {}
-
-    void encodeTo(Encoder& encoder) const
-    {
-      uint8_t* room = encoder.prependRoom(m_length);
-      if (room != nullptr) {
-        std::copy_n(m_value, m_length, room);
-      }
-    }
-
-  private:
-    const uint8_t* m_value;
-    size_t m_length;
-  };
-
   enum OmitEmptyTag
   {
     NoOmitEmpty = 0,

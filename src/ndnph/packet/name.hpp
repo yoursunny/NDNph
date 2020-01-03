@@ -2,7 +2,7 @@
 #define NDNPH_PACKET_NAME_HPP
 
 #include "../core/input-iterator-pointer-proxy.hpp"
-#include "../tlv/encoder.hpp"
+#include "../tlv/value.hpp"
 #include "component.hpp"
 
 namespace ndnph {
@@ -176,7 +176,7 @@ public:
 
   void encodeTo(Encoder& encoder) const
   {
-    encoder.prependTlv(TT::Name, Encoder::Value(m_value, m_length));
+    encoder.prependTlv(TT::Name, tlv::Value(m_value, m_length));
   }
 
 private:
