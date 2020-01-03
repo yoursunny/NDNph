@@ -4,6 +4,12 @@ dist: bionic
 language: python
 python: "3.7"
 
+cache:
+  pip: true
+  directories:
+    - ~/arduino_ide
+    - ~/.arduino15/packages
+
 addons:
   apt:
     packages:
@@ -33,6 +39,11 @@ install:
     cmake -G Ninja ../googletest-release-1.10.0
     ninja
     sudo ninja install
+  - |
+    : install Arduino
+    export INSTALL_PLATFORMS='esp8266,esp32,nrf52'
+    source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh | \
+             sed -e '/sudo pip3/ d' -e 's/pip3 install --user/pip install/')
 
 script:
   - cd $TRAVIS_BUILD_DIR && mk/update-list.sh
@@ -46,6 +57,10 @@ script:
   - cd $TRAVIS_BUILD_DIR/build.optimized && ninja test
   - cd $TRAVIS_BUILD_DIR/build.llvm && ninja test
   - cd $TRAVIS_BUILD_DIR/build.thumb && ninja
+  - cd $TRAVIS_BUILD_DIR
+  - build_platform esp8266
+  - build_platform esp32
+  - build_platform nrf52840
 
 after_success:
   - cd $TRAVIS_BUILD_DIR/build.coverage && ninja coverage
