@@ -107,9 +107,7 @@ public:
   bool prepend(const First& first, const Arg&... arg)
   {
     prepend(arg...);
-    using FirstIsEncodeFunc = std::integral_constant<
-      bool, std::is_convertible<First, std::function<void(Encoder&)>>::value>;
-    prependOne<First>(first, static_cast<FirstIsEncodeFunc*>(nullptr));
+    prependOne(first);
     return !!*this;
   }
 
@@ -170,7 +168,7 @@ public:
   }
 
   /** @brief Prepend TLV with zero TLV-LENGTH. */
-  bool prependTlv(uint32_t type) { return prependTlv(type, NoOmitEmpty); }
+  bool prependTlv(uint32_t type) { return prependTypeLength(type, 0); }
 
 private:
   void init(uint8_t* buf, size_t capacity)
@@ -182,13 +180,14 @@ private:
   bool prepend() { return true; }
 
   template<typename T>
-  void prependOne(const T& encodeFunc, const std::true_type*)
+  void prependOne(const T& encodeFunc,
+                  const decltype(&T::operator())* = nullptr)
   {
     encodeFunc(*this);
   }
 
   template<typename T>
-  void prependOne(const T& encodable, const std::false_type*)
+  void prependOne(const T& encodable, const decltype(&T::encodeTo)* = nullptr)
   {
     encodable.encodeTo(*this);
   }
