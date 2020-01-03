@@ -150,8 +150,7 @@ public:
    * @return whether success.
    */
   template<typename... Arg>
-  bool prependTlv(uint32_t type, OmitEmptyTag omitEmpty = NoOmitEmpty,
-                  const Arg&... arg)
+  bool prependTlv(uint32_t type, OmitEmptyTag omitEmpty, const Arg&... arg)
   {
     uint8_t* after = m_pos;
     bool ok = prepend(arg...);
@@ -169,6 +168,9 @@ public:
   {
     return prependTlv(type, NoOmitEmpty, first, arg...);
   }
+
+  /** @brief Prepend TLV with zero TLV-LENGTH. */
+  bool prependTlv(uint32_t type) { return prependTlv(type, NoOmitEmpty); }
 
 private:
   void init(uint8_t* buf, size_t capacity)

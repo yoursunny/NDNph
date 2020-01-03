@@ -1,3 +1,4 @@
 .vscode
 build*
+src/NDNph.h
 tests/unit/meson.build

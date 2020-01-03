@@ -1,6 +1,8 @@
 #ifndef NDNPH_CORE_COMMON_HPP
 #define NDNPH_CORE_COMMON_HPP
 
+#include <sys/types.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
