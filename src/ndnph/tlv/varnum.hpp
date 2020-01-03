@@ -21,14 +21,14 @@ writeVarNum(uint8_t* room, uint32_t n)
     room[0] = n;
   } else if (n <= 0xFFFF) {
     room[0] = 0xFD;
-    room[1] = static_cast<uint8_t>(n >> 8);
-    room[2] = static_cast<uint8_t>(n >> 0);
+    room[1] = n >> 8;
+    room[2] = n;
   } else {
     room[0] = 0xFE;
-    room[1] = static_cast<uint8_t>(n >> 24);
-    room[2] = static_cast<uint8_t>(n >> 16);
-    room[3] = static_cast<uint8_t>(n >> 8);
-    room[4] = static_cast<uint8_t>(n >> 0);
+    room[1] = n >> 24;
+    room[2] = n >> 16;
+    room[3] = n >> 8;
+    room[4] = n;
   }
 }
 

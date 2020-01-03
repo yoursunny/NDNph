@@ -53,6 +53,7 @@ public:
     using reference = value_type;
 
     Iterator() = default;
+
     Iterator(const super& inner)
       : super(inner)
     {}

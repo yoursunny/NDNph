@@ -53,34 +53,22 @@ public:
     return room;
   }
 
-  /** @brief Allocate and create an object. */
-  template<typename ObjType, typename... Arg>
-  ObjType* createObj(size_t sizeofObj, const Arg&... arg)
-  {
-    uint8_t* ptr = this->allocA(sizeofObj);
-    if (ptr == nullptr) {
-      return nullptr;
-    }
-    return new (ptr) ObjType(*this, arg...);
-  }
-
-  /** @brief Allocate and create an object, and make its reference. */
-  template<typename RefType, typename ObjType, typename... Arg>
-  RefType createRef(size_t sizeofObj, const Arg&... arg)
-  {
-    ObjType* obj = createObj<ObjType>(sizeofObj, arg...);
-    if (obj == nullptr) {
-      return RefType();
-    }
-    return RefType(obj);
-  }
-
   /** @brief Allocate and create an object, and return its reference. */
   template<typename RefType, typename... Arg>
-  RefType create(const Arg&... arg)
+  RefType create(Arg&&... arg)
   {
     using ObjType = typename RefType::ObjType;
-    return createRef<RefType, ObjType>(sizeof(ObjType), arg...);
+    // Region allocator would not `delete` created objects. It's safe to create
+    // trivially destructible objects only.
+    static_assert(std::is_trivially_destructible<ObjType>::value, "");
+
+    uint8_t* ptr = this->allocA(sizeof(ObjType));
+    if (ptr == nullptr) {
+      return RefType();
+    }
+
+    ObjType* obj = new (ptr) ObjType(*this, std::forward<Arg>(arg)...);
+    return RefType(obj);
   }
 
   /**

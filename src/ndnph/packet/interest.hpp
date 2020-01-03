@@ -20,7 +20,10 @@ public:
   {}
 
 public:
-  static constexpr uint16_t DefaultLifetime = 4000;
+  enum
+  {
+    DefaultLifetime = 4000,
+  };
 
 private:
   Name m_name;
@@ -90,8 +93,10 @@ public:
   }
 
 public:
-  static constexpr uint16_t DefaultLifetime =
-    detail::InterestObj::DefaultLifetime;
+  enum
+  {
+    DefaultLifetime = detail::InterestObj::DefaultLifetime,
+  };
 };
 
 } // namespace ndnph

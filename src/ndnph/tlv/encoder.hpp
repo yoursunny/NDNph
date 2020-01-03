@@ -107,7 +107,9 @@ public:
   bool prepend(const First& first, const Arg&... arg)
   {
     prepend(arg...);
-    prependOne(first);
+    using FirstIsEncodeFunc = std::integral_constant<
+      bool, std::is_convertible<First, std::function<void(Encoder&)>>::value>;
+    prependOne<First>(first, static_cast<FirstIsEncodeFunc*>(nullptr));
     return !!*this;
   }
 
@@ -178,17 +180,13 @@ private:
   bool prepend() { return true; }
 
   template<typename T>
-  typename std::enable_if<
-    std::is_convertible<T, std::function<void(Encoder&)>>::value>::type
-  prependOne(const T& encodeFunc)
+  void prependOne(const T& encodeFunc, const std::true_type*)
   {
     encodeFunc(*this);
   }
 
   template<typename T>
-  typename std::enable_if<
-    !std::is_convertible<T, std::function<void(Encoder&)>>::value>::type
-  prependOne(const T& encodable)
+  void prependOne(const T& encodable, const std::false_type*)
   {
     encodable.encodeTo(*this);
   }
