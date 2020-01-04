@@ -82,15 +82,15 @@ public:
     return true;
   }
 
-  template<int type, bool repeatable, int order, typename F>
+  template<int type, bool repeatable, int order, typename Fn>
   struct ElementDef
   {
     using TT = std::integral_constant<int, type>;
     using Repeatable = std::integral_constant<bool, repeatable>;
     using Order = std::integral_constant<int, order>;
     using ReturnBool = typename std::is_convertible<
-      typename std::result_of<F(const Decoder::Tlv&)>::type, bool>::type;
-    const F& f;
+      typename std::result_of<Fn(const Decoder::Tlv&)>::type, bool>::type;
+    const Fn& f;
   };
 
   /**
@@ -101,13 +101,13 @@ public:
    *               in a certain order. By default, the order of defs passed to
    *               decode() determines the expected order. This parameter allows
    *               overriding the default order.
-   * @tparam F `bool (*)(const Decoder::Tlv&)` or `void (*)(const Decoder::Tlv&)`
+   * @tparam Fn `bool (*)(const Decoder::Tlv&)` or `void (*)(const Decoder::Tlv&)`
    * @param f function to process TLV element.
    */
-  template<int type, bool repeatable = false, int order = 0, typename F = void>
-  static ElementDef<type, repeatable, order, F> def(const F& f)
+  template<int type, bool repeatable = false, int order = 0, typename Fn = void>
+  static ElementDef<type, repeatable, order, Fn> def(const Fn& f)
   {
-    return ElementDef<type, repeatable, order, F>{ f };
+    return ElementDef<type, repeatable, order, Fn>{ f };
   }
 
 private:
