@@ -3,6 +3,7 @@
 
 #include "../core/in-region.hpp"
 #include "../tlv/encoder.hpp"
+#include "../tlv/ev-decoder.hpp"
 #include "../tlv/nni.hpp"
 #include "name.hpp"
 
@@ -83,6 +84,29 @@ public:
           encoder.prependTlv(TT::HopLimit, tlv::NNI1(getHopLimit()));
         }
       });
+  }
+
+  bool decodeFrom(const Decoder::Tlv& input)
+  {
+    return EvDecoder::decode(
+      input, { TT::Interest },
+      EvDecoder::def<TT::Name>([this](const Decoder::Tlv& d) {
+        obj->name = Name(d.value, d.length);
+        return !!obj->name;
+      }),
+      EvDecoder::def<TT::CanBePrefix>(
+        [this](const Decoder::Tlv&) { setCanBePrefix(true); }),
+      EvDecoder::def<TT::MustBeFresh>(
+        [this](const Decoder::Tlv&) { setMustBeFresh(true); }),
+      EvDecoder::def<TT::Nonce>([this](const Decoder::Tlv& d) {
+        return tlv::NNI4::decode(d, obj->nonce);
+      }),
+      EvDecoder::def<TT::InterestLifetime>([this](const Decoder::Tlv& d) {
+        return tlv::NNI::decode(d, obj->lifetime);
+      }),
+      EvDecoder::def<TT::HopLimit>([this](const Decoder::Tlv& d) {
+        return tlv::NNI1::decode(d, obj->hopLimit);
+      }));
   }
 };
 

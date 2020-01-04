@@ -28,6 +28,16 @@ TEST(Interest, EncodeMinimal)
   ASSERT_TRUE(ok);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
               T::ElementsAreArray(wire));
+  encoder.discard();
+
+  Decoder::Tlv d;
+  Decoder::readTlv(d, wire.data(), wire.size());
+  Interest decoded = region.create<Interest>();
+  ASSERT_TRUE(decoded.decodeFrom(d));
+  EXPECT_TRUE(decoded.getName() == interest.getName());
+  EXPECT_EQ(decoded.getCanBePrefix(), false);
+  EXPECT_EQ(decoded.getMustBeFresh(), false);
+  EXPECT_EQ(decoded.getNonce(), 0xA0A1A2A3);
 }
 
 TEST(Interest, EncodeFull)
@@ -57,6 +67,18 @@ TEST(Interest, EncodeFull)
   ASSERT_TRUE(ok);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
               T::ElementsAreArray(wire));
+  encoder.discard();
+
+  Decoder::Tlv d;
+  Decoder::readTlv(d, wire.data(), wire.size());
+  Interest decoded = region.create<Interest>();
+  ASSERT_TRUE(decoded.decodeFrom(d));
+  EXPECT_TRUE(decoded.getName() == interest.getName());
+  EXPECT_EQ(decoded.getCanBePrefix(), true);
+  EXPECT_EQ(decoded.getMustBeFresh(), true);
+  EXPECT_EQ(decoded.getNonce(), 0xA0A1A2A3);
+  EXPECT_EQ(decoded.getLifetime(), 8198);
+  EXPECT_EQ(decoded.getHopLimit(), 5);
 }
 
 } // namespace

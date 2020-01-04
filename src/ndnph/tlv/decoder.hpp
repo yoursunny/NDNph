@@ -10,8 +10,23 @@ class Decoder
 {
 public:
   /** @brief Decoded TLV. */
-  struct Tlv
+  class Tlv
   {
+  public:
+    /** @brief Whether this TLV is invalid (e.g. dereference from past-end Iterator). */
+    bool operator!() const { return size == 0; }
+
+    /** @brief Decode into an object with `bool decodeFrom(const Decoder::Tlv&)` method. */
+    template<typename T>
+    bool decode(T& target) const
+    {
+      return !!*this && target.decodeFrom(*this);
+    }
+
+    /** @brief Create Decoder over TLV-VALUE. */
+    Decoder vd() const { return Decoder(value, length); }
+
+  public:
     uint32_t type = 0;
     size_t length = 0;
     const uint8_t* value = nullptr;
@@ -43,6 +58,11 @@ public:
     return end - d.value >= static_cast<ssize_t>(length);
   }
 
+  static bool readTlv(Tlv& d, const uint8_t* input, size_t size)
+  {
+    return readTlv(d, input, input + size);
+  }
+
   /** @brief Iterator over TLV elements. */
   class Iterator
   {
@@ -63,6 +83,11 @@ public:
     /** @brief Whether a decoding error has occurred. */
     bool hasError() const { return m_pos == nullptr; }
 
+    /**
+     * @brief Increment to next TLV element.
+     *
+     * Incrementing past-end iterator is allowed and has no effect.
+     */
     Iterator& operator++()
     {
       m_pos = m_tlv.value + m_tlv.length;
@@ -77,7 +102,13 @@ public:
       return copy;
     }
 
+    /**
+     * @brief Obtain Decoder::Tlv.
+     *
+     * Dereferencing past-end iterator is allowed and returns empty Decoder::Tlv.
+     */
     reference operator*() { return m_tlv; }
+
     pointer operator->() { return &m_tlv; }
 
     friend bool operator==(const Iterator& lhs, const Iterator& rhs)
