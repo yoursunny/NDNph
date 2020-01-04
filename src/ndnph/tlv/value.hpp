@@ -1,6 +1,7 @@
 #ifndef NDNPH_TLV_VALUE_HPP
 #define NDNPH_TLV_VALUE_HPP
 
+#include "decoder.hpp"
 #include "encoder.hpp"
 
 namespace ndnph {
@@ -27,6 +28,13 @@ public:
     if (room != nullptr) {
       std::copy_n(m_value, m_size, room);
     }
+  }
+
+  bool decodeFrom(const Decoder::Tlv& d)
+  {
+    m_value = d.value;
+    m_size = d.length;
+    return true;
   }
 
 private:

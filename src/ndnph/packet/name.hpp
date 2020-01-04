@@ -17,12 +17,8 @@ class Name
 public:
   /** @brief Construct Name, keeping reference to TLV-VALUE. */
   explicit Name(const uint8_t* value = nullptr, size_t length = 0)
-    : m_value(value)
   {
-    if (!decodeComps(length)) {
-      m_value = nullptr;
-      m_length = m_nComps = 0;
-    }
+    decodeValue(value, length);
   }
 
   /** @brief Construct Name, making copy of TLV-VALUE. */
@@ -179,12 +175,28 @@ public:
     encoder.prependTlv(TT::Name, tlv::Value(m_value, m_length));
   }
 
+  bool decodeFrom(const Decoder::Tlv& d)
+  {
+    return decodeValue(d.value, d.length);
+  }
+
 private:
   explicit Name(const uint8_t* value, size_t length, size_t nComps)
     : m_value(value)
     , m_length(length)
     , m_nComps(nComps)
   {}
+
+  bool decodeValue(const uint8_t* value, size_t length)
+  {
+    m_value = value;
+    if (decodeComps(length)) {
+      return true;
+    }
+    m_value = nullptr;
+    m_length = m_nComps = 0;
+    return false;
+  }
 
   bool decodeComps(size_t length)
   {

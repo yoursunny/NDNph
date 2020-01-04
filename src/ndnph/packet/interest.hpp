@@ -34,6 +34,7 @@ public:
 
 } // namespace detail
 
+/** @brief Interest packet. */
 class Interest : public detail::RefRegion<detail::InterestObj>
 {
 public:
@@ -89,24 +90,14 @@ public:
   bool decodeFrom(const Decoder::Tlv& input)
   {
     return EvDecoder::decode(
-      input, { TT::Interest },
-      EvDecoder::def<TT::Name>([this](const Decoder::Tlv& d) {
-        obj->name = Name(d.value, d.length);
-        return !!obj->name;
-      }),
+      input, { TT::Interest }, EvDecoder::def<TT::Name>(&obj->name),
       EvDecoder::def<TT::CanBePrefix>(
         [this](const Decoder::Tlv&) { setCanBePrefix(true); }),
       EvDecoder::def<TT::MustBeFresh>(
         [this](const Decoder::Tlv&) { setMustBeFresh(true); }),
-      EvDecoder::def<TT::Nonce>([this](const Decoder::Tlv& d) {
-        return tlv::NNI4::decode(d, obj->nonce);
-      }),
-      EvDecoder::def<TT::InterestLifetime>([this](const Decoder::Tlv& d) {
-        return tlv::NNI::decode(d, obj->lifetime);
-      }),
-      EvDecoder::def<TT::HopLimit>([this](const Decoder::Tlv& d) {
-        return tlv::NNI1::decode(d, obj->hopLimit);
-      }));
+      EvDecoder::defNni<TT::Nonce, tlv::NNI4>(&obj->nonce),
+      EvDecoder::defNni<TT::InterestLifetime, tlv::NNI>(&obj->lifetime),
+      EvDecoder::defNni<TT::HopLimit, tlv::NNI1>(&obj->hopLimit));
   }
 };
 

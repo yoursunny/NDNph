@@ -27,6 +27,17 @@ TEST(Data, EncodeMinimal)
   ASSERT_TRUE(ok);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
               T::ElementsAreArray(wire));
+  encoder.discard();
+
+  Decoder::Tlv d;
+  Decoder::readTlv(d, wire.data(), wire.size());
+  Data decoded = region.create<Data>();
+  ASSERT_TRUE(decoded.decodeFrom(d));
+  EXPECT_TRUE(decoded.getName() == data.getName());
+  EXPECT_EQ(decoded.getContentType(), 0x00);
+  EXPECT_EQ(decoded.getFreshnessPeriod(), 0);
+  EXPECT_EQ(decoded.getIsFinalBlock(), false);
+  EXPECT_THAT(decoded.getContent(), T::SizeIs(0));
 }
 
 TEST(Interest, EncodeFull)
@@ -55,6 +66,17 @@ TEST(Interest, EncodeFull)
   ASSERT_TRUE(ok);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
               T::ElementsAreArray(wire));
+  encoder.discard();
+
+  Decoder::Tlv d;
+  Decoder::readTlv(d, wire.data(), wire.size());
+  Data decoded = region.create<Data>();
+  ASSERT_TRUE(decoded.decodeFrom(d));
+  EXPECT_TRUE(decoded.getName() == data.getName());
+  EXPECT_EQ(decoded.getContentType(), 0x01);
+  EXPECT_EQ(decoded.getFreshnessPeriod(), 500);
+  EXPECT_EQ(decoded.getIsFinalBlock(), true);
+  EXPECT_THAT(decoded.getContent(), T::SizeIs(2));
 }
 
 } // namespace

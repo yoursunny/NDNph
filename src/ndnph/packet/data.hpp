@@ -3,6 +3,7 @@
 
 #include "../core/in-region.hpp"
 #include "../tlv/encoder.hpp"
+#include "../tlv/ev-decoder.hpp"
 #include "../tlv/nni.hpp"
 #include "name.hpp"
 
@@ -32,6 +33,7 @@ public:
 
 } // namespace detail
 
+/** @brief Data packet. */
 class Data : public detail::RefRegion<detail::DataObj>
 {
 public:
@@ -82,6 +84,26 @@ public:
       [this](Encoder& encoder) {
         encoder.prependTlv(TT::Content, Encoder::OmitEmpty, getContent());
       });
+  }
+
+  bool decodeFrom(const Decoder::Tlv& input)
+  {
+    return EvDecoder::decode(
+      input, { TT::Data }, EvDecoder::def<TT::Name>(&obj->name),
+      EvDecoder::def<TT::MetaInfo>([this](const Decoder::Tlv& d) {
+        return EvDecoder::decode(
+          d, {},
+          EvDecoder::defNni<TT::ContentType, tlv::NNI>(&obj->contentType),
+          EvDecoder::defNni<TT::FreshnessPeriod, tlv::NNI>(
+            &obj->freshnessPeriod),
+          EvDecoder::def<TT::FinalBlockId>([this](const Decoder::Tlv& d) {
+            auto comp = getName()[-1];
+            setIsFinalBlock(
+              d.length == comp.size() &&
+              std::equal(d.value, d.value + d.length, comp.tlv()));
+          }));
+      }),
+      EvDecoder::def<TT::Content>(&obj->content));
   }
 };
 

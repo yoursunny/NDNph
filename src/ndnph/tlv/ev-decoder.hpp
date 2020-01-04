@@ -4,6 +4,93 @@
 #include "decoder.hpp"
 
 namespace ndnph {
+namespace detail {
+
+template<int type, bool repeatable, int order>
+struct EvdElementDefBase
+{
+  using TT = std::integral_constant<int, type>;
+  using Repeatable = std::integral_constant<bool, repeatable>;
+  using Order = std::integral_constant<int, order>;
+};
+
+template<int type, bool repeatable, int order, typename Fn>
+class EvdElementDefVoid : public EvdElementDefBase<type, repeatable, order>
+{
+public:
+  explicit EvdElementDefVoid(const Fn& f)
+    : m_f(f)
+  {}
+
+  bool operator()(const Decoder::Tlv& d) const
+  {
+    m_f(d);
+    return true;
+  }
+
+private:
+  const Fn& m_f;
+};
+
+template<int type, bool repeatable, int order, typename Fn>
+class EvdElementDefBool : public EvdElementDefBase<type, repeatable, order>
+{
+public:
+  explicit EvdElementDefBool(const Fn& f)
+    : m_f(f)
+  {}
+
+  bool operator()(const Decoder::Tlv& d) const { return m_f(d); }
+
+private:
+  const Fn& m_f;
+};
+
+template<
+  int type, bool repeatable, int order, typename Fn,
+  typename R = typename std::conditional<
+    std::is_convertible<typename std::result_of<Fn(const Decoder::Tlv&)>::type,
+                        bool>::value,
+    EvdElementDefBool<type, repeatable, order, Fn>,
+    EvdElementDefVoid<type, repeatable, order, Fn>>::type>
+class EvdElementDefFn : public R
+{
+public:
+  using R::R;
+};
+
+template<int type, bool repeatable, int order, typename Decodable>
+class EvdElementDefDecodable : public EvdElementDefBase<type, repeatable, order>
+{
+public:
+  explicit EvdElementDefDecodable(Decodable* obj)
+    : m_obj(obj)
+  {}
+
+  bool operator()(const Decoder::Tlv& d) const { return m_obj->decodeFrom(d); }
+
+private:
+  Decodable* m_obj;
+};
+
+template<int type, int order, typename NniClass, typename ValueType>
+class EvdElementDefNni : public EvdElementDefBase<type, false, order>
+{
+public:
+  explicit EvdElementDefNni(ValueType* value)
+    : m_value(value)
+  {}
+
+  bool operator()(const Decoder::Tlv& d) const
+  {
+    return NniClass::decode(d, *m_value);
+  }
+
+private:
+  ValueType* m_value;
+};
+
+} // namespace detail
 
 /** @brief TLV-VALUE decoder that understands Packet Format v0.3 evolvability guidelines. */
 class EvDecoder
@@ -82,17 +169,6 @@ public:
     return true;
   }
 
-  template<int type, bool repeatable, int order, typename Fn>
-  struct ElementDef
-  {
-    using TT = std::integral_constant<int, type>;
-    using Repeatable = std::integral_constant<bool, repeatable>;
-    using Order = std::integral_constant<int, order>;
-    using ReturnBool = typename std::is_convertible<
-      typename std::result_of<Fn(const Decoder::Tlv&)>::type, bool>::type;
-    const Fn& f;
-  };
-
   /**
    * @brief Create an element definition.
    * @tparam type TLV-TYPE number.
@@ -104,10 +180,37 @@ public:
    * @tparam Fn `bool (*)(const Decoder::Tlv&)` or `void (*)(const Decoder::Tlv&)`
    * @param f function to process TLV element.
    */
-  template<int type, bool repeatable = false, int order = 0, typename Fn = void>
-  static ElementDef<type, repeatable, order, Fn> def(const Fn& f)
+  template<int type, bool repeatable = false, int order = 0, typename Fn = void,
+           typename R = detail::EvdElementDefFn<type, repeatable, order, Fn>>
+  static R def(const Fn& f, const decltype(&Fn::operator())* = nullptr)
   {
-    return ElementDef<type, repeatable, order, Fn>{ f };
+    return R(f);
+  }
+
+  /**
+   * @brief Create an element definition.
+   * @tparam Decodable class with `bool decodeFrom(const Decoder::Tlv&)` method.
+   */
+  template<int type, bool repeatable = false, int order = 0,
+           typename Decodable = void,
+           typename R =
+             detail::EvdElementDefDecodable<type, repeatable, order, Decodable>>
+  static R def(Decodable* decodable,
+               const decltype(&Decodable::decodeFrom)* = nullptr)
+  {
+    return R(decodable);
+  }
+
+  /**
+   * @brief Create an element definition for Non-Negative Integer field.
+   * @tparam NniClass either tlv::NNI or a fixed-length variant.
+   */
+  template<
+    int type, typename NniClass, int order = 0, typename ValueType = void,
+    typename R = detail::EvdElementDefNni<type, order, NniClass, ValueType>>
+  static R defNni(ValueType* value)
+  {
+    return R(value);
   }
 
 private:
@@ -152,24 +255,7 @@ private:
       return false; // cannot repeat
     }
     currentOrder = defOrder;
-    return invokeDef(def, d);
-  }
-
-  template<typename E>
-  static bool invokeDef(
-    const E& def, const Decoder::Tlv& d,
-    const typename std::enable_if<E::ReturnBool::value>::type* = nullptr)
-  {
-    return def.f(d);
-  }
-
-  template<typename E>
-  static bool invokeDef(
-    const E& def, const Decoder::Tlv& d,
-    const typename std::enable_if<!E::ReturnBool::value>::type* = nullptr)
-  {
-    def.f(d);
-    return true;
+    return def(d);
   }
 
   template<typename IsCritical>
