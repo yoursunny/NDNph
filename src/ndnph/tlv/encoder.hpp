@@ -64,6 +64,9 @@ public:
     m_buf = m_pos = m_end = nullptr;
   }
 
+  /** @brief Reset front to given position. */
+  void resetFront(uint8_t* pos) { m_pos = pos; }
+
   /**
    * @brief Make room to prepend an object.
    * @return room to write object.

@@ -22,6 +22,8 @@ protected:
 
 protected:
   Region& region;
+
+  friend Region& regionOf(const InRegion* obj) { return obj->region; }
 };
 
 template<typename Obj>

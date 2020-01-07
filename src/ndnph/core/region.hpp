@@ -20,7 +20,7 @@ public:
   }
 
   /** @brief Deallocate (front part of) last buffer from alloc(). */
-  bool free(uint8_t* ptr, size_t size)
+  bool free(const uint8_t* ptr, size_t size)
   {
     if (ptr != m_right || m_end - m_right < static_cast<ssize_t>(size)) {
       return false;
@@ -53,7 +53,14 @@ public:
     return room;
   }
 
-  /** @brief Allocate and create an object, and return its reference. */
+  /**
+   * @brief Allocate and create an object, and return its reference.
+   * @tparam RefType a subclass of detail::RefRegion<ObjType>,
+   *                 where ObjType is a subclass of detail::InRegion.
+   * @return a reference to the created object.
+   * @warning If `!ref` is true on the returned reference, it indicates allocation failure.
+   *          Using the reference in that case would cause segmentation fault.
+   */
   template<typename RefType, typename... Arg>
   RefType create(Arg&&... arg)
   {
@@ -100,8 +107,8 @@ protected:
 protected:
   uint8_t* const m_begin;
   uint8_t* const m_end;
-  uint8_t* m_left;
-  uint8_t* m_right;
+  uint8_t* m_left;  ///< [m_begin, m_left) is allocated for aligned items
+  uint8_t* m_right; ///< [m_right, m_end) is allocated for unaligned items
 };
 
 /**

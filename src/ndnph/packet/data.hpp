@@ -2,10 +2,7 @@
 #define NDNPH_PACKET_DATA_HPP
 
 #include "../core/in-region.hpp"
-#include "../tlv/encoder.hpp"
-#include "../tlv/ev-decoder.hpp"
-#include "../tlv/nni.hpp"
-#include "name.hpp"
+#include "sig-info.hpp"
 
 namespace ndnph {
 namespace detail {
@@ -26,6 +23,9 @@ public:
 public:
   Name name;
   tlv::Value content;
+  DSigInfo sigInfo;
+  tlv::Value sigValue;
+  tlv::Value signedPortion;
   uint32_t freshnessPeriod = DefaultFreshnessPeriod;
   uint8_t contentType = DefaultContentType;
   bool isFinalBlock = false;
@@ -54,38 +54,53 @@ public:
   tlv::Value getContent() const { return obj->content; }
   void setContent(tlv::Value v) { obj->content = std::move(v); }
 
-  void encodeTo(Encoder& encoder) const
+  /**
+   * @brief Sign packet and prepend to encoder.
+   * @tparam Key class with
+   *             `void updateSigInfo(SigInfo& sigInfo) const`
+   *             that writes SigType and KeyLocator into SigInfo, and
+   *             `using MaxSigLength = std::integral_constant<int, L>`
+   *             that indicates maximum possible signature length, and
+   *             `ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const`
+   *             that writes signature to sig[] and returns signature length or -1 on error.
+   *
+   * This method does not preserve unrecognized fields found during decoding.
+   *
+   * This method does not set sigValue. Packet is not verifiable after this operation.
+   */
+  template<typename Key>
+  bool encodeSigned(Encoder& encoder, const Key& key) const
   {
-    encoder.prependTlv(
-      TT::Data, getName(),
-      [this](Encoder& encoder) {
-        encoder.prependTlv(
-          TT::MetaInfo, Encoder::OmitEmpty,
-          [this](Encoder& encoder) {
-            if (getContentType() != detail::DataObj::DefaultContentType) {
-              encoder.prependTlv(TT::ContentType, tlv::NNI(getContentType()));
-            }
-          },
-          [this](Encoder& encoder) {
-            if (getFreshnessPeriod() !=
-                detail::DataObj::DefaultFreshnessPeriod) {
-              encoder.prependTlv(TT::FreshnessPeriod,
-                                 tlv::NNI(getFreshnessPeriod()));
-            }
-          },
-          [this](Encoder& encoder) {
-            if (getIsFinalBlock()) {
-              auto comp = getName()[-1];
-              encoder.prependTlv(TT::FinalBlockId,
-                                 tlv::Value(comp.tlv(), comp.size()));
-            }
-          });
-      },
-      [this](Encoder& encoder) {
-        encoder.prependTlv(TT::Content, Encoder::OmitEmpty, getContent());
+    uint8_t* after = const_cast<uint8_t*>(encoder.begin());
+    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLength::value);
+    key.updateSigInfo(obj->sigInfo);
+    encodeSignedPortion(encoder);
+    if (!encoder) {
+      return false;
+    }
+    const uint8_t* signedPortion = encoder.begin();
+    size_t sizeofSignedPortion = sigBuf - signedPortion;
+
+    ssize_t sigLen =
+      key.sign({ tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
+    if (sigLen < 0) {
+      return false;
+    }
+    if (sigLen != Key::MaxSigLength::value) {
+      std::copy_backward(sigBuf, sigBuf + sigLen, after);
+    }
+    encoder.resetFront(after);
+
+    return encoder.prependTlv(
+      TT::Data,
+      [this, &key](Encoder& encoder) { encodeSignedPortion(encoder); },
+      [this, sigLen](Encoder& encoder) {
+        encoder.prependRoom(sigLen); // room contains signature
+        encoder.prependTypeLength(TT::DSigValue, sigLen);
       });
   }
 
+  /** @brief Decode packet. */
   bool decodeFrom(const Decoder::Tlv& input)
   {
     return EvDecoder::decode(
@@ -103,7 +118,64 @@ public:
               std::equal(d.value, d.value + d.length, comp.tlv()));
           }));
       }),
-      EvDecoder::def<TT::Content>(&obj->content));
+      EvDecoder::def<TT::Content>(&obj->content),
+      EvDecoder::def<TT::DSigInfo>(&obj->sigInfo),
+      EvDecoder::def<TT::DSigValue>([this, &input](const Decoder::Tlv& d) {
+        obj->signedPortion = tlv::Value(input.value, d.tlv - input.value);
+        return obj->sigValue.decodeFrom(d);
+      }));
+  }
+
+  /**
+   * @brief Verify packet with public key.
+   * @tparam Key class with
+   *             `bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
+                              size_t length) const`
+   *             that performs verification and returns verification result.
+   * @return verification result.
+   *
+   * This method only works on decoded packet. It does not work on packet that
+   * has been modified or (re-)signed.
+   */
+  template<typename Key>
+  bool verify(const Key& key)
+  {
+    return key.verify({ obj->signedPortion }, obj->sigValue.begin(),
+                      obj->sigValue.size());
+  }
+
+private:
+  void encodeSignedPortion(Encoder& encoder) const
+  {
+    encoder.prepend(
+      obj->name,
+      [this](Encoder& encoder) {
+        encoder.prependTlv(
+          TT::MetaInfo, Encoder::OmitEmpty,
+          [this](Encoder& encoder) {
+            if (obj->contentType != detail::DataObj::DefaultContentType) {
+              encoder.prependTlv(TT::ContentType, tlv::NNI(obj->contentType));
+            }
+          },
+          [this](Encoder& encoder) {
+            if (obj->freshnessPeriod !=
+                detail::DataObj::DefaultFreshnessPeriod) {
+              encoder.prependTlv(TT::FreshnessPeriod,
+                                 tlv::NNI(obj->freshnessPeriod));
+            }
+          },
+          [this](Encoder& encoder) {
+            if (obj->isFinalBlock) {
+              auto comp = obj->name[-1];
+              encoder.prependTlv(TT::FinalBlockId,
+                                 tlv::Value(comp.tlv(), comp.size()));
+            }
+          });
+      },
+      [this](Encoder& encoder) {
+        encoder.prependTlv(TT::Content, Encoder::OmitEmpty, obj->content);
+      },
+      obj->sigInfo);
   }
 };
 

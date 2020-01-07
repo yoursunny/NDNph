@@ -7,7 +7,7 @@ namespace {
 
 TEST(Interest, EncodeMinimal)
 {
-  StaticRegion<256> region;
+  StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
   EXPECT_THAT(interest.getName(), T::SizeIs(0));
@@ -42,7 +42,7 @@ TEST(Interest, EncodeMinimal)
 
 TEST(Interest, EncodeFull)
 {
-  StaticRegion<256> region;
+  StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
 

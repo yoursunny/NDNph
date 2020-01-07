@@ -5,7 +5,6 @@ namespace ndnph {
 
 /** @brief TLV-TYPE assigned numbers. */
 namespace TT {
-
 enum
 {
   Name = 0x07,
@@ -43,8 +42,18 @@ enum
   Delegation = 0x1F,
   Preference = 0x1E,
 };
-
 } // namespace TT
+
+/** @brief SignatureType assigned numbers. */
+namespace SigType {
+enum
+{
+  Sha256 = 0x00,
+  Sha256WithRsa = 0x01,
+  Sha256WithEcdsa = 0x03,
+  HmacWithSha256 = 0x04,
+};
+} // namespace SigType
 
 } // namespace ndnph
 
