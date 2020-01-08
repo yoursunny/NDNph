@@ -1,1 +1,1 @@
-executable('program', 'main.cpp', dependencies: [libdep])
+executable('program', 'main.cpp', dependencies: [lib_dep])

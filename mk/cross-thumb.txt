@@ -1,7 +1,7 @@
 [binaries]
 c = '/usr/bin/arm-none-eabi-gcc'
 cpp = '/usr/bin/arm-none-eabi-g++'
-ld = '/usr/bin/arm-none-eabi-ld'
+ld = 'bfd'
 ar = '/usr/bin/arm-none-eabi-ar'
 strip = '/usr/bin/arm-none-eabi-strip'
 pkgconfig = '/usr/bin/pkg-config'

@@ -5,9 +5,7 @@
 namespace ndnph {
 namespace {
 
-#if NDNPH_HAS_BOOST_CONCEPT
 BOOST_CONCEPT_ASSERT((boost::InputIterator<Name::Iterator>));
-#endif
 
 TEST(Name, Decode)
 {

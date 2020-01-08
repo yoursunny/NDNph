@@ -1,5 +1,5 @@
 [binaries]
 c = '/usr/bin/clang-6.0'
 cpp = '/usr/bin/clang++-6.0'
-ld = '/usr/bin/lld-6.0'
+ld = 'lld'
 ar = '/usr/bin/llvm-ar-6.0'

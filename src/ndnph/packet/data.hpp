@@ -92,9 +92,8 @@ public:
     encoder.resetFront(after);
 
     return encoder.prependTlv(
-      TT::Data,
-      [this, &key](Encoder& encoder) { encodeSignedPortion(encoder); },
-      [this, sigLen](Encoder& encoder) {
+      TT::Data, [this](Encoder& encoder) { encodeSignedPortion(encoder); },
+      [sigLen](Encoder& encoder) {
         encoder.prependRoom(sigLen); // room contains signature
         encoder.prependTypeLength(TT::DSigValue, sigLen);
       });

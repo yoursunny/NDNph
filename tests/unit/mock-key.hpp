@@ -1,7 +1,7 @@
 #ifndef NDNPH_TEST_MOCK_KEY_HPP
 #define NDNPH_TEST_MOCK_KEY_HPP
 
-#include "ndnph/tlv/value.hpp"
+#include "ndnph/packet/sig-info.hpp"
 
 #include "test-common.hpp"
 
