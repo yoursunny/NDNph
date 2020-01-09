@@ -151,6 +151,9 @@ public:
   /** @brief Prepend TLV with zero TLV-LENGTH. */
   bool prependTlv(uint32_t type) { return prependTypeLength(type, 0); }
 
+  /** @brief Indicate an error has occurred. */
+  void setError() { m_pos = nullptr; }
+
 private:
   void init(uint8_t* buf, size_t capacity)
   {

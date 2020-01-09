@@ -1,7 +1,7 @@
 #ifndef NDNPH_PORT_MBEDTLS_SHA256_HPP
 #define NDNPH_PORT_MBEDTLS_SHA256_HPP
 
-#include "../../core/common.hpp"
+#include "../../packet/interest.hpp"
 
 #include <mbedtls/sha256.h>
 
@@ -37,6 +37,9 @@ private:
 };
 
 } // namespace port
+
+using Interest = InterestBase<port::Sha256>;
+
 } // namespace ndnph
 
 #endif // NDNPH_PORT_MBEDTLS_SHA256_HPP

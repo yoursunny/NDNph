@@ -26,7 +26,7 @@ TEST(Data, EncodeMinimal)
   data.setName(Name(&wire[4], 3));
 
   Encoder encoder(region);
-  ASSERT_TRUE(data.encodeSigned(encoder, NullPrivateKey()));
+  ASSERT_TRUE(encoder.prepend(data.sign(NullPrivateKey())));
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
               T::ElementsAreArray(wire));
   encoder.discard();
@@ -58,7 +58,7 @@ TEST(Data, EncodeFull)
     0x1A, 0x03, 0x08, 0x01, 0x42,                   // MetaInfo.FinalBlockId
     0x15, 0x02, 0xC0, 0xC1,                         // Content
     0x16, 0x0A,                                     // DSigInfo
-    0x1B, 0x01, 0x00,                               // DSigInfo.SigType
+    0x1B, 0x01, 0x10,                               // DSigInfo.SigType
     0x1C, 0x05, 0x07, 0x03, 0x08, 0x01, 0x4B,       // DSigInfo.KeyLocator
     0x17, 0x04, 0xF0, 0xF1, 0xF2, 0xF3              // DSigValue
   });
@@ -72,13 +72,13 @@ TEST(Data, EncodeFull)
   {
     MockPrivateKey<32> key;
     EXPECT_CALL(key, updateSigInfo).WillOnce([&wire](SigInfo& sigInfo) {
-      sigInfo.sigType = SigType::Sha256;
+      sigInfo.sigType = 0x10;
       sigInfo.name = Name(&wire[37], 3);
     });
     EXPECT_CALL(key, doSign(T::ElementsAreArray(&wire[2], &wire[40]), T::_))
       .WillOnce(
         T::DoAll(T::SetArrayArgument<1>(&wire[42], &wire[46]), T::Return(4)));
-    ASSERT_TRUE(data.encodeSigned(encoder, key));
+    ASSERT_TRUE(encoder.prepend(data.sign(key)));
   }
 
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),

@@ -19,7 +19,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
   ASSERT_FALSE(!pktA);
   pktA.setName(Name(&nameV[0], 3));
   Encoder encoderA(region);
-  ASSERT_TRUE(pktA.encodeSigned(encoderA, pvtA));
+  ASSERT_TRUE(encoderA.prepend(pktA.sign(pvtA)));
   encoderA.trim();
 
   {
@@ -27,7 +27,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
     ASSERT_FALSE(!pktAr);
     pktAr.setName(Name(&nameV[0], 3));
     Encoder encoderAr(region);
-    ASSERT_TRUE(pktAr.encodeSigned(encoderAr, pvtA));
+    ASSERT_TRUE(encoderAr.prepend(pktAr.sign(pvtA)));
     if (deterministic) {
       EXPECT_THAT(std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
                   T::ElementsAreArray(encoderA.begin(), encoderA.end()));
@@ -43,7 +43,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
   ASSERT_FALSE(!pktB);
   pktB.setName(Name(&nameV[3], 3));
   Encoder encoderB(region);
-  ASSERT_TRUE(pktB.encodeSigned(encoderB, pvtB));
+  ASSERT_TRUE(encoderB.prepend(pktB.sign(pvtB)));
   encoderB.trim();
 
   {

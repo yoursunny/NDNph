@@ -51,6 +51,15 @@ public:
   uint8_t sigType = 0;
 };
 
+class ISigInfo : public SigInfo
+{
+public:
+  void encodeTo(Encoder& encoder) const
+  {
+    return encodeImpl(TT::ISigInfo, encoder);
+  }
+};
+
 class DSigInfo : public SigInfo
 {
 public:

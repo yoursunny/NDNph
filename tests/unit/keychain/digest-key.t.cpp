@@ -1,5 +1,6 @@
 #include "ndnph/keychain/digest-key.hpp"
 #include "ndnph/packet/data.hpp"
+#include "ndnph/packet/interest.hpp"
 #include "ndnph/port/mbedtls/sha256.hpp"
 
 #include "../test-common.hpp"
@@ -29,6 +30,12 @@ TEST(DigestKey, Minimal)
 
   sig[15] ^= 0x01;
   EXPECT_FALSE(key.verify({ chunk0, chunk1 }, sig, sizeof(sig)));
+}
+
+TEST(DigestKey, SignVerifyInterest)
+{
+  DigestKey<port::Sha256> key;
+  testSignVerify<Interest>(key, key, key, key, true, true);
 }
 
 TEST(DigestKey, SignVerifyData)
