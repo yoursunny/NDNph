@@ -53,6 +53,20 @@ public:
     return room;
   }
 
+  /** @brief Allocate and create an item, and return its pointer. */
+  template<typename T, typename... Arg>
+  T* make(Arg&&... arg)
+  {
+    // Region allocator would not `delete` created objects, so it's safe to
+    // create trivially destructible objects only.
+    static_assert(std::is_trivially_destructible<T>::value, "");
+    uint8_t* ptr = this->allocA(sizeof(T));
+    if (ptr == nullptr) {
+      return nullptr;
+    }
+    return new (ptr) T(std::forward<Arg>(arg)...);
+  }
+
   /**
    * @brief Allocate and create an object, and return its reference.
    * @tparam RefType a subclass of detail::RefRegion<ObjType>,
@@ -65,17 +79,8 @@ public:
   RefType create(Arg&&... arg)
   {
     using ObjType = typename RefType::ObjType;
-    // Region allocator would not `delete` created objects. It's safe to create
-    // trivially destructible objects only.
-    static_assert(std::is_trivially_destructible<ObjType>::value, "");
-
-    uint8_t* ptr = this->allocA(sizeof(ObjType));
-    if (ptr == nullptr) {
-      return RefType();
-    }
-
-    ObjType* obj = new (ptr) ObjType(*this, std::forward<Arg>(arg)...);
-    return RefType(obj);
+    auto obj = make<ObjType>(*this, std::forward<Arg>(arg)...);
+    return obj == nullptr ? RefType() : RefType(obj);
   }
 
   /**

@@ -16,7 +16,12 @@ public:
     /** @brief Whether this TLV is invalid (e.g. dereference from past-end Iterator). */
     bool operator!() const { return size == 0; }
 
-    /** @brief Decode into an object with `bool decodeFrom(const Decoder::Tlv&)` method. */
+    /**
+     * @brief Decode into an object with `bool decodeFrom(const Decoder::Tlv&)` method.
+     * @return whether success.
+     * @pre target is newly constructed.
+     * @post target may contain reference to the decoder's underlying input buffer.
+     */
     template<typename T>
     bool decode(T& target) const
     {

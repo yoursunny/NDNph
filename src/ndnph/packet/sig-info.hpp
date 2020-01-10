@@ -7,6 +7,7 @@
 
 namespace ndnph {
 
+/** @brief SignatureInfo. */
 class SigInfo
 {
 public:
@@ -51,6 +52,7 @@ public:
   uint8_t sigType = 0;
 };
 
+/** @brief SignatureInfo on Interest. */
 class ISigInfo : public SigInfo
 {
 public:
@@ -60,6 +62,7 @@ public:
   }
 };
 
+/** @brief SignatureInfo on Data. */
 class DSigInfo : public SigInfo
 {
 public:

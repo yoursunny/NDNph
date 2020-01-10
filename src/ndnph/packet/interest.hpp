@@ -31,7 +31,7 @@ public:
   };
 
 public:
-  InterestParams* params = nullptr;
+  InterestParams* params = nullptr; // only relevant on a decoded packet
   Name name;
   uint32_t nonce = 0;
   uint16_t lifetime = DefaultLifetime;
@@ -108,10 +108,9 @@ public:
                [this](Encoder& encoder) { encodeAppParameters(encoder); });
   }
 
-  template<typename Key, typename R = SignedInterestRef<Sha256Port, Key>>
-  R sign(const Key& key) const;
-
 protected:
+  ~ParameterizedInterestRef() = default;
+
   void encodeName(Encoder& encoder, const tlv::Value& params) const
   {
     Sha256Port hash;
@@ -163,7 +162,7 @@ protected:
       });
   }
 
-private:
+protected:
   tlv::Value m_appParameters;
 };
 
@@ -172,9 +171,10 @@ class SignedInterestRef : public ParameterizedInterestRef<Sha256Port>
 {
 public:
   explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters,
-                             const Key& key)
+                             const Key& key, ISigInfo sigInfo)
     : ParameterizedInterestRef<Sha256Port>(interest, std::move(appParameters))
     , m_key(key)
+    , m_sigInfo(std::move(sigInfo))
   {}
 
   void encodeTo(Encoder& encoder) const
@@ -193,15 +193,15 @@ public:
       return;
     }
 
-    ISigInfo sigInfo;
-    m_key.updateSigInfo(sigInfo);
-
+    m_key.updateSigInfo(m_sigInfo);
     uint8_t* after = const_cast<uint8_t*>(encoder.begin());
     uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLength::value);
-
     encoder.prepend(
       [this](Encoder& encoder) { this->encodeAppParameters(encoder); },
-      sigInfo);
+      m_sigInfo);
+    if (!encoder) {
+      return;
+    }
     const uint8_t* signedPortion = encoder.begin();
     size_t sizeofSignedPortion = sigBuf - signedPortion;
 
@@ -216,10 +216,10 @@ public:
     }
     encoder.resetFront(after);
 
-    this->encodeImpl(encoder, [this, &sigInfo, sigLen](Encoder& encoder) {
+    this->encodeImpl(encoder, [this, sigLen](Encoder& encoder) {
       encoder.prepend(
         [this](Encoder& encoder) { this->encodeAppParameters(encoder); },
-        sigInfo,
+        m_sigInfo,
         [sigLen](Encoder& encoder) {
           encoder.prependRoom(sigLen); // room contains signature
           encoder.prependTypeLength(TT::ISigValue, sigLen);
@@ -229,15 +229,8 @@ public:
 
 private:
   const Key& m_key;
+  mutable ISigInfo m_sigInfo;
 };
-
-template<typename Sha256Port>
-template<typename Key, typename R>
-R
-ParameterizedInterestRef<Sha256Port>::sign(const Key& key) const
-{
-  return R(obj, m_appParameters, key);
-}
 
 class DummySha256
 {
@@ -282,6 +275,11 @@ public:
   uint8_t getHopLimit() const { return obj->hopLimit; }
   void setHopLimit(uint8_t v) { obj->hopLimit = v; }
 
+  /**
+   * @brief Retrieve AppParameters.
+   * @pre only available on decoded packet.
+   * @note To create Interest packet with AppParameters, use parameterize().
+   */
   tlv::Value getAppParameters() const
   {
     if (obj->params == nullptr) {
@@ -290,12 +288,35 @@ public:
     return obj->params->appParameters;
   }
 
+  /**
+   * @brief Retrieve SignatureInfo.
+   * @pre only available on decoded packet.
+   */
+  const ISigInfo* getSigInfo() const
+  {
+    return obj->params == nullptr ? nullptr : &obj->params->sigInfo;
+  }
+
   /** @brief Encode the Interest without AppParameters. */
   void encodeTo(Encoder& encoder) const
   {
     encoder.prependTlv(TT::Interest, obj->name,
                        [this](Encoder& encoder) { encodeMiddle(encoder); });
   }
+
+  class Parameterized : public detail::ParameterizedInterestRef<Sha256Port>
+  {
+  public:
+    using detail::ParameterizedInterestRef<
+      Sha256Port>::ParameterizedInterestRef;
+
+    template<typename Key,
+             typename R = detail::SignedInterestRef<Sha256Port, Key>>
+    R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
+    {
+      return R(obj, this->m_appParameters, key, std::move(sigInfo));
+    }
+  };
 
   /**
    * @brief Add AppParameters to the packet.
@@ -307,11 +328,9 @@ public:
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
    * @note This method does not set sigValue. Packet is not verifiable after this operation.
    */
-  detail::ParameterizedInterestRef<Sha256Port> parameterize(
-    tlv::Value appParameters) const
+  Parameterized parameterize(tlv::Value appParameters) const
   {
-    return detail::ParameterizedInterestRef<Sha256Port>(
-      obj, std::move(appParameters));
+    return Parameterized(obj, std::move(appParameters));
   }
 
   /**
@@ -328,9 +347,9 @@ public:
    */
   template<typename Key,
            typename R = detail::SignedInterestRef<Sha256Port, Key>>
-  R sign(const Key& key) const
+  R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
   {
-    return R(obj, tlv::Value(), key);
+    return R(obj, tlv::Value(), key, std::move(sigInfo));
   }
 
   /** @brief Decode packet. */
@@ -346,13 +365,10 @@ public:
       EvDecoder::defNni<TT::InterestLifetime, tlv::NNI>(&obj->lifetime),
       EvDecoder::defNni<TT::HopLimit, tlv::NNI1>(&obj->hopLimit),
       EvDecoder::def<TT::AppParameters>([this, &input](const Decoder::Tlv& d) {
-        uint8_t* ptr = regionOf(obj).allocA(sizeof(detail::InterestParams));
-        if (ptr == nullptr) {
+        obj->params = regionOf(obj).template make<detail::InterestParams>();
+        if (obj->params == nullptr) {
           return false;
         }
-        static_assert(
-          std::is_trivially_destructible<detail::InterestParams>::value, "");
-        obj->params = new (ptr) detail::InterestParams();
         obj->params->allParams =
           tlv::Value(d.tlv, input.tlv + input.size - d.tlv);
         return obj->params->appParameters.decodeFrom(d);

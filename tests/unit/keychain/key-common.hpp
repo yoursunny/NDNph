@@ -39,11 +39,18 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
     encoderAr.discard();
   }
 
+  using SigInfoT =
+    typename std::remove_cv<typename std::remove_pointer<decltype(
+      std::declval<Pkt>().getSigInfo())>::type>::type;
+  SigInfoT sigInfoB;
+  std::vector<uint8_t> sigInfoExtB({ 0x20, 0x00 });
+  sigInfoB.extensions = tlv::Value(sigInfoExtB.data(), sigInfoExtB.size());
+
   Pkt pktB = region.create<Pkt>();
   ASSERT_FALSE(!pktB);
   pktB.setName(Name(&nameV[3], 3));
   Encoder encoderB(region);
-  ASSERT_TRUE(encoderB.prepend(pktB.sign(pvtB)));
+  ASSERT_TRUE(encoderB.prepend(pktB.sign(pvtB, sigInfoB)));
   encoderB.trim();
 
   {
@@ -65,6 +72,12 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
     ASSERT_TRUE(pktBd.decodeFrom(d));
 
     EXPECT_TRUE(pktBd.verify(pubB));
+
+    const SigInfoT* sigInfoBd = pktBd.getSigInfo();
+    ASSERT_THAT(sigInfoBd, T::NotNull());
+    EXPECT_THAT(std::vector<uint8_t>(sigInfoBd->extensions.begin(),
+                                     sigInfoBd->extensions.end()),
+                T::ElementsAreArray(sigInfoExtB));
   }
 }
 

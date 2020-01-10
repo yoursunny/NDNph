@@ -7,6 +7,14 @@
 namespace ndnph {
 namespace detail {
 
+struct DataSigned
+{
+  DSigInfo sigInfo;
+  tlv::Value sigValue;
+  tlv::Value signedPortion;
+  tlv::Value wholePacket;
+};
+
 class DataObj : public detail::InRegion
 {
 public:
@@ -21,58 +29,23 @@ public:
   };
 
 public:
+  DataSigned* sig = nullptr;
   Name name;
   tlv::Value content;
-  DSigInfo sigInfo;
-  tlv::Value sigValue;
-  tlv::Value signedPortion;
   uint32_t freshnessPeriod = DefaultFreshnessPeriod;
   uint8_t contentType = DefaultContentType;
   bool isFinalBlock = false;
 };
 
-template<typename Key>
-class SignedDataRef : public RefRegion<DataObj>
+class DataRefBase : public RefRegion<DataObj>
 {
 public:
-  explicit SignedDataRef(DataObj* data, const Key& key)
-    : RefRegion(data)
-    , m_key(key)
-  {}
+  using RefRegion::RefRegion;
 
-  void encodeTo(Encoder& encoder) const
-  {
-    m_key.updateSigInfo(obj->sigInfo);
-    uint8_t* after = const_cast<uint8_t*>(encoder.begin());
-    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLength::value);
-    encodeSignedPortion(encoder);
-    if (!encoder) {
-      return;
-    }
-    const uint8_t* signedPortion = encoder.begin();
-    size_t sizeofSignedPortion = sigBuf - signedPortion;
+protected:
+  ~DataRefBase() = default;
 
-    ssize_t sigLen =
-      m_key.sign({ tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
-    if (sigLen < 0) {
-      encoder.setError();
-      return;
-    }
-    if (sigLen != Key::MaxSigLength::value) {
-      std::copy_backward(sigBuf, sigBuf + sigLen, after);
-    }
-    encoder.resetFront(after);
-
-    encoder.prependTlv(
-      TT::Data, [this](Encoder& encoder) { encodeSignedPortion(encoder); },
-      [sigLen](Encoder& encoder) {
-        encoder.prependRoom(sigLen); // room contains signature
-        encoder.prependTypeLength(TT::DSigValue, sigLen);
-      });
-  }
-
-private:
-  void encodeSignedPortion(Encoder& encoder) const
+  void encodeSignedPortion(Encoder& encoder, const DSigInfo& sigInfo) const
   {
     encoder.prepend(
       obj->name,
@@ -102,11 +75,55 @@ private:
       [this](Encoder& encoder) {
         encoder.prependTlv(TT::Content, Encoder::OmitEmpty, obj->content);
       },
-      obj->sigInfo);
+      sigInfo);
+  }
+};
+
+template<typename Key>
+class SignedDataRef : public DataRefBase
+{
+public:
+  explicit SignedDataRef(DataObj* data, const Key& key, DSigInfo sigInfo)
+    : DataRefBase(data)
+    , m_key(key)
+    , m_sigInfo(std::move(sigInfo))
+  {}
+
+  void encodeTo(Encoder& encoder) const
+  {
+    m_key.updateSigInfo(m_sigInfo);
+    uint8_t* after = const_cast<uint8_t*>(encoder.begin());
+    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLength::value);
+    encodeSignedPortion(encoder, m_sigInfo);
+    if (!encoder) {
+      return;
+    }
+    const uint8_t* signedPortion = encoder.begin();
+    size_t sizeofSignedPortion = sigBuf - signedPortion;
+
+    ssize_t sigLen =
+      m_key.sign({ tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
+    if (sigLen < 0) {
+      encoder.setError();
+      return;
+    }
+    if (sigLen != Key::MaxSigLength::value) {
+      std::copy_backward(sigBuf, sigBuf + sigLen, after);
+    }
+    encoder.resetFront(after);
+
+    encoder.prependTlv(
+      TT::Data,
+      [this](Encoder& encoder) { encodeSignedPortion(encoder, m_sigInfo); },
+      [sigLen](Encoder& encoder) {
+        encoder.prependRoom(sigLen); // room contains signature
+        encoder.prependTypeLength(TT::DSigValue, sigLen);
+      });
   }
 
 private:
   const Key& m_key;
+  mutable DSigInfo m_sigInfo;
 };
 
 } // namespace detail
@@ -133,6 +150,15 @@ public:
   void setContent(tlv::Value v) { obj->content = std::move(v); }
 
   /**
+   * @brief Retrieve SignatureInfo.
+   * @pre only available on decoded packet.
+   */
+  const DSigInfo* getSigInfo() const
+  {
+    return obj->sig == nullptr ? nullptr : &obj->sig->sigInfo;
+  }
+
+  /**
    * @brief Sign the packet with a private key.
    * @tparam Key class with
    *             `void updateSigInfo(SigInfo& sigInfo) const`
@@ -144,17 +170,21 @@ public:
    * @return an Encodable object. This object is valid only if Data and Key are kept alive.
    *         It's recommended to pass it to Encoder immediately without saving as variable.
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
-   * @note This method does not set sigValue. Packet is not verifiable after this operation.
    */
   template<typename Key, typename R = detail::SignedDataRef<Key>>
-  R sign(const Key& key) const
+  R sign(const Key& key, DSigInfo sigInfo = DSigInfo()) const
   {
-    return R(obj, key);
+    return R(obj, key, std::move(sigInfo));
   }
 
   /** @brief Decode packet. */
   bool decodeFrom(const Decoder::Tlv& input)
   {
+    obj->sig = regionOf(obj).make<detail::DataSigned>();
+    if (obj->sig == nullptr) {
+      return false;
+    }
+    obj->sig->wholePacket = tlv::Value(input.tlv, input.size);
     return EvDecoder::decode(
       input, { TT::Data }, EvDecoder::def<TT::Name>(&obj->name),
       EvDecoder::def<TT::MetaInfo>([this](const Decoder::Tlv& d) {
@@ -171,29 +201,28 @@ public:
           }));
       }),
       EvDecoder::def<TT::Content>(&obj->content),
-      EvDecoder::def<TT::DSigInfo>(&obj->sigInfo),
+      EvDecoder::def<TT::DSigInfo>(&obj->sig->sigInfo),
       EvDecoder::def<TT::DSigValue>([this, &input](const Decoder::Tlv& d) {
-        obj->signedPortion = tlv::Value(input.value, d.tlv - input.value);
-        return obj->sigValue.decodeFrom(d);
+        obj->sig->signedPortion = tlv::Value(input.value, d.tlv - input.value);
+        return obj->sig->sigValue.decodeFrom(d);
       }));
   }
 
   /**
    * @brief Verify the packet with a public key.
+   * @pre only available on decoded packet.
    * @tparam Key class with
    *             `bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
                               size_t length) const`
    *             that performs verification and returns verification result.
    * @return verification result.
-   *
-   * This method only works on decoded packet. It does not work on packet that
-   * has been modified or (re-)signed.
    */
   template<typename Key>
   bool verify(const Key& key) const
   {
-    return key.verify({ obj->signedPortion }, obj->sigValue.begin(),
-                      obj->sigValue.size());
+    return obj->sig != nullptr &&
+           key.verify({ obj->sig->signedPortion }, obj->sig->sigValue.begin(),
+                      obj->sig->sigValue.size());
   }
 };
 
