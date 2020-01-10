@@ -5,4 +5,11 @@ else
   mbedcrypto_dep = declare_dependency(compile_args: ['-DNDNPH_PORT_MBEDTLS=0'])
 endif
 
-lib_dep = declare_dependency(include_directories: ['.'], dependencies: [mbedcrypto_dep])
+if meson.is_cross_build()
+  urandom = false
+else
+  urandom = run_command('test', '-r', '/dev/urandom').returncode() == 0
+endif
+urandom_dep = declare_dependency(compile_args: ['-DNDNPH_PORT_URANDOM=@0@'.format(0 + urandom)])
+
+lib_dep = declare_dependency(include_directories: ['.'], dependencies: [mbedcrypto_dep, urandom_dep])

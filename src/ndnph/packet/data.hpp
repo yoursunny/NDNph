@@ -93,7 +93,7 @@ public:
   {
     m_key.updateSigInfo(m_sigInfo);
     uint8_t* after = const_cast<uint8_t*>(encoder.begin());
-    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLength::value);
+    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLen::value);
     encodeSignedPortion(encoder, m_sigInfo);
     if (!encoder) {
       return;
@@ -107,7 +107,7 @@ public:
       encoder.setError();
       return;
     }
-    if (sigLen != Key::MaxSigLength::value) {
+    if (sigLen != Key::MaxSigLen::value) {
       std::copy_backward(sigBuf, sigBuf + sigLen, after);
     }
     encoder.resetFront(after);
@@ -163,7 +163,7 @@ public:
    * @tparam Key class with
    *             `void updateSigInfo(SigInfo& sigInfo) const`
    *             that writes SigType and KeyLocator into SigInfo, and
-   *             `using MaxSigLength = std::integral_constant<int, L>`
+   *             `using MaxSigLen = std::integral_constant<int, L>`
    *             that indicates maximum possible signature length, and
    *             `ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const`
    *             that writes signature to sig[] and returns signature length or -1 on error.

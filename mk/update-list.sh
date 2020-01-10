@@ -9,6 +9,9 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"/..
   echo '#if NDNPH_PORT_MBEDTLS'
   find ./port/mbedtls -name '*.hpp' -printf '%P\n' | sed 's|.*|#include "ndnph/port/mbedtls/\0"|'
   echo '#endif // NDNPH_PORT_MBEDTLS'
+  echo '#if NDNPH_PORT_URANDOM'
+  find ./port/urandom -name '*.hpp' -printf '%P\n' | sed 's|.*|#include "ndnph/port/urandom/\0"|'
+  echo '#endif // NDNPH_PORT_URANDOM'
   echo "#endif // NDNPH_H"
 ) > src/NDNph.h
 

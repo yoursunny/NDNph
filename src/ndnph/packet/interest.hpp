@@ -2,7 +2,7 @@
 #define NDNPH_PACKET_INTEREST_HPP
 
 #include "../core/in-region.hpp"
-#include "../keychain/timing-safe-equal.hpp"
+#include "../keychain/common.hpp"
 #include "sig-info.hpp"
 
 namespace ndnph {
@@ -121,7 +121,7 @@ protected:
       return;
     }
     digestComp[0] = TT::ParametersSha256DigestComponent;
-    digestComp[1] = 32;
+    digestComp[1] = NDNPH_SHA256_LEN;
 
     tlv::Value prefix, suffix;
     int posParamsDigest = findParamsDigest(obj->name);
@@ -195,7 +195,7 @@ public:
 
     m_key.updateSigInfo(m_sigInfo);
     uint8_t* after = const_cast<uint8_t*>(encoder.begin());
-    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLength::value);
+    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLen::value);
     encoder.prepend(
       [this](Encoder& encoder) { this->encodeAppParameters(encoder); },
       m_sigInfo);
@@ -211,7 +211,7 @@ public:
       encoder.setError();
       return;
     }
-    if (sigLen != Key::MaxSigLength::value) {
+    if (sigLen != Key::MaxSigLen::value) {
       std::copy_backward(sigBuf, sigBuf + sigLen, after);
     }
     encoder.resetFront(after);
@@ -232,13 +232,6 @@ private:
   mutable ISigInfo m_sigInfo;
 };
 
-class DummySha256
-{
-public:
-  void update(const uint8_t*, size_t) {}
-  bool final(uint8_t[32]) { return false; }
-};
-
 } // namespace detail
 
 /**
@@ -252,7 +245,7 @@ public:
  * @note A port is expected to typedef this template as `Interest` type.
  */
 template<typename Sha256Port, typename TimingSafeEqual = DefaultTimingSafeEqual>
-class InterestBase : public detail::InterestRefBase
+class BasicInterest : public detail::InterestRefBase
 {
 public:
   using InterestRefBase::InterestRefBase;
@@ -405,7 +398,7 @@ public:
     }
     Component paramsDigest = obj->name[posParamsDigest];
 
-    uint8_t digest[32];
+    uint8_t digest[NDNPH_SHA256_LEN];
     Sha256Port hash;
     hash.update(obj->params->allParams.begin(), obj->params->allParams.size());
     return hash.final(digest) &&
@@ -438,15 +431,6 @@ public:
                       obj->params->sigValue.size());
   }
 };
-
-/**
- * @def NDNPH_DECLARE_INTEREST_NO_PORT
- * If defined, create `Interest` typedef with dummy SHA256 implementation,
- * which does not support parameterized or signed Interest.
- */
-#ifdef NDNPH_DECLARE_INTEREST_NO_PORT
-using Interest = InterestBase<detail::DummySha256>;
-#endif
 
 } // namespace ndnph
 

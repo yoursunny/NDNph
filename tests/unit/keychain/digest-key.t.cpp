@@ -1,7 +1,7 @@
 #include "ndnph/keychain/digest-key.hpp"
 #include "ndnph/packet/data.hpp"
 #include "ndnph/packet/interest.hpp"
-#include "ndnph/port/mbedtls/sha256.hpp"
+#include "ndnph/port/mbedtls/typedef.hpp"
 
 #include "../test-common.hpp"
 #include "key-common.hpp"
@@ -15,9 +15,9 @@ TEST(DigestKey, Minimal)
   tlv::Value chunk0(&wire[0], 2);
   tlv::Value chunk1(&wire[2], 4);
 
-  DigestKey<port::Sha256> key;
-  uint8_t sig[32];
-  EXPECT_EQ(decltype(key)::MaxSigLength::value, sizeof(sig));
+  DigestKey key;
+  uint8_t sig[NDNPH_SHA256_LEN];
+  EXPECT_EQ(decltype(key)::MaxSigLen::value, sizeof(sig));
   EXPECT_EQ(key.sign({ chunk0, chunk1 }, sig), sizeof(sig));
   EXPECT_THAT(std::vector<uint8_t>(sig, sig + sizeof(sig)),
               T::ElementsAre(0x4F, 0xBF, 0x10, 0xA6, 0x42, 0xCA, 0xF3, 0xC2,
@@ -28,19 +28,16 @@ TEST(DigestKey, Minimal)
 
   EXPECT_TRUE(key.verify({ chunk0, chunk1 }, sig, sizeof(sig)));
 
+  EXPECT_FALSE(key.verify({ chunk0, chunk1 }, sig, sizeof(sig) - 1));
+
   sig[15] ^= 0x01;
   EXPECT_FALSE(key.verify({ chunk0, chunk1 }, sig, sizeof(sig)));
 }
 
-TEST(DigestKey, SignVerifyInterest)
+TEST(DigestKey, SignVerify)
 {
-  DigestKey<port::Sha256> key;
+  DigestKey key;
   testSignVerify<Interest>(key, key, key, key, true, true);
-}
-
-TEST(DigestKey, SignVerifyData)
-{
-  DigestKey<port::Sha256> key;
   testSignVerify<Data>(key, key, key, key, true, true);
 }
 

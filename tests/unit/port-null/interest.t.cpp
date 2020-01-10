@@ -1,5 +1,4 @@
-#define NDNPH_DECLARE_INTEREST_NO_PORT
-#include "ndnph/packet/interest.hpp"
+#include "ndnph/port/null/typedef.hpp"
 
 #include "../mock-key.hpp"
 #include "../test-common.hpp"
@@ -7,7 +6,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Interest, NoPort)
+TEST(PortNull, Interest)
 {
   std::vector<uint8_t> nameV({ 0x08, 0x01, 0x41 });
   std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });

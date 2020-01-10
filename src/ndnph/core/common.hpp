@@ -19,6 +19,8 @@
 #define NDNPH_ALIGNMENT (sizeof(void*))
 #endif
 
+#define NDNPH_SHA256_LEN 32
+
 /** @brief Declare operator!= in terms of operator== */
 #define NDNPH_DECLARE_NE(T)                                                    \
   inline bool operator!=(const T& lhs, const T& rhs) { return !(lhs == rhs); }

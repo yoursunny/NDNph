@@ -12,7 +12,7 @@ class NullPrivateKey
 public:
   void updateSigInfo(SigInfo&) const {}
 
-  using MaxSigLength = std::integral_constant<int, 0>;
+  using MaxSigLen = std::integral_constant<int, 0>;
 
   ssize_t sign(std::initializer_list<tlv::Value>, uint8_t*) const { return 0; }
 };
@@ -52,7 +52,7 @@ template<int L>
 class MockPrivateKey : public MockPrivateKeyBase
 {
 public:
-  using MaxSigLength = std::integral_constant<int, L>;
+  using MaxSigLen = std::integral_constant<int, L>;
 };
 
 class MockPublicKey : public MockKeyBase

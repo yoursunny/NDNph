@@ -1,5 +1,5 @@
 #include "ndnph/packet/interest.hpp"
-#include "ndnph/port/mbedtls/sha256.hpp"
+#include "ndnph/port/mbedtls/typedef.hpp"
 
 #include "../mock-key.hpp"
 #include "../test-common.hpp"
@@ -111,7 +111,7 @@ TEST(Interest, EncodeParameterizedReplace)
   EXPECT_EQ(name[0].type(), 0xB1);
   EXPECT_EQ(name[2].type(), 0xB3);
   EXPECT_EQ(name[1].type(), TT::ParametersSha256DigestComponent);
-  EXPECT_EQ(name[1].length(), 32);
+  EXPECT_EQ(name[1].length(), NDNPH_SHA256_LEN);
 
   EXPECT_TRUE(decoded.checkDigest());
   EXPECT_THAT(decoded.getAppParameters(), T::SizeIs(2));
@@ -142,7 +142,7 @@ TEST(Interest, EncodeParameterizedAppend)
   EXPECT_EQ(name[0].type(), 0xB1);
   EXPECT_EQ(name[1].type(), 0xB3);
   EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
-  EXPECT_EQ(name[2].length(), 32);
+  EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
 
   EXPECT_TRUE(decoded.checkDigest());
   EXPECT_THAT(decoded.getAppParameters(), T::SizeIs(2));
@@ -202,7 +202,7 @@ TEST(Interest, EncodeSignedReplace)
   EXPECT_EQ(name[0].type(), 0xB1);
   EXPECT_EQ(name[1].type(), 0xB3);
   EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
-  EXPECT_EQ(name[2].length(), 32);
+  EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
 
   EXPECT_TRUE(decoded.checkDigest());
   EXPECT_THAT(decoded.getAppParameters(), T::SizeIs(0));
