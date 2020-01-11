@@ -61,9 +61,7 @@ protected:
           encoder.prependTlv(TT::MustBeFresh);
         }
       },
-      [this](Encoder& encoder) {
-        encoder.prependTlv(TT::Nonce, tlv::NNI4(obj->nonce));
-      },
+      [this](Encoder& encoder) { encoder.prependTlv(TT::Nonce, tlv::NNI4(obj->nonce)); },
       [this](Encoder& encoder) {
         if (obj->lifetime != InterestObj::DefaultLifetime) {
           encoder.prependTlv(TT::InterestLifetime, tlv::NNI(obj->lifetime));
@@ -96,16 +94,14 @@ template<typename Sha256Port>
 class ParameterizedInterestRef : public InterestRefBase
 {
 public:
-  explicit ParameterizedInterestRef(InterestObj* interest,
-                                    tlv::Value appParameters)
+  explicit ParameterizedInterestRef(InterestObj* interest, tlv::Value appParameters)
     : InterestRefBase(interest)
     , m_appParameters(std::move(appParameters))
   {}
 
   void encodeTo(Encoder& encoder) const
   {
-    encodeImpl(encoder,
-               [this](Encoder& encoder) { encodeAppParameters(encoder); });
+    encodeImpl(encoder, [this](Encoder& encoder) { encodeAppParameters(encoder); });
   }
 
 protected:
@@ -134,8 +130,7 @@ protected:
       prefix = tlv::Value(obj->name.value(), obj->name.length());
     }
 
-    encoder.prependTlv(TT::Name, prefix,
-                       tlv::Value(digestComp, sizeof(digestComp)), suffix);
+    encoder.prependTlv(TT::Name, prefix, tlv::Value(digestComp, sizeof(digestComp)), suffix);
   }
 
   void encodeAppParameters(Encoder& encoder) const
@@ -147,19 +142,18 @@ protected:
   void encodeImpl(Encoder& encoder, const Fn& encodeParams) const
   {
     tlv::Value params;
-    encoder.prependTlv(
-      TT::Interest,
-      [this, &params](Encoder& encoder) { encodeName(encoder, params); },
-      [this](Encoder& encoder) { encodeMiddle(encoder); },
-      [&encodeParams, &params](Encoder& encoder) {
-        const uint8_t* paramsEnd = encoder.begin();
-        encodeParams(encoder);
-        if (!encoder) {
-          return;
-        }
-        const uint8_t* paramsBegin = encoder.begin();
-        params = tlv::Value(paramsBegin, paramsEnd - paramsBegin);
-      });
+    encoder.prependTlv(TT::Interest,
+                       [this, &params](Encoder& encoder) { encodeName(encoder, params); },
+                       [this](Encoder& encoder) { encodeMiddle(encoder); },
+                       [&encodeParams, &params](Encoder& encoder) {
+                         const uint8_t* paramsEnd = encoder.begin();
+                         encodeParams(encoder);
+                         if (!encoder) {
+                           return;
+                         }
+                         const uint8_t* paramsBegin = encoder.begin();
+                         params = tlv::Value(paramsBegin, paramsEnd - paramsBegin);
+                       });
   }
 
 protected:
@@ -170,8 +164,8 @@ template<typename Sha256Port, typename Key>
 class SignedInterestRef : public ParameterizedInterestRef<Sha256Port>
 {
 public:
-  explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters,
-                             const Key& key, ISigInfo sigInfo)
+  explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters, const Key& key,
+                             ISigInfo sigInfo)
     : ParameterizedInterestRef<Sha256Port>(interest, std::move(appParameters))
     , m_key(key)
     , m_sigInfo(std::move(sigInfo))
@@ -182,10 +176,8 @@ public:
     tlv::Value signedName;
     int posParamsDigest = this->findParamsDigest(this->obj->name);
     if (posParamsDigest < 0) {
-      signedName =
-        tlv::Value(this->obj->name.value(), this->obj->name.length());
-    } else if (static_cast<size_t>(posParamsDigest) ==
-               this->obj->name.size() - 1) {
+      signedName = tlv::Value(this->obj->name.value(), this->obj->name.length());
+    } else if (static_cast<size_t>(posParamsDigest) == this->obj->name.size() - 1) {
       auto prefix = this->obj->name.getPrefix(-1);
       signedName = tlv::Value(prefix.value(), prefix.length());
     } else {
@@ -196,17 +188,15 @@ public:
     m_key.updateSigInfo(m_sigInfo);
     uint8_t* after = const_cast<uint8_t*>(encoder.begin());
     uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLen::value);
-    encoder.prepend(
-      [this](Encoder& encoder) { this->encodeAppParameters(encoder); },
-      m_sigInfo);
+    encoder.prepend([this](Encoder& encoder) { this->encodeAppParameters(encoder); }, m_sigInfo);
     if (!encoder) {
       return;
     }
     const uint8_t* signedPortion = encoder.begin();
     size_t sizeofSignedPortion = sigBuf - signedPortion;
 
-    ssize_t sigLen = m_key.sign(
-      { signedName, tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
+    ssize_t sigLen =
+      m_key.sign({ signedName, tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
     if (sigLen < 0) {
       encoder.setError();
       return;
@@ -217,13 +207,11 @@ public:
     encoder.resetFront(after);
 
     this->encodeImpl(encoder, [this, sigLen](Encoder& encoder) {
-      encoder.prepend(
-        [this](Encoder& encoder) { this->encodeAppParameters(encoder); },
-        m_sigInfo,
-        [sigLen](Encoder& encoder) {
-          encoder.prependRoom(sigLen); // room contains signature
-          encoder.prependTypeLength(TT::ISigValue, sigLen);
-        });
+      encoder.prepend([this](Encoder& encoder) { this->encodeAppParameters(encoder); }, m_sigInfo,
+                      [sigLen](Encoder& encoder) {
+                        encoder.prependRoom(sigLen); // room contains signature
+                        encoder.prependTypeLength(TT::ISigValue, sigLen);
+                      });
     });
   }
 
@@ -250,23 +238,65 @@ class BasicInterest : public detail::InterestRefBase
 public:
   using InterestRefBase::InterestRefBase;
 
-  const Name& getName() const { return obj->name; }
-  void setName(const Name& v) { obj->name = v; }
+  const Name& getName() const
+  {
+    return obj->name;
+  }
 
-  bool getCanBePrefix() const { return obj->canBePrefix; }
-  void setCanBePrefix(bool v) { obj->canBePrefix = v; }
+  void setName(const Name& v)
+  {
+    obj->name = v;
+  }
 
-  bool getMustBeFresh() const { return obj->mustBeFresh; }
-  void setMustBeFresh(bool v) { obj->mustBeFresh = v; }
+  bool getCanBePrefix() const
+  {
+    return obj->canBePrefix;
+  }
 
-  uint32_t getNonce() const { return obj->nonce; }
-  void setNonce(uint32_t v) { obj->nonce = v; }
+  void setCanBePrefix(bool v)
+  {
+    obj->canBePrefix = v;
+  }
 
-  uint16_t getLifetime() const { return obj->lifetime; }
-  void setLifetime(uint16_t v) { obj->lifetime = v; }
+  bool getMustBeFresh() const
+  {
+    return obj->mustBeFresh;
+  }
 
-  uint8_t getHopLimit() const { return obj->hopLimit; }
-  void setHopLimit(uint8_t v) { obj->hopLimit = v; }
+  void setMustBeFresh(bool v)
+  {
+    obj->mustBeFresh = v;
+  }
+
+  uint32_t getNonce() const
+  {
+    return obj->nonce;
+  }
+
+  void setNonce(uint32_t v)
+  {
+    obj->nonce = v;
+  }
+
+  uint16_t getLifetime() const
+  {
+    return obj->lifetime;
+  }
+
+  void setLifetime(uint16_t v)
+  {
+    obj->lifetime = v;
+  }
+
+  uint8_t getHopLimit() const
+  {
+    return obj->hopLimit;
+  }
+
+  void setHopLimit(uint8_t v)
+  {
+    obj->hopLimit = v;
+  }
 
   /**
    * @brief Retrieve AppParameters.
@@ -300,11 +330,9 @@ public:
   class Parameterized : public detail::ParameterizedInterestRef<Sha256Port>
   {
   public:
-    using detail::ParameterizedInterestRef<
-      Sha256Port>::ParameterizedInterestRef;
+    using detail::ParameterizedInterestRef<Sha256Port>::ParameterizedInterestRef;
 
-    template<typename Key,
-             typename R = detail::SignedInterestRef<Sha256Port, Key>>
+    template<typename Key, typename R = detail::SignedInterestRef<Sha256Port, Key>>
     R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
     {
       return R(obj, this->m_appParameters, key, std::move(sigInfo));
@@ -338,8 +366,7 @@ public:
    * To create a signed Interest with AppParameters, call parameterize() first, then
    * call sign() on its return value.
    */
-  template<typename Key,
-           typename R = detail::SignedInterestRef<Sha256Port, Key>>
+  template<typename Key, typename R = detail::SignedInterestRef<Sha256Port, Key>>
   R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
   {
     return R(obj, tlv::Value(), key, std::move(sigInfo));
@@ -350,10 +377,8 @@ public:
   {
     return EvDecoder::decode(
       input, { TT::Interest }, EvDecoder::def<TT::Name>(&obj->name),
-      EvDecoder::def<TT::CanBePrefix>(
-        [this](const Decoder::Tlv&) { setCanBePrefix(true); }),
-      EvDecoder::def<TT::MustBeFresh>(
-        [this](const Decoder::Tlv&) { setMustBeFresh(true); }),
+      EvDecoder::def<TT::CanBePrefix>([this](const Decoder::Tlv&) { setCanBePrefix(true); }),
+      EvDecoder::def<TT::MustBeFresh>([this](const Decoder::Tlv&) { setMustBeFresh(true); }),
       EvDecoder::defNni<TT::Nonce, tlv::NNI4>(&obj->nonce),
       EvDecoder::defNni<TT::InterestLifetime, tlv::NNI>(&obj->lifetime),
       EvDecoder::defNni<TT::HopLimit, tlv::NNI1>(&obj->hopLimit),
@@ -362,8 +387,7 @@ public:
         if (obj->params == nullptr) {
           return false;
         }
-        obj->params->allParams =
-          tlv::Value(d.tlv, input.tlv + input.size - d.tlv);
+        obj->params->allParams = tlv::Value(d.tlv, input.tlv + input.size - d.tlv);
         return obj->params->appParameters.decodeFrom(d);
       }),
       EvDecoder::def<TT::ISigInfo>([this](const Decoder::Tlv& d) {
@@ -374,8 +398,7 @@ public:
           return false;
         }
         obj->params->signedParams =
-          tlv::Value(obj->params->allParams.begin(),
-                     d.tlv - obj->params->allParams.begin());
+          tlv::Value(obj->params->allParams.begin(), d.tlv - obj->params->allParams.begin());
         return obj->params->sigValue.decodeFrom(d);
       }));
   }
@@ -402,8 +425,7 @@ public:
     Sha256Port hash;
     hash.update(obj->params->allParams.begin(), obj->params->allParams.size());
     return hash.final(digest) &&
-           TimingSafeEqual()(digest, sizeof(digest), paramsDigest.value(),
-                             paramsDigest.length());
+           TimingSafeEqual()(digest, sizeof(digest), paramsDigest.value(), paramsDigest.length());
   }
 
   /**
@@ -425,10 +447,9 @@ public:
       return false;
     }
     auto signedName = obj->name.getPrefix(-1);
-    return key.verify({ tlv::Value(signedName.value(), signedName.length()),
-                        obj->params->signedParams },
-                      obj->params->sigValue.begin(),
-                      obj->params->sigValue.size());
+    return key.verify(
+      { tlv::Value(signedName.value(), signedName.length()), obj->params->signedParams },
+      obj->params->sigValue.begin(), obj->params->sigValue.size());
   }
 };
 

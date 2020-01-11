@@ -14,7 +14,10 @@ public:
   {
   public:
     /** @brief Whether this TLV is invalid (e.g. dereference from past-end Iterator). */
-    bool operator!() const { return size == 0; }
+    bool operator!() const
+    {
+      return size == 0;
+    }
 
     /**
      * @brief Decode into an object with `bool decodeFrom(const Decoder::Tlv&)` method.
@@ -29,7 +32,10 @@ public:
     }
 
     /** @brief Create Decoder over TLV-VALUE. */
-    Decoder vd() const { return Decoder(value, length); }
+    Decoder vd() const
+    {
+      return Decoder(value, length);
+    }
 
   public:
     uint32_t type = 0;
@@ -86,7 +92,10 @@ public:
     }
 
     /** @brief Whether a decoding error has occurred. */
-    bool hasError() const { return m_pos == nullptr; }
+    bool hasError() const
+    {
+      return m_pos == nullptr;
+    }
 
     /**
      * @brief Increment to next TLV element.
@@ -112,9 +121,15 @@ public:
      *
      * Dereferencing past-end iterator is allowed and returns empty Decoder::Tlv.
      */
-    reference operator*() { return m_tlv; }
+    reference operator*()
+    {
+      return m_tlv;
+    }
 
-    pointer operator->() { return &m_tlv; }
+    pointer operator->()
+    {
+      return &m_tlv;
+    }
 
     friend bool operator==(const Iterator& lhs, const Iterator& rhs)
     {
@@ -142,8 +157,14 @@ public:
     , m_end(input + count)
   {}
 
-  Iterator begin() const { return Iterator(m_begin, m_end); }
-  Iterator end() const { return Iterator(m_end, m_end); }
+  Iterator begin() const
+  {
+    return Iterator(m_begin, m_end);
+  }
+  Iterator end() const
+  {
+    return Iterator(m_end, m_end);
+  }
 
 private:
   const uint8_t* m_begin;

@@ -45,8 +45,7 @@ public:
     if (d.length != sizeof(value)) {
       return false;
     }
-    value = (static_cast<uint32_t>(d.value[0]) << 24) |
-            (static_cast<uint32_t>(d.value[1]) << 16) |
+    value = (static_cast<uint32_t>(d.value[0]) << 24) | (static_cast<uint32_t>(d.value[1]) << 16) |
             (static_cast<uint32_t>(d.value[2]) << 8) | d.value[3];
     return true;
   }
@@ -79,11 +78,9 @@ public:
    * @tparam I destination integer type, which could be narrower than uint64_t.
    * @param max inclusive maximum value; default is max possible value of I type.
    */
-  template<typename I,
-           typename Limit = typename std::enable_if<
-             std::is_integral<I>::value, std::numeric_limits<I>>::type>
-  static bool decode(const Decoder::Tlv& d, I& value,
-                     uint64_t max = Limit::max())
+  template<typename I, typename Limit = typename std::enable_if<std::is_integral<I>::value,
+                                                                std::numeric_limits<I>>::type>
+  static bool decode(const Decoder::Tlv& d, I& value, uint64_t max = Limit::max())
   {
     uint64_t v = 0;
     switch (d.length) {
@@ -94,17 +91,13 @@ public:
         v = (static_cast<uint16_t>(d.value[0]) << 8) | d.value[1];
         break;
       case 4:
-        v = (static_cast<uint32_t>(d.value[0]) << 24) |
-            (static_cast<uint32_t>(d.value[1]) << 16) |
+        v = (static_cast<uint32_t>(d.value[0]) << 24) | (static_cast<uint32_t>(d.value[1]) << 16) |
             (static_cast<uint32_t>(d.value[2]) << 8) | d.value[3];
         break;
       case 8:
-        v = (static_cast<uint64_t>(d.value[0]) << 56) |
-            (static_cast<uint64_t>(d.value[1]) << 48) |
-            (static_cast<uint64_t>(d.value[2]) << 40) |
-            (static_cast<uint64_t>(d.value[3]) << 32) |
-            (static_cast<uint64_t>(d.value[4]) << 24) |
-            (static_cast<uint64_t>(d.value[5]) << 16) |
+        v = (static_cast<uint64_t>(d.value[0]) << 56) | (static_cast<uint64_t>(d.value[1]) << 48) |
+            (static_cast<uint64_t>(d.value[2]) << 40) | (static_cast<uint64_t>(d.value[3]) << 32) |
+            (static_cast<uint64_t>(d.value[4]) << 24) | (static_cast<uint64_t>(d.value[5]) << 16) |
             (static_cast<uint64_t>(d.value[6]) << 8) | d.value[7];
         break;
       default:

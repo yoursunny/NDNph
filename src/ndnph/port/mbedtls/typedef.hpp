@@ -12,11 +12,9 @@ namespace ndnph {
 using Interest = BasicInterest<port_mbedtls::Sha256>;
 using DigestKey = BasicDigestKey<port_mbedtls::Sha256>;
 using EcdsaPublicKey =
-  BasicEcdsaPublicKey<port_mbedtls::Sha256,
-                      port_mbedtls::Ecdsa<port_mbedtls::ec_curve::P256>>;
+  BasicEcdsaPublicKey<port_mbedtls::Sha256, port_mbedtls::Ecdsa<port_mbedtls::ec_curve::P256>>;
 using EcdsaPrivateKey =
-  BasicEcdsaPrivateKey<port_mbedtls::Sha256,
-                       port_mbedtls::Ecdsa<port_mbedtls::ec_curve::P256>>;
+  BasicEcdsaPrivateKey<port_mbedtls::Sha256, port_mbedtls::Ecdsa<port_mbedtls::ec_curve::P256>>;
 
 } // namespace ndnph
 

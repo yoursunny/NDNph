@@ -8,9 +8,8 @@ namespace {
 
 template<typename Pkt, typename PvtKey, typename PubKey>
 void
-testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
-               const PubKey& pubB, bool deterministic = false,
-               bool sameAB = false)
+testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const PubKey& pubB,
+               bool deterministic = false, bool sameAB = false)
 {
   std::vector<uint8_t> nameV({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x42 });
   StaticRegion<1024> region;
@@ -32,16 +31,14 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
       EXPECT_THAT(std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
                   T::ElementsAreArray(encoderA.begin(), encoderA.end()));
     } else {
-      EXPECT_THAT(
-        std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
-        T::Not(T::ElementsAreArray(encoderA.begin(), encoderA.end())));
+      EXPECT_THAT(std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
+                  T::Not(T::ElementsAreArray(encoderA.begin(), encoderA.end())));
     }
     encoderAr.discard();
   }
 
-  using SigInfoT =
-    typename std::remove_cv<typename std::remove_pointer<decltype(
-      std::declval<Pkt>().getSigInfo())>::type>::type;
+  using SigInfoT = typename std::remove_cv<
+    typename std::remove_pointer<decltype(std::declval<Pkt>().getSigInfo())>::type>::type;
   SigInfoT sigInfoB;
   std::vector<uint8_t> sigInfoExtB({ 0x20, 0x00 });
   sigInfoB.extensions = tlv::Value(sigInfoExtB.data(), sigInfoExtB.size());
@@ -75,8 +72,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB,
 
     const SigInfoT* sigInfoBd = pktBd.getSigInfo();
     ASSERT_THAT(sigInfoBd, T::NotNull());
-    EXPECT_THAT(std::vector<uint8_t>(sigInfoBd->extensions.begin(),
-                                     sigInfoBd->extensions.end()),
+    EXPECT_THAT(std::vector<uint8_t>(sigInfoBd->extensions.begin(), sigInfoBd->extensions.end()),
                 T::ElementsAreArray(sigInfoExtB));
   }
 }

@@ -12,8 +12,7 @@ namespace ndnph {
 using Interest = BasicInterest<port_null::Sha256>;
 using DigestKey = BasicDigestKey<port_null::Sha256>;
 using EcdsaPublicKey = BasicEcdsaPublicKey<port_null::Sha256, port_null::Ecdsa>;
-using EcdsaPrivateKey =
-  BasicEcdsaPrivateKey<port_null::Sha256, port_null::Ecdsa>;
+using EcdsaPrivateKey = BasicEcdsaPrivateKey<port_null::Sha256, port_null::Ecdsa>;
 
 } // namespace ndnph
 

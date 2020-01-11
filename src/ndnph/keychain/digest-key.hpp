@@ -29,8 +29,7 @@ public:
     return ok ? NDNPH_SHA256_LEN : -1;
   }
 
-  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
-              size_t sigLen) const
+  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig, size_t sigLen) const
   {
     uint8_t digest[NDNPH_SHA256_LEN];
     return detail::computeDigest<Sha256Port>(chunks, digest) &&

@@ -63,8 +63,7 @@ TEST(Name, Decode)
   EXPECT_TRUE(!name);
 
   // TLV-TYPE out of range for Component
-  wire.assign(
-    { 0xFE, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x41 });
+  wire.assign({ 0xFE, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x41 });
   name = Name(wire.data(), wire.size());
   EXPECT_TRUE(!name);
 }
@@ -119,8 +118,8 @@ TEST(Name, Slice)
 TEST(Name, Append)
 {
   StaticRegion<60> region;
-  std::vector<uint8_t> wire({ 0x81, 0x01, 0x41, 0x82, 0x01, 0x42, 0x83, 0x01,
-                              0x43, 0x82, 0x01, 0x42, 0x08, 0x01, 0x44 });
+  std::vector<uint8_t> wire(
+    { 0x81, 0x01, 0x41, 0x82, 0x01, 0x42, 0x83, 0x01, 0x43, 0x82, 0x01, 0x42, 0x08, 0x01, 0x44 });
   Name name(region, wire.data(), 3);
 
   Name name2 = name.append(region, {});
@@ -130,9 +129,8 @@ TEST(Name, Append)
   Component comp2(region, wire[6], wire[7], &wire[8]);
   Component comp3(region, wire[13], &wire[14]);
   name2 = name.append(region, { comp1, comp2, comp1, comp3 });
-  EXPECT_THAT(
-    std::vector<uint8_t>(name2.value(), name2.value() + name2.length()),
-    T::ElementsAreArray(wire));
+  EXPECT_THAT(std::vector<uint8_t>(name2.value(), name2.value() + name2.length()),
+              T::ElementsAreArray(wire));
 }
 
 TEST(Name, CompareComponent)

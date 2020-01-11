@@ -18,9 +18,12 @@ TEST(Interest, EncodeMinimal)
   EXPECT_EQ(interest.getNonce(), 0);
 
   std::vector<uint8_t> wire({
-    0x05, 0x0B,                         // Interest
-    0x07, 0x03, 0x08, 0x01, 0x41,       // Name
-    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3, // Nonce
+    0x05,
+    0x0B, // Interest
+    0x07, 0x03, 0x08, 0x01,
+    0x41, // Name
+    0x0A, 0x04, 0xA0, 0xA1, 0xA2,
+    0xA3, // Nonce
   });
   interest.setName(Name(&wire[4], 3));
   interest.setNonce(0xA0A1A2A3);
@@ -28,8 +31,7 @@ TEST(Interest, EncodeMinimal)
   Encoder encoder(region);
   bool ok = encoder.prepend(interest);
   ASSERT_TRUE(ok);
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
-              T::ElementsAreArray(wire));
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
   encoder.discard();
 
   Decoder::Tlv d;
@@ -50,13 +52,20 @@ TEST(Interest, EncodeFull)
   ASSERT_FALSE(!interest);
 
   std::vector<uint8_t> wire({
-    0x05, 0x16,                         // Interest
-    0x07, 0x03, 0x08, 0x01, 0x41,       // Name
-    0x21, 0x00,                         // CanBePrefix
-    0x12, 0x00,                         // MustBeFresh
-    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3, // Nonce
-    0x0C, 0x02, 0x20, 0x06,             // InterestLifetime
-    0x22, 0x01, 0x05,                   // HopLimit
+    0x05,
+    0x16, // Interest
+    0x07, 0x03, 0x08, 0x01,
+    0x41, // Name
+    0x21,
+    0x00, // CanBePrefix
+    0x12,
+    0x00, // MustBeFresh
+    0x0A, 0x04, 0xA0, 0xA1, 0xA2,
+    0xA3, // Nonce
+    0x0C, 0x02, 0x20,
+    0x06, // InterestLifetime
+    0x22, 0x01,
+    0x05, // HopLimit
   });
   interest.setName(Name(&wire[4], 3));
   interest.setCanBePrefix(true);
@@ -68,8 +77,7 @@ TEST(Interest, EncodeFull)
   Encoder encoder(region);
   bool ok = encoder.prepend(interest);
   ASSERT_TRUE(ok);
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
-              T::ElementsAreArray(wire));
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
   encoder.discard();
 
   Decoder::Tlv d;
@@ -87,8 +95,7 @@ TEST(Interest, EncodeFull)
 
 TEST(Interest, EncodeParameterizedReplace)
 {
-  std::vector<uint8_t> nameV(
-    { 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 });
+  std::vector<uint8_t> nameV({ 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 });
   std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
@@ -150,8 +157,7 @@ TEST(Interest, EncodeParameterizedAppend)
 
 TEST(Interest, EncodeSignedBadPlaceholder)
 {
-  std::vector<uint8_t> nameV(
-    { 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 });
+  std::vector<uint8_t> nameV({ 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 });
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
@@ -168,25 +174,21 @@ TEST(Interest, EncodeSignedBadPlaceholder)
 
 TEST(Interest, EncodeSignedReplace)
 {
-  std::vector<uint8_t> nameV(
-    { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x02, 0x02, 0xA0, 0xA1 });
+  std::vector<uint8_t> nameV({ 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x02, 0x02, 0xA0, 0xA1 });
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
   interest.setName(Name(nameV.data(), nameV.size()));
 
-  std::vector<uint8_t> signedPortion({ 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x24,
-                                       0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10 });
+  std::vector<uint8_t> signedPortion(
+    { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x24, 0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10 });
   std::vector<uint8_t> sig({ 0xF0, 0xF1, 0xF2, 0xF3 });
   Encoder encoder(region);
   {
     MockPrivateKey<32> key;
-    EXPECT_CALL(key, updateSigInfo).WillOnce([](SigInfo& sigInfo) {
-      sigInfo.sigType = 0x10;
-    });
+    EXPECT_CALL(key, updateSigInfo).WillOnce([](SigInfo& sigInfo) { sigInfo.sigType = 0x10; });
     EXPECT_CALL(key, doSign(T::ElementsAreArray(signedPortion), T::_))
-      .WillOnce(
-        T::DoAll(T::SetArrayArgument<1>(sig.begin(), sig.end()), T::Return(4)));
+      .WillOnce(T::DoAll(T::SetArrayArgument<1>(sig.begin(), sig.end()), T::Return(4)));
     EXPECT_TRUE(encoder.prepend(interest.sign(key)));
   }
   encoder.trim();
@@ -209,8 +211,7 @@ TEST(Interest, EncodeSignedReplace)
 
   {
     MockPublicKey key;
-    EXPECT_CALL(key, doVerify(T::ElementsAreArray(signedPortion),
-                              T::ElementsAreArray(sig)))
+    EXPECT_CALL(key, doVerify(T::ElementsAreArray(signedPortion), T::ElementsAreArray(sig)))
       .WillOnce(T::Return(true));
     EXPECT_TRUE(decoded.verify(key));
   }

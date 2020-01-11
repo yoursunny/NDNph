@@ -40,19 +40,20 @@ public:
     : m_f(f)
   {}
 
-  bool operator()(const Decoder::Tlv& d) const { return m_f(d); }
+  bool operator()(const Decoder::Tlv& d) const
+  {
+    return m_f(d);
+  }
 
 private:
   const Fn& m_f;
 };
 
-template<
-  int type, bool repeatable, int order, typename Fn,
-  typename R = typename std::conditional<
-    std::is_convertible<typename std::result_of<Fn(const Decoder::Tlv&)>::type,
-                        bool>::value,
-    EvdElementDefBool<type, repeatable, order, Fn>,
-    EvdElementDefVoid<type, repeatable, order, Fn>>::type>
+template<int type, bool repeatable, int order, typename Fn,
+         typename R = typename std::conditional<
+           std::is_convertible<typename std::result_of<Fn(const Decoder::Tlv&)>::type, bool>::value,
+           EvdElementDefBool<type, repeatable, order, Fn>,
+           EvdElementDefVoid<type, repeatable, order, Fn>>::type>
 class EvdElementDefFn : public R
 {
 public:
@@ -67,7 +68,10 @@ public:
     : m_obj(obj)
   {}
 
-  bool operator()(const Decoder::Tlv& d) const { return m_obj->decodeFrom(d); }
+  bool operator()(const Decoder::Tlv& d) const
+  {
+    return m_obj->decodeFrom(d);
+  }
 
 private:
   Decodable* m_obj;
@@ -99,7 +103,10 @@ public:
   class DefaultUnknownCb
   {
   public:
-    bool operator()(const Decoder::Tlv&, int&) const { return false; }
+    bool operator()(const Decoder::Tlv&, int&) const
+    {
+      return false;
+    }
   };
 
   class DefaultIsCritical
@@ -117,11 +124,10 @@ public:
    * Compare to decodeEx(), decode() does not allow customizing unknownCb and isCritical.
    */
   template<typename... E>
-  static bool decode(const Decoder::Tlv& input,
-                     std::initializer_list<uint32_t> topTypes, const E&... defs)
+  static bool decode(const Decoder::Tlv& input, std::initializer_list<uint32_t> topTypes,
+                     const E&... defs)
   {
-    return decodeEx(input, topTypes, DefaultUnknownCb(), DefaultIsCritical(),
-                    defs...);
+    return decodeEx(input, topTypes, DefaultUnknownCb(), DefaultIsCritical(), defs...);
   }
 
   /**
@@ -139,11 +145,10 @@ public:
    * @param defs a sequence of ElementDef to recognize each sub TLV element.
    */
   template<typename UnknownCallback, typename IsCritical, typename... E>
-  static bool decodeEx(const Decoder::Tlv& input,
-                       std::initializer_list<uint32_t> topTypes,
+  static bool decodeEx(const Decoder::Tlv& input, std::initializer_list<uint32_t> topTypes,
 
-                       const UnknownCallback& unknownCb,
-                       const IsCritical& isCritical, const E&... defs)
+                       const UnknownCallback& unknownCb, const IsCritical& isCritical,
+                       const E&... defs)
   {
     if (topTypes.size() > 0) {
       bool found = false;
@@ -160,8 +165,7 @@ public:
 
     int currentOrder = 0;
     for (const auto& d : input.vd()) {
-      bool ok = decodeElement<AUTO_ORDER_SKIP>(d, currentOrder, unknownCb,
-                                               isCritical, defs...);
+      bool ok = decodeElement<AUTO_ORDER_SKIP>(d, currentOrder, unknownCb, isCritical, defs...);
       if (!ok) {
         return false;
       }
@@ -191,12 +195,9 @@ public:
    * @brief Create an element definition.
    * @tparam Decodable class with `bool decodeFrom(const Decoder::Tlv&)` method.
    */
-  template<int type, bool repeatable = false, int order = 0,
-           typename Decodable = void,
-           typename R =
-             detail::EvdElementDefDecodable<type, repeatable, order, Decodable>>
-  static R def(Decodable* decodable,
-               const decltype(&Decodable::decodeFrom)* = nullptr)
+  template<int type, bool repeatable = false, int order = 0, typename Decodable = void,
+           typename R = detail::EvdElementDefDecodable<type, repeatable, order, Decodable>>
+  static R def(Decodable* decodable, const decltype(&Decodable::decodeFrom)* = nullptr)
   {
     return R(decodable);
   }
@@ -205,9 +206,8 @@ public:
    * @brief Create an element definition for Non-Negative Integer field.
    * @tparam NniClass either tlv::NNI or a fixed-length variant.
    */
-  template<
-    int type, typename NniClass, int order = 0, typename ValueType = void,
-    typename R = detail::EvdElementDefNni<type, order, NniClass, ValueType>>
+  template<int type, typename NniClass, int order = 0, typename ValueType = void,
+           typename R = detail::EvdElementDefNni<type, order, NniClass, ValueType>>
   static R defNni(ValueType* value)
   {
     return R(value);
@@ -221,31 +221,29 @@ private:
     AUTO_ORDER_SKIP = 100,
   };
 
-  template<int autoOrder, typename UnknownCallback, typename IsCritical,
-           typename First, typename... E>
+  template<int autoOrder, typename UnknownCallback, typename IsCritical, typename First,
+           typename... E>
   static bool decodeElement(const Decoder::Tlv& d, int& currentOrder,
-                            const UnknownCallback& unknownCb,
-                            const IsCritical& isCritical, const First& first,
-                            const E&... defs)
+                            const UnknownCallback& unknownCb, const IsCritical& isCritical,
+                            const First& first, const E&... defs)
   {
     if (d.type == First::TT::value) {
       return useDef<autoOrder>(d, currentOrder, isCritical, first);
     }
-    return decodeElement<autoOrder + AUTO_ORDER_SKIP>(
-      d, currentOrder, unknownCb, isCritical, defs...);
+    return decodeElement<autoOrder + AUTO_ORDER_SKIP>(d, currentOrder, unknownCb, isCritical,
+                                                      defs...);
   }
 
   template<int autoOrder, typename UnknownCallback, typename IsCritical>
   static bool decodeElement(const Decoder::Tlv& d, int& currentOrder,
-                            const UnknownCallback& unknownCb,
-                            const IsCritical& isCritical)
+                            const UnknownCallback& unknownCb, const IsCritical& isCritical)
   {
     return unknownCb(d, currentOrder) || handleUnrecognized(d, isCritical);
   }
 
   template<int autoOrder, typename IsCritical, typename E>
-  static bool useDef(const Decoder::Tlv& d, int& currentOrder,
-                     const IsCritical& isCritical, const E& def)
+  static bool useDef(const Decoder::Tlv& d, int& currentOrder, const IsCritical& isCritical,
+                     const E& def)
   {
     int defOrder = E::Order::value == 0 ? autoOrder : E::Order::value;
     if (currentOrder > defOrder) {
@@ -259,8 +257,7 @@ private:
   }
 
   template<typename IsCritical>
-  static bool handleUnrecognized(const Decoder::Tlv& d,
-                                 const IsCritical& isCritical)
+  static bool handleUnrecognized(const Decoder::Tlv& d, const IsCritical& isCritical)
   {
     return !isCritical(d.type);
   }

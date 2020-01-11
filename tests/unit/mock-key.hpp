@@ -14,7 +14,10 @@ public:
 
   using MaxSigLen = std::integral_constant<int, 0>;
 
-  ssize_t sign(std::initializer_list<tlv::Value>, uint8_t*) const { return 0; }
+  ssize_t sign(std::initializer_list<tlv::Value>, uint8_t*) const
+  {
+    return 0;
+  }
 };
 
 class MockKeyBase
@@ -58,14 +61,12 @@ public:
 class MockPublicKey : public MockKeyBase
 {
 public:
-  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
-              size_t length) const
+  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig, size_t length) const
   {
     return doVerify(gather(chunks), std::vector<uint8_t>(sig, sig + length));
   }
 
-  MOCK_METHOD(bool, doVerify, (std::vector<uint8_t>, std::vector<uint8_t>),
-              (const));
+  MOCK_METHOD(bool, doVerify, (std::vector<uint8_t>, std::vector<uint8_t>), (const));
 };
 
 } // namespace ndnph

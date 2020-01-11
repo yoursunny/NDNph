@@ -11,8 +11,7 @@ namespace ndnph {
  * @tparam Sha256Port platform-specific SHA256 implementation.
  * @tparam EcdsaPort platform-specific ECDSA implementation.
  */
-template<typename Sha256Port, typename EcdsaPort,
-         typename PubPort = typename EcdsaPort::PublicKey>
+template<typename Sha256Port, typename EcdsaPort, typename PubPort = typename EcdsaPort::PublicKey>
 class BasicEcdsaPublicKey
 {
 public:
@@ -22,12 +21,10 @@ public:
     : m_key(std::move(key))
   {}
 
-  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
-              size_t sigLen) const
+  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig, size_t sigLen) const
   {
     uint8_t digest[NDNPH_SHA256_LEN];
-    return m_key != nullptr &&
-           detail::computeDigest<Sha256Port>(chunks, digest) &&
+    return m_key != nullptr && detail::computeDigest<Sha256Port>(chunks, digest) &&
            m_key->verify(digest, sig, sigLen);
   }
 
@@ -40,8 +37,7 @@ private:
  * @tparam Sha256Port platform-specific SHA256 implementation.
  * @tparam EcdsaPort platform-specific ECDSA implementation.
  */
-template<typename Sha256Port, typename EcdsaPort,
-         typename PvtPort = typename EcdsaPort::PrivateKey>
+template<typename Sha256Port, typename EcdsaPort, typename PvtPort = typename EcdsaPort::PrivateKey>
 class BasicEcdsaPrivateKey
 {
 public:
@@ -78,8 +74,7 @@ public:
   ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const
   {
     uint8_t digest[NDNPH_SHA256_LEN];
-    return m_key == nullptr ||
-               !detail::computeDigest<Sha256Port>(chunks, digest)
+    return m_key == nullptr || !detail::computeDigest<Sha256Port>(chunks, digest)
              ? -1
              : m_key->sign(digest, sig);
   }

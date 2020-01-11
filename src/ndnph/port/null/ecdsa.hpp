@@ -19,8 +19,7 @@ public:
   class PrivateKey
   {
   public:
-    ssize_t sign(const uint8_t[NDNPH_SHA256_LEN],
-                 uint8_t[Curve::MaxSigLen::value]) const
+    ssize_t sign(const uint8_t[NDNPH_SHA256_LEN], uint8_t[Curve::MaxSigLen::value]) const
     {
       return -1;
     }

@@ -22,8 +22,7 @@ public:
         }
         return true;
       },
-      EvDecoder::DefaultIsCritical(),
-      EvDecoder::defNni<TT::SigType, tlv::NNI, 1>(&sigType),
+      EvDecoder::DefaultIsCritical(), EvDecoder::defNni<TT::SigType, tlv::NNI, 1>(&sigType),
       EvDecoder::def<TT::KeyLocator, false, 2>([this](const Decoder::Tlv& d) {
         return EvDecoder::decode(d, {}, EvDecoder::def<TT::Name>(&name));
       }));
@@ -34,16 +33,14 @@ protected:
 
   void encodeImpl(uint32_t type, Encoder& encoder) const
   {
-    encoder.prependTlv(type,
-                       [this](Encoder& encoder) {
-                         encoder.prependTlv(TT::SigType, tlv::NNI(sigType));
-                       },
-                       [this](Encoder& encoder) {
-                         if (name.size() > 0) {
-                           encoder.prependTlv(TT::KeyLocator, name);
-                         }
-                       },
-                       extensions);
+    encoder.prependTlv(
+      type, [this](Encoder& encoder) { encoder.prependTlv(TT::SigType, tlv::NNI(sigType)); },
+      [this](Encoder& encoder) {
+        if (name.size() > 0) {
+          encoder.prependTlv(TT::KeyLocator, name);
+        }
+      },
+      extensions);
   }
 
 public:

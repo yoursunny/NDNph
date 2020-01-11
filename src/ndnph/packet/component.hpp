@@ -18,7 +18,10 @@ public:
   explicit Component() = default;
 
   /** @brief Construct from decoder result, keeping reference to TLV. */
-  explicit Component(const Decoder::Tlv& d) { fromDecoded(d); }
+  explicit Component(const Decoder::Tlv& d)
+  {
+    fromDecoded(d);
+  }
 
   /** @brief Decode, keeping reference to TLV. */
   explicit Component(const uint8_t* tlv, size_t size)
@@ -31,8 +34,7 @@ public:
   }
 
   /** @brief Construct from T-L-V, copying TLV-VALUE. */
-  explicit Component(Region& region, uint16_t type, uint16_t length,
-                     const uint8_t* value)
+  explicit Component(Region& region, uint16_t type, uint16_t length, const uint8_t* value)
     : m_type(type)
     , m_length(length)
   {
@@ -56,14 +58,35 @@ public:
   {}
 
   /** @brief Return true if Component is invalid. */
-  bool operator!() const { return m_type == 0; }
+  bool operator!() const
+  {
+    return m_type == 0;
+  }
 
-  uint16_t type() const { return m_type; }
-  size_t length() const { return m_length; }
-  const uint8_t* value() const { return m_value; }
+  uint16_t type() const
+  {
+    return m_type;
+  }
 
-  const uint8_t* tlv() const { return m_tlv; }
-  size_t size() const { return m_value - m_tlv + m_length; }
+  size_t length() const
+  {
+    return m_length;
+  }
+
+  const uint8_t* value() const
+  {
+    return m_value;
+  }
+
+  const uint8_t* tlv() const
+  {
+    return m_tlv;
+  }
+
+  size_t size() const
+  {
+    return m_value - m_tlv + m_length;
+  }
 
 private:
   void fromDecoded(const Decoder::Tlv& d)

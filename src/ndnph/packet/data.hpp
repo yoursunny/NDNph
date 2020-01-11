@@ -47,35 +47,32 @@ protected:
 
   void encodeSignedPortion(Encoder& encoder, const DSigInfo& sigInfo) const
   {
-    encoder.prepend(
-      obj->name,
-      [this](Encoder& encoder) {
-        encoder.prependTlv(
-          TT::MetaInfo, Encoder::OmitEmpty,
-          [this](Encoder& encoder) {
-            if (obj->contentType != detail::DataObj::DefaultContentType) {
-              encoder.prependTlv(TT::ContentType, tlv::NNI(obj->contentType));
-            }
-          },
-          [this](Encoder& encoder) {
-            if (obj->freshnessPeriod !=
-                detail::DataObj::DefaultFreshnessPeriod) {
-              encoder.prependTlv(TT::FreshnessPeriod,
-                                 tlv::NNI(obj->freshnessPeriod));
-            }
-          },
-          [this](Encoder& encoder) {
-            if (obj->isFinalBlock) {
-              auto comp = obj->name[-1];
-              encoder.prependTlv(TT::FinalBlockId,
-                                 tlv::Value(comp.tlv(), comp.size()));
-            }
-          });
-      },
-      [this](Encoder& encoder) {
-        encoder.prependTlv(TT::Content, Encoder::OmitEmpty, obj->content);
-      },
-      sigInfo);
+    encoder.prepend(obj->name,
+                    [this](Encoder& encoder) {
+                      encoder.prependTlv(
+                        TT::MetaInfo, Encoder::OmitEmpty,
+                        [this](Encoder& encoder) {
+                          if (obj->contentType != detail::DataObj::DefaultContentType) {
+                            encoder.prependTlv(TT::ContentType, tlv::NNI(obj->contentType));
+                          }
+                        },
+                        [this](Encoder& encoder) {
+                          if (obj->freshnessPeriod != detail::DataObj::DefaultFreshnessPeriod) {
+                            encoder.prependTlv(TT::FreshnessPeriod, tlv::NNI(obj->freshnessPeriod));
+                          }
+                        },
+                        [this](Encoder& encoder) {
+                          if (obj->isFinalBlock) {
+                            auto comp = obj->name[-1];
+                            encoder.prependTlv(TT::FinalBlockId,
+                                               tlv::Value(comp.tlv(), comp.size()));
+                          }
+                        });
+                    },
+                    [this](Encoder& encoder) {
+                      encoder.prependTlv(TT::Content, Encoder::OmitEmpty, obj->content);
+                    },
+                    sigInfo);
   }
 };
 
@@ -101,8 +98,7 @@ public:
     const uint8_t* signedPortion = encoder.begin();
     size_t sizeofSignedPortion = sigBuf - signedPortion;
 
-    ssize_t sigLen =
-      m_key.sign({ tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
+    ssize_t sigLen = m_key.sign({ tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
     if (sigLen < 0) {
       encoder.setError();
       return;
@@ -112,13 +108,12 @@ public:
     }
     encoder.resetFront(after);
 
-    encoder.prependTlv(
-      TT::Data,
-      [this](Encoder& encoder) { encodeSignedPortion(encoder, m_sigInfo); },
-      [sigLen](Encoder& encoder) {
-        encoder.prependRoom(sigLen); // room contains signature
-        encoder.prependTypeLength(TT::DSigValue, sigLen);
-      });
+    encoder.prependTlv(TT::Data,
+                       [this](Encoder& encoder) { encodeSignedPortion(encoder, m_sigInfo); },
+                       [sigLen](Encoder& encoder) {
+                         encoder.prependRoom(sigLen); // room contains signature
+                         encoder.prependTypeLength(TT::DSigValue, sigLen);
+                       });
   }
 
 private:
@@ -134,20 +129,55 @@ class Data : public detail::RefRegion<detail::DataObj>
 public:
   using RefRegion::RefRegion;
 
-  const Name& getName() const { return obj->name; }
-  void setName(const Name& v) { obj->name = v; }
+  const Name& getName() const
+  {
+    return obj->name;
+  }
 
-  uint8_t getContentType() const { return obj->contentType; }
-  void setContentType(uint8_t v) { obj->contentType = v; }
+  void setName(const Name& v)
+  {
+    obj->name = v;
+  }
 
-  uint32_t getFreshnessPeriod() const { return obj->freshnessPeriod; }
-  void setFreshnessPeriod(uint32_t v) { obj->freshnessPeriod = v; }
+  uint8_t getContentType() const
+  {
+    return obj->contentType;
+  }
 
-  bool getIsFinalBlock() const { return obj->isFinalBlock; }
-  void setIsFinalBlock(bool v) { obj->isFinalBlock = v; }
+  void setContentType(uint8_t v)
+  {
+    obj->contentType = v;
+  }
 
-  tlv::Value getContent() const { return obj->content; }
-  void setContent(tlv::Value v) { obj->content = std::move(v); }
+  uint32_t getFreshnessPeriod() const
+  {
+    return obj->freshnessPeriod;
+  }
+
+  void setFreshnessPeriod(uint32_t v)
+  {
+    obj->freshnessPeriod = v;
+  }
+
+  bool getIsFinalBlock() const
+  {
+    return obj->isFinalBlock;
+  }
+
+  void setIsFinalBlock(bool v)
+  {
+    obj->isFinalBlock = v;
+  }
+
+  tlv::Value getContent() const
+  {
+    return obj->content;
+  }
+
+  void setContent(tlv::Value v)
+  {
+    obj->content = std::move(v);
+  }
 
   /**
    * @brief Retrieve SignatureInfo.
@@ -189,19 +219,15 @@ public:
       input, { TT::Data }, EvDecoder::def<TT::Name>(&obj->name),
       EvDecoder::def<TT::MetaInfo>([this](const Decoder::Tlv& d) {
         return EvDecoder::decode(
-          d, {},
-          EvDecoder::defNni<TT::ContentType, tlv::NNI>(&obj->contentType),
-          EvDecoder::defNni<TT::FreshnessPeriod, tlv::NNI>(
-            &obj->freshnessPeriod),
+          d, {}, EvDecoder::defNni<TT::ContentType, tlv::NNI>(&obj->contentType),
+          EvDecoder::defNni<TT::FreshnessPeriod, tlv::NNI>(&obj->freshnessPeriod),
           EvDecoder::def<TT::FinalBlockId>([this](const Decoder::Tlv& d) {
             auto comp = getName()[-1];
-            setIsFinalBlock(
-              d.length == comp.size() &&
-              std::equal(d.value, d.value + d.length, comp.tlv()));
+            setIsFinalBlock(d.length == comp.size() &&
+                            std::equal(d.value, d.value + d.length, comp.tlv()));
           }));
       }),
-      EvDecoder::def<TT::Content>(&obj->content),
-      EvDecoder::def<TT::DSigInfo>(&obj->sig->sigInfo),
+      EvDecoder::def<TT::Content>(&obj->content), EvDecoder::def<TT::DSigInfo>(&obj->sig->sigInfo),
       EvDecoder::def<TT::DSigValue>([this, &input](const Decoder::Tlv& d) {
         obj->sig->signedPortion = tlv::Value(input.value, d.tlv - input.value);
         return obj->sig->sigValue.decodeFrom(d);
@@ -220,9 +246,8 @@ public:
   template<typename Key>
   bool verify(const Key& key) const
   {
-    return obj->sig != nullptr &&
-           key.verify({ obj->sig->signedPortion }, obj->sig->sigValue.begin(),
-                      obj->sig->sigValue.size());
+    return obj->sig != nullptr && key.verify({ obj->sig->signedPortion },
+                                             obj->sig->sigValue.begin(), obj->sig->sigValue.size());
   }
 };
 

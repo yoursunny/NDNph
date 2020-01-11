@@ -8,11 +8,16 @@ namespace {
 TEST(Decoder, DecodeGood)
 {
   std::vector<uint8_t> wire({
-    0x01, 0x00,                               // 0100
-    0x02, 0x01, 0xA1,                         // 0201 A1
-    0xFD, 0x00, 0xFD, 0x03, 0xA3, 0xA3, 0xA3, // FD03 A3A3A3
-    0xFD, 0x01, 0x00, 0x02, 0xA2, 0xA2,       // 010002 A2A2
-    0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0xA1, // FFFFFFFF A1
+    0x01,
+    0x00, // 0100
+    0x02, 0x01,
+    0xA1, // 0201 A1
+    0xFD, 0x00, 0xFD, 0x03, 0xA3, 0xA3,
+    0xA3, // FD03 A3A3A3
+    0xFD, 0x01, 0x00, 0x02, 0xA2,
+    0xA2, // 010002 A2A2
+    0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+    0xA1, // FFFFFFFF A1
   });
   Decoder decoder(wire.data(), wire.size());
 
@@ -25,8 +30,7 @@ TEST(Decoder, DecodeGood)
   ASSERT_TRUE(it != end);
   EXPECT_EQ(it->type, 0x02);
   EXPECT_EQ(it->length, 1);
-  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length),
-              T::ElementsAre(0xA1));
+  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), T::ElementsAre(0xA1));
 
   ++it;
   ASSERT_TRUE(it != end);
@@ -39,15 +43,13 @@ TEST(Decoder, DecodeGood)
   ASSERT_TRUE(it != end);
   EXPECT_EQ(it->type, 0x0100);
   EXPECT_EQ(it->length, 2);
-  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length),
-              T::ElementsAre(0xA2, 0xA2));
+  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), T::ElementsAre(0xA2, 0xA2));
 
   ++it;
   ASSERT_TRUE(it != end);
   EXPECT_EQ(it->type, 0xFFFFFFFF);
   EXPECT_EQ(it->length, 1);
-  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length),
-              T::ElementsAre(0xA1));
+  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), T::ElementsAre(0xA1));
 
   ++it;
   ASSERT_TRUE(it == end);
@@ -71,8 +73,7 @@ TEST(Decoder, DecodeBad)
   EXPECT_TRUE(decoder3.begin() == decoder3.end());
 
   // unacceptable 9-octet TLV-TYPE
-  std::vector<uint8_t> wire4(
-    { 0xFF, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0xA1 });
+  std::vector<uint8_t> wire4({ 0xFF, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0xA1 });
   Decoder decoder4(wire4.data(), wire4.size());
   EXPECT_TRUE(decoder4.begin() == decoder4.end());
 

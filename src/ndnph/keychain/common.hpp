@@ -8,8 +8,7 @@ namespace detail {
 
 template<typename Sha256Port>
 inline bool
-computeDigest(std::initializer_list<tlv::Value> chunks,
-              uint8_t digest[NDNPH_SHA256_LEN])
+computeDigest(std::initializer_list<tlv::Value> chunks, uint8_t digest[NDNPH_SHA256_LEN])
 {
   Sha256Port hash;
   for (const auto& chunk : chunks) {

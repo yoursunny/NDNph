@@ -23,7 +23,10 @@ protected:
 protected:
   Region& region;
 
-  friend Region& regionOf(const InRegion* obj) { return obj->region; }
+  friend Region& regionOf(const InRegion* obj)
+  {
+    return obj->region;
+  }
 };
 
 template<typename Obj>
@@ -36,7 +39,10 @@ public:
     : obj(obj)
   {}
 
-  bool operator!() const { return obj == nullptr; }
+  bool operator!() const
+  {
+    return obj == nullptr;
+  }
 
 protected:
   ~RefRegion() = default;

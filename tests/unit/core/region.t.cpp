@@ -1,5 +1,5 @@
-#include "ndnph/core/in-region.hpp"
 #include "ndnph/core/region.hpp"
+#include "ndnph/core/in-region.hpp"
 
 #include "../test-common.hpp"
 
@@ -70,14 +70,15 @@ class MyRef : public detail::RefRegion<MyObj>
 public:
   using RefRegion::RefRegion;
 
-  MyObj* getObj() { return obj; }
+  MyObj* getObj()
+  {
+    return obj;
+  }
 };
 
 TEST(Region, Create)
 {
-  static_assert(sizeof(MyObj) > NDNPH_ALIGNMENT &&
-                  sizeof(MyObj) <= 2 * NDNPH_ALIGNMENT,
-                "");
+  static_assert(sizeof(MyObj) > NDNPH_ALIGNMENT && sizeof(MyObj) <= 2 * NDNPH_ALIGNMENT, "");
   StaticRegion<NDNPH_ALIGNMENT * 5 - 1> region;
 
   MyRef ref = region.create<MyRef>();

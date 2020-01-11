@@ -10,7 +10,11 @@ class Sha256
 {
 public:
   void update(const uint8_t*, size_t) {}
-  bool final(uint8_t[NDNPH_SHA256_LEN]) { return false; }
+
+  bool final(uint8_t[NDNPH_SHA256_LEN])
+  {
+    return false;
+  }
 };
 
 } // namespace port_null

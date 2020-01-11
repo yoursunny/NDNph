@@ -60,6 +60,7 @@ public:
     // Region allocator would not `delete` created objects, so it's safe to
     // create trivially destructible objects only.
     static_assert(std::is_trivially_destructible<T>::value, "");
+
     uint8_t* ptr = this->allocA(sizeof(T));
     if (ptr == nullptr) {
       return nullptr;
@@ -94,10 +95,16 @@ public:
   }
 
   /** @brief Compute remaining space. */
-  size_t available() const { return m_right - m_left; }
+  size_t available() const
+  {
+    return m_right - m_left;
+  }
 
   /** @brief Compute utilized space. */
-  size_t size() const { return m_end - m_begin - available(); }
+  size_t size() const
+  {
+    return m_end - m_begin - available();
+  }
 
 protected:
   Region(uint8_t* buf, size_t cap)
@@ -142,7 +149,10 @@ public:
     : Region(new uint8_t[capacity], capacity)
   {}
 
-  ~DynamicRegion() { delete[] m_begin; }
+  ~DynamicRegion()
+  {
+    delete[] m_begin;
+  }
 };
 
 } // namespace ndnph

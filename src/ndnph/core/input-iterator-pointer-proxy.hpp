@@ -13,7 +13,10 @@ public:
     : m_item(item)
   {}
 
-  T* operator->() const { return &m_item; }
+  T* operator->() const
+  {
+    return &m_item;
+  }
 
 private:
   T m_item;

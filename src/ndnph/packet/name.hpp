@@ -22,21 +22,33 @@ public:
   }
 
   /** @brief Construct Name, making copy of TLV-VALUE. */
-  explicit Name(Region& region, const uint8_t* value = nullptr,
-                size_t length = 0)
+  explicit Name(Region& region, const uint8_t* value = nullptr, size_t length = 0)
     : Name(value, length)
   {
     m_value = region.dup(m_value, m_length);
   }
 
   /** @brief Return true if Name is invalid. */
-  bool operator!() const { return m_value == nullptr; }
+  bool operator!() const
+  {
+    return m_value == nullptr;
+  }
 
-  size_t length() const { return m_length; }
-  const uint8_t* value() const { return m_value; }
+  size_t length() const
+  {
+    return m_length;
+  }
+
+  const uint8_t* value() const
+  {
+    return m_value;
+  }
 
   /** @brief Get number of components. */
-  size_t size() const { return m_nComps; }
+  size_t size() const
+  {
+    return m_nComps;
+  }
 
   class Iterator : public Decoder::Iterator
   {
@@ -54,12 +66,26 @@ public:
       : super(inner)
     {}
 
-    reference operator*() { return Component(super::operator*()); }
-    pointer operator->() { return pointer(this->operator*()); }
+    reference operator*()
+    {
+      return Component(super::operator*());
+    }
+
+    pointer operator->()
+    {
+      return pointer(this->operator*());
+    }
   };
 
-  Iterator begin() const { return Decoder(m_value, m_length).begin(); }
-  Iterator end() const { return Decoder(m_value, m_length).end(); }
+  Iterator begin() const
+  {
+    return Decoder(m_value, m_length).begin();
+  }
+
+  Iterator end() const
+  {
+    return Decoder(m_value, m_length).end();
+  }
 
   /** @brief Access i-th component. */
   Component operator[](int i) const
@@ -97,16 +123,17 @@ public:
     auto firstComp = *it;
     std::advance(it, last - first - 1);
     auto lastComp = *it; // inclusive last component
-    return Name(firstComp.tlv(),
-                lastComp.tlv() + lastComp.size() - firstComp.tlv(),
-                last - first);
+    return Name(firstComp.tlv(), lastComp.tlv() + lastComp.size() - firstComp.tlv(), last - first);
   }
 
   /**
    * @brief Get prefix of n components.
    * @param n number of component; if non-positive, count from end.
    */
-  Name getPrefix(int n = 0) const { return slice(0, n); }
+  Name getPrefix(int n = 0) const
+  {
+    return slice(0, n);
+  }
 
   /**
    * @brief Append a sequence of components.
@@ -215,8 +242,8 @@ private:
 
   bool isOutOfRange(int i, bool acceptPastEnd = false) const
   {
-    return i < 0 || (acceptPastEnd ? i > static_cast<int>(m_nComps)
-                                   : i >= static_cast<int>(m_nComps));
+    return i < 0 ||
+           (acceptPastEnd ? i > static_cast<int>(m_nComps) : i >= static_cast<int>(m_nComps));
   }
 
 private:

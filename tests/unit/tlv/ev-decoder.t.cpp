@@ -8,7 +8,10 @@ namespace {
 class Target0
 {
 public:
-  int sum() const { return a1 * 1000 + a4 * 100 + a6 * 10 + a9; }
+  int sum() const
+  {
+    return a1 * 1000 + a4 * 100 + a6 * 10 + a9;
+  }
 
 public:
   int a1 = 0;
@@ -22,16 +25,15 @@ class Target1 : public Target0
 public:
   bool decodeFrom(const Decoder::Tlv& input)
   {
-    return EvDecoder::decode(
-      input, { 0xA0 }, EvDecoder::def<0xA1>([this](const Decoder::Tlv& d) {
-        EXPECT_EQ(d.type, 0xA1);
-        ASSERT_EQ(d.length, 1);
-        EXPECT_EQ(d.value[0], 0x10);
-        ++a1;
-      }),
-      EvDecoder::def<0xA4>([this](const Decoder::Tlv&) { ++a4; }),
-      EvDecoder::def<0xA6, true>([this](const Decoder::Tlv&) { ++a6; }),
-      EvDecoder::def<0xA9>([this](const Decoder::Tlv&) { ++a9; }));
+    return EvDecoder::decode(input, { 0xA0 }, EvDecoder::def<0xA1>([this](const Decoder::Tlv& d) {
+                               EXPECT_EQ(d.type, 0xA1);
+                               ASSERT_EQ(d.length, 1);
+                               EXPECT_EQ(d.value[0], 0x10);
+                               ++a1;
+                             }),
+                             EvDecoder::def<0xA4>([this](const Decoder::Tlv&) { ++a4; }),
+                             EvDecoder::def<0xA6, true>([this](const Decoder::Tlv&) { ++a6; }),
+                             EvDecoder::def<0xA9>([this](const Decoder::Tlv&) { ++a9; }));
   }
 };
 
@@ -40,10 +42,9 @@ class Target2 : public Target0
 public:
   bool decodeFrom(const Decoder::Tlv& input)
   {
-    return EvDecoder::decodeEx(
-      input, {}, EvDecoder::DefaultUnknownCb(),
-      [](uint32_t type) { return type == 0xA2; },
-      EvDecoder::def<0xA1>([this](const Decoder::Tlv&) { ++a1; }));
+    return EvDecoder::decodeEx(input, {}, EvDecoder::DefaultUnknownCb(),
+                               [](uint32_t type) { return type == 0xA2; },
+                               EvDecoder::def<0xA1>([this](const Decoder::Tlv&) { ++a1; }));
   }
 };
 
@@ -77,63 +78,98 @@ TEST(EvDecoder, All)
   std::vector<uint8_t> wire({
     // ---- Target1
     // packet 0
-    0xA0, 0x0B,       // A0
-    0xA1, 0x01, 0x10, // A1
-    0xA4, 0x00,       // A4
-    0xA6, 0x00,       // A6
-    0xA6, 0x00,       // A6 repeatable
-    0xA9, 0x00,       // A9
+    0xA0,
+    0x0B, // A0
+    0xA1, 0x01,
+    0x10, // A1
+    0xA4,
+    0x00, // A4
+    0xA6,
+    0x00, // A6
+    0xA6,
+    0x00, // A6 repeatable
+    0xA9,
+    0x00, // A9
 
     // packet 1
-    0xA0, 0x02, // A0
-    0xA2, 0x00, // A2 non-critical
+    0xA0,
+    0x02, // A0
+    0xA2,
+    0x00, // A2 non-critical
 
     // packet 2
-    0xA0, 0x02, // A0
-    0xA3, 0x00, // A3 critical
+    0xA0,
+    0x02, // A0
+    0xA3,
+    0x00, // A3 critical
 
     // packet 3
-    0xA0, 0x02, // A0
-    0x10, 0x00, // 10 critical
+    0xA0,
+    0x02, // A0
+    0x10,
+    0x00, // 10 critical
 
     // packet 4
-    0xA0, 0x05,       // A0
-    0xA1, 0x01, 0x10, // A1
-    0xA1, 0x00,       // A1 cannot repeat
+    0xA0,
+    0x05, // A0
+    0xA1, 0x01,
+    0x10, // A1
+    0xA1,
+    0x00, // A1 cannot repeat
 
     // packet 5
-    0xA0, 0x04, // A0
-    0xA4, 0x00, // A4
-    0xA1, 0x00, // A1 out of order
+    0xA0,
+    0x04, // A0
+    0xA4,
+    0x00, // A4
+    0xA1,
+    0x00, // A1 out of order
 
     // packet 6
-    0xA0, 0x06, // A0
-    0xA6, 0x00, // A6
-    0xA9, 0x00, // A9
-    0xA6, 0x00, // A6 out of order
+    0xA0,
+    0x06, // A0
+    0xA6,
+    0x00, // A6
+    0xA9,
+    0x00, // A9
+    0xA6,
+    0x00, // A6 out of order
 
     // packet 7
-    0xB0, 0x00, // B0 incorrect
+    0xB0,
+    0x00, // B0 incorrect
 
     // ---- Target2 tests isCritical and ignores top TLV-TYPE
     // packet 8
-    0xB0, 0x04, // B0
-    0xA1, 0x00, // A1 recognized
-    0xA3, 0x00, // A3 non-critical
+    0xB0,
+    0x04, // B0
+    0xA1,
+    0x00, // A1 recognized
+    0xA3,
+    0x00, // A3 non-critical
 
     // packet 9
-    0xB1, 0x04, // B1
-    0xA1, 0x00, // A1 recognized
-    0xA2, 0x00, // A2 critical
+    0xB1,
+    0x04, // B1
+    0xA1,
+    0x00, // A1 recognized
+    0xA2,
+    0x00, // A2 critical
 
     // ---- Target3 tests unknownCb and accepts 0xA0,0xAA as top TLV-TYPE
     // packet 10
-    0xAA, 0x0A, // AA
-    0xA2, 0x00, // A2 ignored
-    0xA1, 0x00, // A1 handled by unknownCb
-    0xA4, 0x00, // A4 handled by rule
-    0xA1, 0x00, // A1 handled by unknownCb
-    0xA6, 0x00, // A6 ignored
+    0xAA,
+    0x0A, // AA
+    0xA2,
+    0x00, // A2 ignored
+    0xA1,
+    0x00, // A1 handled by unknownCb
+    0xA4,
+    0x00, // A4 handled by rule
+    0xA1,
+    0x00, // A1 handled by unknownCb
+    0xA6,
+    0x00, // A6 ignored
   });
   Decoder decoder(wire.data(), wire.size());
   auto it = decoder.begin(), end = decoder.end();

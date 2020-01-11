@@ -17,12 +17,14 @@ public:
     m_hasError = m_hasError || mbedtls_sha256_starts_ret(&m_ctx, 0) != 0;
   }
 
-  ~Sha256() { mbedtls_sha256_free(&m_ctx); }
+  ~Sha256()
+  {
+    mbedtls_sha256_free(&m_ctx);
+  }
 
   void update(const uint8_t* chunk, size_t size)
   {
-    m_hasError =
-      m_hasError || mbedtls_sha256_update_ret(&m_ctx, chunk, size) != 0;
+    m_hasError = m_hasError || mbedtls_sha256_update_ret(&m_ctx, chunk, size) != 0;
   }
 
   bool final(uint8_t digest[NDNPH_SHA256_LEN])

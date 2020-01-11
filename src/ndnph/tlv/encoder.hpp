@@ -11,7 +11,10 @@ class Encoder
 {
 public:
   /** @brief Create over given buffer. */
-  explicit Encoder(uint8_t* buf, size_t capacity) { init(buf, capacity); }
+  explicit Encoder(uint8_t* buf, size_t capacity)
+  {
+    init(buf, capacity);
+  }
 
   /**
    * @brief Create over remaining space in a Region.
@@ -26,14 +29,26 @@ public:
   }
 
   /** @brief Whether an error has occurred, such as running out of space. */
-  bool operator!() const { return m_pos == nullptr; }
+  bool operator!() const
+  {
+    return m_pos == nullptr;
+  }
 
   /** @brief Get output begin. */
-  const uint8_t* begin() const { return m_pos; }
+  const uint8_t* begin() const
+  {
+    return m_pos;
+  }
   /** @brief Get output end. */
-  const uint8_t* end() const { return m_pos == nullptr ? nullptr : m_end; }
+  const uint8_t* end() const
+  {
+    return m_pos == nullptr ? nullptr : m_end;
+  }
   /** @brief Get output size. */
-  size_t size() const { return m_pos == nullptr ? 0 : m_end - m_pos; }
+  size_t size() const
+  {
+    return m_pos == nullptr ? 0 : m_end - m_pos;
+  }
 
   /**
    * @brief Release unused space to the Region.
@@ -65,7 +80,10 @@ public:
   }
 
   /** @brief Reset front to given position. */
-  void resetFront(uint8_t* pos) { m_pos = pos; }
+  void resetFront(uint8_t* pos)
+  {
+    m_pos = pos;
+  }
 
   /**
    * @brief Make room to prepend an object.
@@ -142,17 +160,23 @@ public:
 
   /** @brief Prepend TLV, measuring TLV-LENGTH automatically. */
   template<typename First, typename... Arg>
-  typename std::enable_if<!std::is_same<First, OmitEmptyTag>::value, bool>::type
-  prependTlv(uint32_t type, const First& first, const Arg&... arg)
+  typename std::enable_if<!std::is_same<First, OmitEmptyTag>::value, bool>::type prependTlv(
+    uint32_t type, const First& first, const Arg&... arg)
   {
     return prependTlv(type, NoOmitEmpty, first, arg...);
   }
 
   /** @brief Prepend TLV with zero TLV-LENGTH. */
-  bool prependTlv(uint32_t type) { return prependTypeLength(type, 0); }
+  bool prependTlv(uint32_t type)
+  {
+    return prependTypeLength(type, 0);
+  }
 
   /** @brief Indicate an error has occurred. */
-  void setError() { m_pos = nullptr; }
+  void setError()
+  {
+    m_pos = nullptr;
+  }
 
 private:
   void init(uint8_t* buf, size_t capacity)
@@ -161,11 +185,13 @@ private:
     m_pos = m_end = buf + capacity;
   }
 
-  bool prepend() { return true; }
+  bool prepend()
+  {
+    return true;
+  }
 
   template<typename T>
-  void prependOne(const T& encodeFunc,
-                  const decltype(&T::operator())* = nullptr)
+  void prependOne(const T& encodeFunc, const decltype(&T::operator())* = nullptr)
   {
     encodeFunc(*this);
   }
