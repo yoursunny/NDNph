@@ -53,9 +53,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
   {
     Pkt pktAd = region.create<Pkt>();
     ASSERT_FALSE(!pktAd);
-    Decoder::Tlv d;
-    Decoder::readTlv(d, encoderA.begin(), encoderA.end());
-    ASSERT_TRUE(pktAd.decodeFrom(d));
+    ASSERT_TRUE(Decoder(encoderA.begin(), encoderA.size()).decode(pktAd));
 
     EXPECT_TRUE(pktAd.verify(pubA));
     EXPECT_EQ(pktAd.verify(pubB), sameAB);
@@ -64,9 +62,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
   {
     Pkt pktBd = region.create<Pkt>();
     ASSERT_FALSE(!pktBd);
-    Decoder::Tlv d;
-    Decoder::readTlv(d, encoderB.begin(), encoderB.end());
-    ASSERT_TRUE(pktBd.decodeFrom(d));
+    ASSERT_TRUE(Decoder(encoderB.begin(), encoderB.size()).decode(pktBd));
 
     EXPECT_TRUE(pktBd.verify(pubB));
 

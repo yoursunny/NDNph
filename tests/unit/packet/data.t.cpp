@@ -34,11 +34,9 @@ TEST(Data, EncodeMinimal)
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
   encoder.discard();
 
-  Decoder::Tlv d;
-  Decoder::readTlv(d, wire.data(), wire.size());
   Data decoded = region.create<Data>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(decoded.decodeFrom(d));
+  ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(decoded));
   EXPECT_TRUE(decoded.getName() == data.getName());
   EXPECT_EQ(decoded.getContentType(), 0x00);
   EXPECT_EQ(decoded.getFreshnessPeriod(), 0);
@@ -97,11 +95,9 @@ TEST(Data, EncodeFull)
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
   encoder.discard();
 
-  Decoder::Tlv d;
-  Decoder::readTlv(d, wire.data(), wire.size());
   Data decoded = region.create<Data>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(decoded.decodeFrom(d));
+  ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(decoded));
   EXPECT_TRUE(decoded.getName() == data.getName());
   EXPECT_EQ(decoded.getContentType(), 0x01);
   EXPECT_EQ(decoded.getFreshnessPeriod(), 500);

@@ -62,7 +62,7 @@ public:
 
     Iterator() = default;
 
-    Iterator(const super& inner)
+    explicit Iterator(const super& inner)
       : super(inner)
     {}
 
@@ -79,12 +79,12 @@ public:
 
   Iterator begin() const
   {
-    return Decoder(m_value, m_length).begin();
+    return Iterator(Decoder(m_value, m_length).begin());
   }
 
   Iterator end() const
   {
-    return Decoder(m_value, m_length).end();
+    return Iterator(Decoder(m_value, m_length).end());
   }
 
   /** @brief Access i-th component. */

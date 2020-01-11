@@ -20,7 +20,8 @@ public:
     }
 
     /**
-     * @brief Decode into an object with `bool decodeFrom(const Decoder::Tlv&)` method.
+     * @brief Decode into target object.
+     * @tparam class with `bool decodeFrom(const Decoder::Tlv&)` method.
      * @return whether success.
      * @pre target is newly constructed.
      * @post target may contain reference to the decoder's underlying input buffer.
@@ -67,11 +68,6 @@ public:
     d.tlv = input;
     d.size = sizeofT + sizeofL + length;
     return end - d.value >= static_cast<ssize_t>(length);
-  }
-
-  static bool readTlv(Tlv& d, const uint8_t* input, size_t size)
-  {
-    return readTlv(d, input, input + size);
   }
 
   /** @brief Iterator over TLV elements. */
@@ -161,9 +157,20 @@ public:
   {
     return Iterator(m_begin, m_end);
   }
+
   Iterator end() const
   {
     return Iterator(m_end, m_end);
+  }
+
+  /**
+   * @brief Decode first TLV into target object.
+   * @sa Decoder::Tlv::decode
+   */
+  template<typename T>
+  bool decode(T& target) const
+  {
+    return begin()->decode(target);
   }
 
 private:

@@ -34,11 +34,9 @@ TEST(Interest, EncodeMinimal)
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
   encoder.discard();
 
-  Decoder::Tlv d;
-  Decoder::readTlv(d, wire.data(), wire.size());
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(decoded.decodeFrom(d));
+  ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(decoded));
   EXPECT_TRUE(decoded.getName() == interest.getName());
   EXPECT_EQ(decoded.getCanBePrefix(), false);
   EXPECT_EQ(decoded.getMustBeFresh(), false);
@@ -80,11 +78,9 @@ TEST(Interest, EncodeFull)
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
   encoder.discard();
 
-  Decoder::Tlv d;
-  Decoder::readTlv(d, wire.data(), wire.size());
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(decoded.decodeFrom(d));
+  ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(decoded));
   EXPECT_TRUE(decoded.getName() == interest.getName());
   EXPECT_EQ(decoded.getCanBePrefix(), true);
   EXPECT_EQ(decoded.getMustBeFresh(), true);
@@ -107,11 +103,9 @@ TEST(Interest, EncodeParameterizedReplace)
   ASSERT_TRUE(encoder.prepend(interest.parameterize(appParams)));
   encoder.trim();
 
-  Decoder::Tlv d;
-  Decoder::readTlv(d, encoder.begin(), encoder.end());
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(decoded.decodeFrom(d));
+  ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
 
   auto name = decoded.getName();
   EXPECT_THAT(name, T::SizeIs(3));
@@ -138,11 +132,9 @@ TEST(Interest, EncodeParameterizedAppend)
   ASSERT_TRUE(encoder.prepend(interest.parameterize(appParams)));
   encoder.trim();
 
-  Decoder::Tlv d;
-  Decoder::readTlv(d, encoder.begin(), encoder.end());
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(decoded.decodeFrom(d));
+  ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
 
   auto name = decoded.getName();
   EXPECT_THAT(name, T::SizeIs(3));
@@ -193,11 +185,9 @@ TEST(Interest, EncodeSignedReplace)
   }
   encoder.trim();
 
-  Decoder::Tlv d;
-  Decoder::readTlv(d, encoder.begin(), encoder.end());
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(decoded.decodeFrom(d));
+  ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
 
   auto name = decoded.getName();
   EXPECT_THAT(name, T::SizeIs(3));
