@@ -29,16 +29,6 @@ public:
     return true;
   }
 
-  /** @brief Duplicate an input string. */
-  uint8_t* dup(const uint8_t* input, size_t size)
-  {
-    uint8_t* copy = alloc(size);
-    if (copy != nullptr) {
-      std::copy_n(input, size, copy);
-    }
-    return copy;
-  }
-
   /** @brief Allocate a region aligned to multiple of sizeof(void*). */
   uint8_t* allocA(size_t size)
   {

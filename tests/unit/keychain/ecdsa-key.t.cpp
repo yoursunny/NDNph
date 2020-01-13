@@ -13,12 +13,14 @@ namespace {
 
 TEST(EcdsaKey, SignVerify)
 {
-  std::vector<uint8_t> nameV({ 0x08, 0x02, 0x4B, 0x41, 0x08, 0x02, 0x4B, 0x42 });
+  StaticRegion<1024> region;
+  Name nameKA(region, { 0x08, 0x02, 0x4B, 0x41 });
+  Name nameKB(region, { 0x08, 0x02, 0x4B, 0x42 });
   port_urandom::RandomSource rng;
   EcdsaPrivateKey pvtA, pvtB;
   EcdsaPublicKey pubA, pubB;
-  ASSERT_TRUE(EcdsaPrivateKey::generate(rng, Name(&nameV[0], 4), pvtA, pubA));
-  ASSERT_TRUE(EcdsaPrivateKey::generate(rng, Name(&nameV[4], 4), pvtB, pubB));
+  ASSERT_TRUE(EcdsaPrivateKey::generate(rng, nameKA, pvtA, pubA));
+  ASSERT_TRUE(EcdsaPrivateKey::generate(rng, nameKB, pvtB, pubB));
 
   testSignVerify<Interest>(pvtA, pubA, pvtB, pubB, true);
   testSignVerify<Data>(pvtA, pubA, pvtB, pubB, true);
@@ -26,11 +28,12 @@ TEST(EcdsaKey, SignVerify)
 
 TEST(EcdsaKey, NullRandomSource)
 {
-  std::vector<uint8_t> nameV({ 0x08, 0x02, 0x4B, 0x41 });
+  StaticRegion<1024> region;
+  Name nameKA(region, { 0x08, 0x02, 0x4B, 0x41 });
   port_null::RandomSource rng;
   EcdsaPrivateKey pvt;
   EcdsaPublicKey pub;
-  EXPECT_FALSE(EcdsaPrivateKey::generate(rng, Name(nameV.data(), nameV.size()), pvt, pub));
+  EXPECT_FALSE(EcdsaPrivateKey::generate(rng, nameKA, pvt, pub));
 }
 
 } // namespace

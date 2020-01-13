@@ -39,7 +39,7 @@ TEST(Name, Decode)
 
   StaticRegion<60> region;
   wire.assign({ 0x09, 0x01, 0x41, 0x08, 0x01, 0x42 });
-  name = Name(region, wire.data(), wire.size());
+  name = Name(region, wire.begin(), wire.end());
   EXPECT_FALSE(!name);
   EXPECT_NE(name.value(), wire.data());
   EXPECT_EQ(name.length(), 6);
@@ -120,12 +120,13 @@ TEST(Name, Append)
   StaticRegion<60> region;
   std::vector<uint8_t> wire(
     { 0x81, 0x01, 0x41, 0x82, 0x01, 0x42, 0x83, 0x01, 0x43, 0x82, 0x01, 0x42, 0x08, 0x01, 0x44 });
-  Name name(region, wire.data(), 3);
+  Name name(wire.data(), 3);
 
   Name name2 = name.append(region, {});
   EXPECT_THAT(name2, T::SizeIs(1));
 
-  Component comp1(&wire[3], 3);
+  Component comp1;
+  Decoder(&wire[3], 3).decode(comp1);
   Component comp2(region, wire[6], wire[7], &wire[8]);
   Component comp3(region, wire[13], &wire[14]);
   name2 = name.append(region, { comp1, comp2, comp1, comp3 });
@@ -137,7 +138,7 @@ TEST(Name, CompareComponent)
 {
   StaticRegion<60> region;
   std::vector<uint8_t> wire({ 0xF0, 0x02, 0x41, 0x42 });
-  Name name(region, wire.data(), wire.size());
+  Name name(region, wire.begin(), wire.end());
 
   wire.assign({ 0xF1, 0x02, 0x41, 0x42 });
   EXPECT_LT(name, Name(wire.data(), wire.size()));
@@ -165,16 +166,11 @@ TEST(Name, CompareComponent)
 TEST(Name, Compare)
 {
   StaticRegion<60> region;
-  std::vector<uint8_t> wire({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x42 });
-  Name nameAB(region, wire.data(), wire.size());
-  wire.assign({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x43 });
-  Name nameAC(region, wire.data(), wire.size());
-  wire.assign({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x42, 0x08, 0x01, 0x43 });
-  Name nameABC(region, wire.data(), wire.size());
-  wire.assign({ 0x08, 0x01, 0x41 });
-  Name nameA(region, wire.data(), wire.size());
-  wire.assign({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x41 });
-  Name nameAA(region, wire.data(), wire.size());
+  Name nameAB(region, { 0x08, 0x01, 0x41, 0x08, 0x01, 0x42 });
+  Name nameAC(region, { 0x08, 0x01, 0x41, 0x08, 0x01, 0x43 });
+  Name nameABC(region, { 0x08, 0x01, 0x41, 0x08, 0x01, 0x42, 0x08, 0x01, 0x43 });
+  Name nameA(region, { 0x08, 0x01, 0x41 });
+  Name nameAA(region, { 0x08, 0x01, 0x41, 0x08, 0x01, 0x41 });
 
   EXPECT_EQ(nameAB.compare(nameAC), Name::CMP_LT);
   EXPECT_EQ(nameAB.compare(nameABC), Name::CMP_LPREFIX);

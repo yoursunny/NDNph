@@ -11,12 +11,13 @@ void
 testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const PubKey& pubB,
                bool deterministic = false, bool sameAB = false)
 {
-  std::vector<uint8_t> nameV({ 0x08, 0x01, 0x41, 0x08, 0x01, 0x42 });
   StaticRegion<1024> region;
+  Name nameA(region, { 0x08, 0x01, 0x41 });
+  Name nameB(region, { 0x08, 0x01, 0x42 });
 
   Pkt pktA = region.create<Pkt>();
   ASSERT_FALSE(!pktA);
-  pktA.setName(Name(&nameV[0], 3));
+  pktA.setName(nameA);
   Encoder encoderA(region);
   ASSERT_TRUE(encoderA.prepend(pktA.sign(pvtA)));
   encoderA.trim();
@@ -24,7 +25,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
   {
     Pkt pktAr = region.create<Pkt>();
     ASSERT_FALSE(!pktAr);
-    pktAr.setName(Name(&nameV[0], 3));
+    pktAr.setName(nameA);
     Encoder encoderAr(region);
     ASSERT_TRUE(encoderAr.prepend(pktAr.sign(pvtA)));
     if (deterministic) {
@@ -45,7 +46,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
 
   Pkt pktB = region.create<Pkt>();
   ASSERT_FALSE(!pktB);
-  pktB.setName(Name(&nameV[3], 3));
+  pktB.setName(nameB);
   Encoder encoderB(region);
   ASSERT_TRUE(encoderB.prepend(pktB.sign(pvtB, sigInfoB)));
   encoderB.trim();

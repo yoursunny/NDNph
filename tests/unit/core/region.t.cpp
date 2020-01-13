@@ -17,20 +17,14 @@ TEST(Region, Alloc_Dup)
   EXPECT_EQ(region.size(), 12);
   EXPECT_EQ(region.available(), 48);
 
-  std::vector<uint8_t> b1({ 0xB0, 0xB1, 0xB2, 0xB3, 0xB4 });
-  uint8_t* a1 = region.dup(b1.data(), b1.size());
+  uint8_t* a1 = region.alloc(5);
   EXPECT_THAT(a1, T::NotNull());
   EXPECT_EQ(a0 - a1, 5);
   EXPECT_EQ(region.size(), 17);
   EXPECT_EQ(region.available(), 43);
-  EXPECT_TRUE(std::equal(b1.begin(), b1.end(), a1));
 
   uint8_t* a2 = region.alloc(50);
   EXPECT_THAT(a2, T::IsNull());
-
-  std::vector<uint8_t> b3(50);
-  uint8_t* a3 = region.dup(b3.data(), b3.size());
-  EXPECT_THAT(a3, T::IsNull());
 }
 
 TEST(Region, AllocA)

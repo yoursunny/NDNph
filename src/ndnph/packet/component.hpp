@@ -10,28 +10,12 @@ namespace ndnph {
 /**
  * @brief Name component.
  *
- * This type is immutable.
+ * This type is immutable, except `decodeFrom()` method.
  */
 class Component
 {
 public:
   explicit Component() = default;
-
-  /** @brief Construct from decoder result, keeping reference to TLV. */
-  explicit Component(const Decoder::Tlv& d)
-  {
-    fromDecoded(d);
-  }
-
-  /** @brief Decode, keeping reference to TLV. */
-  explicit Component(const uint8_t* tlv, size_t size)
-  {
-    Decoder decoder(tlv, size);
-    auto it = decoder.begin();
-    if (it != decoder.end()) {
-      fromDecoded(*it);
-    }
-  }
 
   /** @brief Construct from T-L-V, copying TLV-VALUE. */
   explicit Component(Region& region, uint16_t type, uint16_t length, const uint8_t* value)
@@ -88,15 +72,16 @@ public:
     return m_value - m_tlv + m_length;
   }
 
-private:
-  void fromDecoded(const Decoder::Tlv& d)
+  bool decodeFrom(const Decoder::Tlv& d)
   {
-    if (d.type > 0 && d.type <= 0xFFFF) {
-      m_tlv = d.tlv;
-      m_type = d.type;
-      m_length = d.length;
-      m_value = d.value;
+    if (d.type <= 0 || d.type > 0xFFFF) {
+      return false;
     }
+    m_tlv = d.tlv;
+    m_type = d.type;
+    m_length = d.length;
+    m_value = d.value;
+    return true;
   }
 
 private:

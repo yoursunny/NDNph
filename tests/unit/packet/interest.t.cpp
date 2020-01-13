@@ -91,12 +91,11 @@ TEST(Interest, EncodeFull)
 
 TEST(Interest, EncodeParameterizedReplace)
 {
-  std::vector<uint8_t> nameV({ 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 });
   std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(nameV.data(), nameV.size()));
+  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 }));
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
   Encoder encoder(region);
@@ -120,12 +119,11 @@ TEST(Interest, EncodeParameterizedReplace)
 
 TEST(Interest, EncodeParameterizedAppend)
 {
-  std::vector<uint8_t> nameV({ 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43 });
   std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(nameV.data(), nameV.size()));
+  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43 }));
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
   Encoder encoder(region);
@@ -149,11 +147,10 @@ TEST(Interest, EncodeParameterizedAppend)
 
 TEST(Interest, EncodeSignedBadPlaceholder)
 {
-  std::vector<uint8_t> nameV({ 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 });
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(nameV.data(), nameV.size()));
+  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 }));
 
   Encoder encoder(region);
   {
@@ -166,11 +163,10 @@ TEST(Interest, EncodeSignedBadPlaceholder)
 
 TEST(Interest, EncodeSignedReplace)
 {
-  std::vector<uint8_t> nameV({ 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x02, 0x02, 0xA0, 0xA1 });
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(nameV.data(), nameV.size()));
+  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x02, 0x02, 0xA0, 0xA1 }));
 
   std::vector<uint8_t> signedPortion(
     { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x24, 0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10 });

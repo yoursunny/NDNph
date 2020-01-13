@@ -10,7 +10,7 @@ namespace ndnph {
 /**
  * @brief Name.
  *
- * This type is immutable.
+ * This type is immutable, except `decodeFrom()` method.
  */
 class Name
 {
@@ -22,11 +22,25 @@ public:
   }
 
   /** @brief Construct Name, making copy of TLV-VALUE. */
-  explicit Name(Region& region, const uint8_t* value = nullptr, size_t length = 0)
-    : Name(value, length)
+  template<typename It>
+  explicit Name(Region& region, It first, It last)
   {
-    m_value = region.dup(m_value, m_length);
+    static_assert(std::is_base_of<std::forward_iterator_tag,
+                                  typename std::iterator_traits<It>::iterator_category>::value,
+                  "");
+    static_assert(std::is_same<uint8_t, typename std::iterator_traits<It>::value_type>::value, "");
+    size_t length = std::distance(first, last);
+    uint8_t* value = region.alloc(length);
+    if (value != nullptr) {
+      std::copy(first, last, value);
+      decodeValue(value, length);
+    }
   }
+
+  /** @brief Construct Name, making copy of TLV-VALUE. */
+  explicit Name(Region& region, std::initializer_list<uint8_t> value)
+    : Name(region, value.begin(), value.end())
+  {}
 
   /** @brief Return true if Name is invalid. */
   bool operator!() const
@@ -50,6 +64,7 @@ public:
     return m_nComps;
   }
 
+  /** @brief Iterator over name components. */
   class Iterator : public Decoder::Iterator
   {
   public:
@@ -68,7 +83,9 @@ public:
 
     reference operator*()
     {
-      return Component(super::operator*());
+      Component comp;
+      comp.decodeFrom(super::operator*());
+      return comp;
     }
 
     pointer operator->()
@@ -230,8 +247,8 @@ private:
     Decoder decoder(m_value, length);
     auto it = decoder.begin(), end = decoder.end();
     for (; it != end; ++it) {
-      Component comp(*it);
-      if (!comp) {
+      Component comp;
+      if (!it->decode(comp)) {
         return false;
       }
       m_length += it->size;

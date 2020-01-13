@@ -8,12 +8,11 @@ namespace {
 
 TEST(PortNull, Interest)
 {
-  std::vector<uint8_t> nameV({ 0x08, 0x01, 0x41 });
-  std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });
   StaticRegion<1024> region;
+  std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(nameV.data(), nameV.size()));
+  interest.setName(Name(region, { 0x08, 0x01, 0x41 }));
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
   {
