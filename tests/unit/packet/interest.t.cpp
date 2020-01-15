@@ -18,12 +18,9 @@ TEST(Interest, EncodeMinimal)
   EXPECT_EQ(interest.getNonce(), 0);
 
   std::vector<uint8_t> wire({
-    0x05,
-    0x0B, // Interest
-    0x07, 0x03, 0x08, 0x01,
-    0x41, // Name
-    0x0A, 0x04, 0xA0, 0xA1, 0xA2,
-    0xA3, // Nonce
+    0x05, 0x0B,                         // Interest
+    0x07, 0x03, 0x08, 0x01, 0x41,       // Name
+    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3, // Nonce
   });
   interest.setName(Name(&wire[4], 3));
   interest.setNonce(0xA0A1A2A3);
@@ -50,20 +47,13 @@ TEST(Interest, EncodeFull)
   ASSERT_FALSE(!interest);
 
   std::vector<uint8_t> wire({
-    0x05,
-    0x16, // Interest
-    0x07, 0x03, 0x08, 0x01,
-    0x41, // Name
-    0x21,
-    0x00, // CanBePrefix
-    0x12,
-    0x00, // MustBeFresh
-    0x0A, 0x04, 0xA0, 0xA1, 0xA2,
-    0xA3, // Nonce
-    0x0C, 0x02, 0x20,
-    0x06, // InterestLifetime
-    0x22, 0x01,
-    0x05, // HopLimit
+    0x05, 0x16,                         // Interest
+    0x07, 0x03, 0x08, 0x01, 0x41,       // Name
+    0x21, 0x00,                         // CanBePrefix
+    0x12, 0x00,                         // MustBeFresh
+    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3, // Nonce
+    0x0C, 0x02, 0x20, 0x06,             // InterestLifetime
+    0x22, 0x01, 0x05,                   // HopLimit
   });
   interest.setName(Name(&wire[4], 3));
   interest.setCanBePrefix(true);
@@ -95,7 +85,7 @@ TEST(Interest, EncodeParameterizedReplace)
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 }));
+  interest.setName(Name::parse(region, "/101=A/2=N/103=C"));
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
   Encoder encoder(region);
@@ -108,8 +98,8 @@ TEST(Interest, EncodeParameterizedReplace)
 
   auto name = decoded.getName();
   EXPECT_THAT(name, T::SizeIs(3));
-  EXPECT_EQ(name[0].type(), 0xB1);
-  EXPECT_EQ(name[2].type(), 0xB3);
+  EXPECT_EQ(name[0].type(), 101);
+  EXPECT_EQ(name[2].type(), 103);
   EXPECT_EQ(name[1].type(), TT::ParametersSha256DigestComponent);
   EXPECT_EQ(name[1].length(), NDNPH_SHA256_LEN);
 
@@ -123,7 +113,7 @@ TEST(Interest, EncodeParameterizedAppend)
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43 }));
+  interest.setName(Name::parse(region, "/101=A/102=B"));
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
   Encoder encoder(region);
@@ -136,8 +126,8 @@ TEST(Interest, EncodeParameterizedAppend)
 
   auto name = decoded.getName();
   EXPECT_THAT(name, T::SizeIs(3));
-  EXPECT_EQ(name[0].type(), 0xB1);
-  EXPECT_EQ(name[1].type(), 0xB3);
+  EXPECT_EQ(name[0].type(), 101);
+  EXPECT_EQ(name[1].type(), 102);
   EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
   EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
 
@@ -150,7 +140,7 @@ TEST(Interest, EncodeSignedBadPlaceholder)
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0x02, 0x02, 0xA0, 0xA1, 0xB3, 0x01, 0x43 }));
+  interest.setName(Name::parse(region, "/101=A/2=N/103=C"));
 
   Encoder encoder(region);
   {
@@ -166,10 +156,10 @@ TEST(Interest, EncodeSignedReplace)
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(region, { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x02, 0x02, 0xA0, 0xA1 }));
+  interest.setName(Name::parse(region, "/101=A/102=B/2=N"));
 
   std::vector<uint8_t> signedPortion(
-    { 0xB1, 0x01, 0x41, 0xB3, 0x01, 0x43, 0x24, 0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10 });
+    { 0x65, 0x01, 0x41, 0x66, 0x01, 0x42, 0x24, 0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10 });
   std::vector<uint8_t> sig({ 0xF0, 0xF1, 0xF2, 0xF3 });
   Encoder encoder(region);
   {
@@ -187,8 +177,8 @@ TEST(Interest, EncodeSignedReplace)
 
   auto name = decoded.getName();
   EXPECT_THAT(name, T::SizeIs(3));
-  EXPECT_EQ(name[0].type(), 0xB1);
-  EXPECT_EQ(name[1].type(), 0xB3);
+  EXPECT_EQ(name[0].type(), 101);
+  EXPECT_EQ(name[1].type(), 102);
   EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
   EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
 

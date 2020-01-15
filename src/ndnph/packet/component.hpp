@@ -17,29 +17,103 @@ class Component
 public:
   explicit Component() = default;
 
-  /** @brief Construct from T-L-V, copying TLV-VALUE. */
-  explicit Component(Region& region, uint16_t type, uint16_t length, const uint8_t* value)
+  /** @brief Construct from T-L-V. */
+  explicit Component(Region& region, uint16_t type, size_t length, const uint8_t* value)
+    : Component(region.alloc(computeSize(type, length)), computeSize(type, length), type, length,
+                value)
+  {}
+
+  /** @brief Construct GenericNameComponent from L-V. */
+  explicit Component(Region& region, size_t length, const uint8_t* value)
+    : Component(region, TT::GenericNameComponent, length, value)
+  {}
+
+  /**
+   * @brief Construct from T-L-V into provided buffer.
+   * @param buf buffer for writing TLV.
+   * @param bufLen size of buf; if insufficient, !component will be true.
+   * @param type TLV-TYPE
+   * @param length TLV-LENGTH
+   * @param value TLV-VALUE, may overlap with buf
+   * @param writeFromBack write TLV from back of provided buffer instead of from front.
+   */
+  explicit Component(uint8_t* buf, size_t bufLen, uint16_t type, size_t length,
+                     const uint8_t* value, bool writeFromBack = false)
     : m_type(type)
     , m_length(length)
   {
-    size_t sizeofT = tlv::sizeofVarNum(type);
-    size_t sizeofL = tlv::sizeofVarNum(length);
-    uint8_t* tlv = region.alloc(sizeofT + sizeofL + length);
-    if (tlv == nullptr) {
+    size_t sizeofTlv = computeSize(type, length);
+    if (buf == nullptr || bufLen < sizeofTlv) {
+      m_type = 0;
       return;
     }
+    if (writeFromBack) {
+      buf = buf + bufLen - sizeofTlv;
+    }
 
-    tlv::writeVarNum(tlv, type);
-    tlv::writeVarNum(&tlv[sizeofT], length);
-    std::copy_n(value, length, &tlv[sizeofT + sizeofL]);
-    m_tlv = tlv;
-    m_value = &tlv[sizeofT + sizeofL];
+    size_t sizeofT = tlv::sizeofVarNum(type);
+    size_t sizeofL = tlv::sizeofVarNum(length);
+    uint8_t* valueBuf = &buf[sizeofT + sizeofL];
+    if (value != valueBuf) {
+      std::memmove(valueBuf, value, length);
+    }
+    tlv::writeVarNum(buf, type);
+    tlv::writeVarNum(&buf[sizeofT], length);
+    m_tlv = buf;
+    m_value = valueBuf;
   }
 
-  /** @brief Construct GenericNameComponent from L-V, copying TLV-VALUE. */
-  explicit Component(Region& region, uint16_t length, const uint8_t* value)
-    : Component(region, TT::GenericNameComponent, length, value)
-  {}
+  /**
+   * @brief Parse from URI.
+   * @param region memory region; must have 8 + strlen(uri) available room
+   * @param uri URI in canonical format; except that `8=` prefix of GenericNameComponent
+   *            may be omitted.
+   * @return component; it's valid if !component is false.
+   * @note This is a not-so-strict parser. It lets some invalid inputs slip through
+   *       in exchange for smaller code size. Not recommended on untrusted input.
+   */
+  static Component parse(Region& region, const char* uri)
+  {
+    return parse(region, uri, std::strlen(uri));
+  }
+
+  static Component parse(Region& region, const char* uri, size_t uriLen)
+  {
+    size_t bufLen = 8 + uriLen;
+    uint8_t* buf = region.alloc(bufLen);
+    if (buf == nullptr) {
+      return Component();
+    }
+    Component comp = parse(buf, bufLen, uri, uriLen, true);
+    region.free(buf, !comp ? bufLen : comp.m_tlv - buf);
+    return comp;
+  }
+
+  /** @brief Parse from URI into provided buffer. */
+  static Component parse(uint8_t* buf, size_t bufLen, const char* uri)
+  {
+    return parse(buf, bufLen, uri, std::strlen(uri));
+  }
+
+  static Component parse(uint8_t* buf, size_t bufLen, const char* uri, size_t uriLen,
+                         bool writeFromBack = false)
+  {
+    const char* uriEnd = uri + uriLen;
+    const char* posEqual = std::find(uri, uriEnd, '=');
+    uint16_t type = TT::GenericNameComponent;
+    if (posEqual != uriEnd) {
+      type = std::strtoul(uri, nullptr, 10);
+      uri = posEqual + 1;
+    }
+
+    size_t valueOffset = std::min(bufLen, tlv::sizeofVarNum(type) + tlv::sizeofVarNum(uriLen));
+    uint8_t* valueBuf = buf + valueOffset; // write TLV-VALUE in place in most cases
+    ssize_t length = parseUriValue(valueBuf, bufLen - valueOffset, uri, uriEnd);
+    if (length < 0) {
+      return Component();
+    }
+    return Component(buf, bufLen, type, length, valueBuf, writeFromBack);
+  }
 
   /** @brief Return true if Component is invalid. */
   bool operator!() const
@@ -74,7 +148,7 @@ public:
 
   bool decodeFrom(const Decoder::Tlv& d)
   {
-    if (d.type <= 0 || d.type > 0xFFFF) {
+    if (d.type == 0 || d.type > 0xFFFF) {
       return false;
     }
     m_tlv = d.tlv;
@@ -82,6 +156,34 @@ public:
     m_length = d.length;
     m_value = d.value;
     return true;
+  }
+
+private:
+  static constexpr size_t computeSize(uint16_t type, size_t length)
+  {
+    return tlv::sizeofVarNum(type) + tlv::sizeofVarNum(length) + length;
+  }
+
+  static ssize_t parseUriValue(uint8_t* buf, size_t bufLen, const char* uri, const char* uriEnd)
+  {
+    if (std::count(uri, uriEnd, '.') == uriEnd - uri && uriEnd - uri >= 3) {
+      uri += 3;
+    }
+
+    for (size_t j = 0; j < bufLen; ++j) {
+      if (uri == uriEnd) {
+        return j;
+      }
+
+      if (*uri == '%' && uri + 3 <= uriEnd) {
+        char hex[] = { uri[1], uri[2], 0 };
+        buf[j] = std::strtoul(hex, nullptr, 16);
+        uri += 3;
+      } else {
+        buf[j] = *uri++;
+      }
+    }
+    return -1;
   }
 
 private:

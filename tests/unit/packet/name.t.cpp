@@ -37,7 +37,7 @@ TEST(Name, Decode)
   comp2 = name[-2];
   EXPECT_TRUE(!comp2);
 
-  StaticRegion<60> region;
+  StaticRegion<1024> region;
   wire.assign({ 0x09, 0x01, 0x41, 0x08, 0x01, 0x42 });
   name = Name(region, wire.begin(), wire.end());
   EXPECT_FALSE(!name);
@@ -66,6 +66,41 @@ TEST(Name, Decode)
   wire.assign({ 0xFE, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x41 });
   name = Name(wire.data(), wire.size());
   EXPECT_TRUE(!name);
+}
+
+TEST(Name, Parse)
+{
+  StaticRegion<1024> region;
+
+  {
+    auto name = Name::parse(region, "/");
+    ASSERT_FALSE(!name);
+    EXPECT_EQ(name.size(), 0);
+    region.reset();
+  }
+
+  {
+    auto name = Name::parse(region, "/A");
+    ASSERT_FALSE(!name);
+    EXPECT_THAT(std::vector<uint8_t>(name.value(), name.value() + name.length()),
+                T::ElementsAre(0x08, 0x01, 0x41));
+    region.reset();
+  }
+
+  {
+    auto name = Name::parse(region, "/A/56=B.");
+    ASSERT_FALSE(!name);
+    EXPECT_THAT(std::vector<uint8_t>(name.value(), name.value() + name.length()),
+                T::ElementsAre(0x08, 0x01, 0x41, 0x38, 0x02, 0x42, 0x2E));
+    region.reset();
+  }
+
+  {
+    region.alloc(1020);
+    auto name = Name::parse(region, "/ZZZ");
+    ASSERT_TRUE(!name);
+    region.reset();
+  }
 }
 
 TEST(Name, Slice)
@@ -117,7 +152,7 @@ TEST(Name, Slice)
 
 TEST(Name, Append)
 {
-  StaticRegion<60> region;
+  StaticRegion<1024> region;
   std::vector<uint8_t> wire(
     { 0x81, 0x01, 0x41, 0x82, 0x01, 0x42, 0x83, 0x01, 0x43, 0x82, 0x01, 0x42, 0x08, 0x01, 0x44 });
   Name name(wire.data(), 3);
@@ -136,7 +171,7 @@ TEST(Name, Append)
 
 TEST(Name, CompareComponent)
 {
-  StaticRegion<60> region;
+  StaticRegion<1024> region;
   std::vector<uint8_t> wire({ 0xF0, 0x02, 0x41, 0x42 });
   Name name(region, wire.begin(), wire.end());
 
@@ -163,9 +198,9 @@ TEST(Name, CompareComponent)
   EXPECT_GT(name, Name(wire.data(), wire.size()));
 }
 
-TEST(Name, Compare)
+TEST(Name, CompareStructure)
 {
-  StaticRegion<60> region;
+  StaticRegion<1024> region;
   Name nameAB(region, { 0x08, 0x01, 0x41, 0x08, 0x01, 0x42 });
   Name nameAC(region, { 0x08, 0x01, 0x41, 0x08, 0x01, 0x43 });
   Name nameABC(region, { 0x08, 0x01, 0x41, 0x08, 0x01, 0x42, 0x08, 0x01, 0x43 });

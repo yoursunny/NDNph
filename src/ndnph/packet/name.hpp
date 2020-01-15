@@ -15,13 +15,13 @@ namespace ndnph {
 class Name
 {
 public:
-  /** @brief Construct Name, keeping reference to TLV-VALUE. */
+  /** @brief Construct referencing TLV-VALUE. */
   explicit Name(const uint8_t* value = nullptr, size_t length = 0)
   {
     decodeValue(value, length);
   }
 
-  /** @brief Construct Name, making copy of TLV-VALUE. */
+  /** @brief Construct from TLV-VALUE. */
   template<typename It>
   explicit Name(Region& region, It first, It last)
   {
@@ -37,10 +37,43 @@ public:
     }
   }
 
-  /** @brief Construct Name, making copy of TLV-VALUE. */
+  /** @brief Construct from TLV-VALUE. */
   explicit Name(Region& region, std::initializer_list<uint8_t> value)
     : Name(region, value.begin(), value.end())
   {}
+
+  /**
+   * @brief Parse from URI.
+   * @param region memory region; must have 2*strlen(uri) available room
+   * @param uri URI in canonical format; scheme and authority must be omitted;
+   *            `8=` prefix of GenericNameComponent may be omitted.
+   * @return name; it's valid if !name is false.
+   * @note This is a not-so-strict parser. It lets some invalid inputs slip through
+   *       in exchange for smaller code size. Not recommended on untrusted input.
+   */
+  static Name parse(Region& region, const char* uri)
+  {
+    size_t uriLen = std::strlen(uri);
+    size_t bufLen = 2 * uriLen;
+    uint8_t* buf = region.alloc(bufLen);
+    if (buf == nullptr) {
+      return Name();
+    }
+
+    size_t nComps = 0;
+    ssize_t length = parseUri(buf, bufLen, uri, uriLen, nComps);
+    if (length < 0) {
+      region.free(buf, bufLen);
+      return Name();
+    }
+
+    uint8_t* value = buf + bufLen - length;
+    if (value != buf) {
+      std::copy_backward(buf, buf + length, value + length);
+      region.free(buf, bufLen - length);
+    }
+    return Name(value, length, nComps);
+  }
 
   /** @brief Return true if Name is invalid. */
   bool operator!() const
@@ -261,6 +294,33 @@ private:
   {
     return i < 0 ||
            (acceptPastEnd ? i > static_cast<int>(m_nComps) : i >= static_cast<int>(m_nComps));
+  }
+
+  static ssize_t parseUri(uint8_t* buf, size_t bufLen, const char* uri, size_t uriLen,
+                          size_t& nComps)
+  {
+    nComps = 0;
+    if (uriLen <= 1) { // empty Name
+      return 0;
+    }
+    const char* uriEnd = uri + uriLen;
+    size_t length = 0;
+    while (uri < uriEnd) {
+      ++uri; // skip '/'
+      const char* compEnd = std::strchr(uri, '/');
+      if (compEnd == nullptr) {
+        compEnd = uriEnd;
+      }
+
+      auto comp = Component::parse(buf + length, bufLen - length, uri, compEnd - uri);
+      if (!comp) {
+        return -1;
+      }
+      ++nComps;
+      length += comp.size();
+      uri = compEnd;
+    }
+    return length;
   }
 
 private:
