@@ -1,4 +1,5 @@
 #include "ndnph/packet/data.hpp"
+#include "ndnph/port/mbedtls/typedef.hpp"
 
 #include "../mock-key.hpp"
 #include "../test-common.hpp"

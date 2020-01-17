@@ -22,6 +22,8 @@ class InterestObj : public detail::InRegion
 public:
   explicit InterestObj(Region& region)
     : InRegion(region)
+    , canBePrefix(false)
+    , mustBeFresh(false)
   {}
 
   enum
@@ -36,8 +38,8 @@ public:
   uint32_t nonce = 0;
   uint16_t lifetime = DefaultLifetime;
   uint8_t hopLimit = MaxHopLimit;
-  bool canBePrefix = false;
-  bool mustBeFresh = false;
+  bool canBePrefix : 1;
+  bool mustBeFresh : 1;
 };
 
 class InterestRefBase : public RefRegion<InterestObj>
@@ -450,6 +452,39 @@ public:
     return key.verify(
       { tlv::Value(signedName.value(), signedName.length()), obj->params->signedParams },
       obj->params->sigValue.begin(), obj->params->sigValue.size());
+  }
+
+  /**
+   * @brief Determine whether Data can satisfy Interest.
+   * @tparam DataT the `Data` type.
+   *
+   * This method only works reliably on decoded packets. For packets that are being constructed
+   * or modified, this method may give incorrect results for parameterized/signed Interests or
+   * Interest carrying implicit digest component.
+   */
+  template<typename DataT>
+  bool match(const DataT& data) const
+  {
+    if (obj->mustBeFresh && data.getFreshnessPeriod() == 0) {
+      return false;
+    }
+    const Name& dataName = data.getName();
+    switch (obj->name.compare(dataName)) {
+      case Name::CMP_EQUAL:
+        return true;
+      case Name::CMP_LPREFIX:
+        return obj->canBePrefix;
+      case Name::CMP_RPREFIX: {
+        Component lastComp = obj->name[-1];
+        uint8_t digest[NDNPH_SHA256_LEN];
+        return obj->name.size() == dataName.size() + 1 &&
+               lastComp.type() == TT::ImplicitSha256DigestComponent &&
+               data.computeImplicitDigest(digest) &&
+               TimingSafeEqual()(digest, sizeof(digest), lastComp.value(), lastComp.length());
+      }
+      default:
+        return false;
+    }
   }
 };
 

@@ -123,8 +123,17 @@ private:
 
 } // namespace detail
 
-/** @brief Data packet. */
-class Data : public detail::RefRegion<detail::DataObj>
+/**
+ * @class Data
+ * @brief Data packet.
+ */
+/**
+ * @brief Data packet.
+ * @tparam Sha256Port platform-specific SHA256 implementation.
+ * @note A port is expected to typedef this template as `Data` type.
+ */
+template<typename Sha256Port>
+class BasicData : public detail::RefRegion<detail::DataObj>
 {
 public:
   using RefRegion::RefRegion;
@@ -210,7 +219,7 @@ public:
   /** @brief Decode packet. */
   bool decodeFrom(const Decoder::Tlv& input)
   {
-    obj->sig = regionOf(obj).make<detail::DataSigned>();
+    obj->sig = regionOf(obj).template make<detail::DataSigned>();
     if (obj->sig == nullptr) {
       return false;
     }
@@ -248,6 +257,21 @@ public:
   {
     return obj->sig != nullptr && key.verify({ obj->sig->signedPortion },
                                              obj->sig->sigValue.begin(), obj->sig->sigValue.size());
+  }
+
+  /**
+   * @brief Compute implicit digest.
+   * @pre Data was decoded, not being constructed.
+   * @return whether success.
+   */
+  bool computeImplicitDigest(uint8_t digest[NDNPH_SHA256_LEN]) const
+  {
+    if (obj->sig == nullptr) {
+      return false;
+    }
+    Sha256Port hash;
+    hash.update(obj->sig->wholePacket.begin(), obj->sig->wholePacket.size());
+    return hash.final(digest);
   }
 };
 

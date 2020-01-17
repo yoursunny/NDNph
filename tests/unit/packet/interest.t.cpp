@@ -199,5 +199,67 @@ TEST(Interest, EncodeSignedReplace)
   }
 }
 
+TEST(Interest, MatchSimple)
+{
+  StaticRegion<1024> region;
+
+  Interest interest = region.create<Interest>();
+  ASSERT_FALSE(!interest);
+  interest.setName(Name::parse(region, "/A"));
+
+  Data data = region.create<Data>();
+  ASSERT_FALSE(!data);
+  data.setName(Name::parse(region, "/A"));
+  EXPECT_TRUE(interest.match(data));
+
+  data.setName(Name::parse(region, "/A/B"));
+  EXPECT_FALSE(interest.match(data));
+
+  interest.setCanBePrefix(true);
+  EXPECT_TRUE(interest.match(data));
+
+  data.setFreshnessPeriod(0);
+  interest.setMustBeFresh(true);
+  EXPECT_FALSE(interest.match(data));
+
+  data.setFreshnessPeriod(1000);
+  EXPECT_TRUE(interest.match(data));
+
+  interest.setName(Name::parse(region, "/C"));
+  EXPECT_FALSE(interest.match(data));
+}
+
+TEST(Interest, MatchImplicitDigest)
+{
+  StaticRegion<1024> region;
+
+  Data data = region.create<Data>();
+  ASSERT_FALSE(!data);
+  data.setName(Name::parse(region, "/A"));
+  {
+    Encoder encoder(region);
+    T::NiceMock<MockPrivateKey<0>> key;
+    ASSERT_TRUE(encoder.prepend(data.sign(key)));
+    encoder.trim();
+
+    data = region.create<Data>();
+    ASSERT_FALSE(!data);
+    ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(data));
+  }
+
+  uint8_t digest[NDNPH_SHA256_LEN] = { 0 };
+  EXPECT_TRUE(data.computeImplicitDigest(digest));
+  EXPECT_LT(std::count(digest, digest + NDNPH_SHA256_LEN, 0), NDNPH_SHA256_LEN);
+  Component digestComp(region, TT::ImplicitSha256DigestComponent, NDNPH_SHA256_LEN, digest);
+
+  Interest interest = region.create<Interest>();
+  ASSERT_FALSE(!interest);
+  interest.setName(data.getName().append(region, { digestComp }));
+  EXPECT_TRUE(interest.match(data));
+
+  interest.setName(Name::parse(region, "/A/B").append(region, { digestComp }));
+  EXPECT_FALSE(interest.match(data));
+}
+
 } // namespace
 } // namespace ndnph
