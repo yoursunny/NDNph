@@ -30,10 +30,10 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
     ASSERT_TRUE(encoderAr.prepend(pktAr.sign(pvtA)));
     if (deterministic) {
       EXPECT_THAT(std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
-                  T::ElementsAreArray(encoderA.begin(), encoderA.end()));
+                  g::ElementsAreArray(encoderA.begin(), encoderA.end()));
     } else {
       EXPECT_THAT(std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
-                  T::Not(T::ElementsAreArray(encoderA.begin(), encoderA.end())));
+                  g::Not(g::ElementsAreArray(encoderA.begin(), encoderA.end())));
     }
     encoderAr.discard();
   }
@@ -68,9 +68,9 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
     EXPECT_TRUE(pktBd.verify(pubB));
 
     const SigInfoT* sigInfoBd = pktBd.getSigInfo();
-    ASSERT_THAT(sigInfoBd, T::NotNull());
+    ASSERT_THAT(sigInfoBd, g::NotNull());
     EXPECT_THAT(std::vector<uint8_t>(sigInfoBd->extensions.begin(), sigInfoBd->extensions.end()),
-                T::ElementsAreArray(sigInfoExtB));
+                g::ElementsAreArray(sigInfoExtB));
   }
 }
 

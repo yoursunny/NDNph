@@ -13,18 +13,18 @@ TEST(Region, Alloc_Dup)
   EXPECT_EQ(region.available(), 60);
 
   uint8_t* a0 = region.alloc(12);
-  EXPECT_THAT(a0, T::NotNull());
+  EXPECT_THAT(a0, g::NotNull());
   EXPECT_EQ(region.size(), 12);
   EXPECT_EQ(region.available(), 48);
 
   uint8_t* a1 = region.alloc(5);
-  EXPECT_THAT(a1, T::NotNull());
+  EXPECT_THAT(a1, g::NotNull());
   EXPECT_EQ(a0 - a1, 5);
   EXPECT_EQ(region.size(), 17);
   EXPECT_EQ(region.available(), 43);
 
   uint8_t* a2 = region.alloc(50);
-  EXPECT_THAT(a2, T::IsNull());
+  EXPECT_THAT(a2, g::IsNull());
 }
 
 TEST(Region, AllocA)
@@ -33,18 +33,18 @@ TEST(Region, AllocA)
   EXPECT_EQ(region.size(), 0);
 
   uint8_t* a0 = region.allocA(9);
-  EXPECT_THAT(a0, T::NotNull());
+  EXPECT_THAT(a0, g::NotNull());
   EXPECT_EQ(region.size(), NDNPH_ALIGNMENT == 8 ? 16 : 12);
   EXPECT_EQ(region.available(), NDNPH_ALIGNMENT == 8 ? 44 : 48);
 
   uint8_t* a1 = region.allocA(8);
-  EXPECT_THAT(a1, T::NotNull());
+  EXPECT_THAT(a1, g::NotNull());
   EXPECT_EQ(a1 - a0, NDNPH_ALIGNMENT == 8 ? 16 : 12);
   EXPECT_EQ(region.size(), NDNPH_ALIGNMENT == 8 ? 24 : 20);
   EXPECT_EQ(region.available(), NDNPH_ALIGNMENT == 8 ? 36 : 40);
 
   uint8_t* a2 = region.allocA(50);
-  EXPECT_THAT(a2, T::IsNull());
+  EXPECT_THAT(a2, g::IsNull());
 }
 
 class MyObj : public detail::InRegion
@@ -77,7 +77,7 @@ TEST(Region, Create)
 
   MyRef ref = region.create<MyRef>();
   ASSERT_FALSE(!ref);
-  EXPECT_THAT(ref.getObj(), T::NotNull());
+  EXPECT_THAT(ref.getObj(), g::NotNull());
   EXPECT_EQ(ref.getObj()->x, 1);
 
   ref = region.create<MyRef>(42);
@@ -87,7 +87,7 @@ TEST(Region, Create)
 
   ref = region.create<MyRef>();
   ASSERT_TRUE(!ref);
-  EXPECT_THAT(ref.getObj(), T::IsNull());
+  EXPECT_THAT(ref.getObj(), g::IsNull());
 }
 
 TEST(Region, Free)

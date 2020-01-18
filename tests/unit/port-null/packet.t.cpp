@@ -24,8 +24,8 @@ TEST(PortNull, Interest)
 
   {
     Encoder encoder(region);
-    T::NiceMock<MockPrivateKey<32>> key;
-    ON_CALL(key, doSign).WillByDefault(T::Return(true));
+    g::NiceMock<MockPrivateKey<32>> key;
+    ON_CALL(key, doSign).WillByDefault(g::Return(true));
     EXPECT_FALSE(encoder.prepend(interest.sign(key)));
     encoder.discard();
   }
@@ -41,7 +41,7 @@ TEST(PortNull, Data)
   data.setName(Name::parse(region, "/A"));
   {
     Encoder encoder(region);
-    T::NiceMock<MockPrivateKey<0>> key;
+    g::NiceMock<MockPrivateKey<0>> key;
     ASSERT_TRUE(encoder.prepend(data.sign(key)));
     encoder.trim();
 

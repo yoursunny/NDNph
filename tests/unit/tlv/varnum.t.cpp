@@ -20,23 +20,23 @@ TEST(Tlv, WriteVarNum)
 {
   std::vector<uint8_t> room(1);
   tlv::writeVarNum(room.data(), 0x01);
-  EXPECT_THAT(room, T::ElementsAre(0x01));
+  EXPECT_THAT(room, g::ElementsAre(0x01));
   tlv::writeVarNum(room.data(), 0xFC);
-  EXPECT_THAT(room, T::ElementsAre(0xFC));
+  EXPECT_THAT(room, g::ElementsAre(0xFC));
 
   room.resize(3);
   tlv::writeVarNum(room.data(), 0xFD);
-  EXPECT_THAT(room, T::ElementsAre(0xFD, 0x00, 0xFD));
+  EXPECT_THAT(room, g::ElementsAre(0xFD, 0x00, 0xFD));
   tlv::writeVarNum(room.data(), 0x0100);
-  EXPECT_THAT(room, T::ElementsAre(0xFD, 0x01, 0x00));
+  EXPECT_THAT(room, g::ElementsAre(0xFD, 0x01, 0x00));
   tlv::writeVarNum(room.data(), 0xFFFF);
-  EXPECT_THAT(room, T::ElementsAre(0xFD, 0xFF, 0xFF));
+  EXPECT_THAT(room, g::ElementsAre(0xFD, 0xFF, 0xFF));
 
   room.resize(5);
   tlv::writeVarNum(room.data(), 0x00010000);
-  EXPECT_THAT(room, T::ElementsAre(0xFE, 0x00, 0x01, 0x00, 0x00));
+  EXPECT_THAT(room, g::ElementsAre(0xFE, 0x00, 0x01, 0x00, 0x00));
   tlv::writeVarNum(room.data(), 0xFFFFFFFF);
-  EXPECT_THAT(room, T::ElementsAre(0xFE, 0xFF, 0xFF, 0xFF, 0xFF));
+  EXPECT_THAT(room, g::ElementsAre(0xFE, 0xFF, 0xFF, 0xFF, 0xFF));
 }
 
 } // namespace

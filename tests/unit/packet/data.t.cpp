@@ -12,11 +12,11 @@ TEST(Data, EncodeMinimal)
   StaticRegion<1024> region;
   Data data = region.create<Data>();
   ASSERT_FALSE(!data);
-  EXPECT_THAT(data.getName(), T::SizeIs(0));
+  EXPECT_THAT(data.getName(), g::SizeIs(0));
   EXPECT_EQ(data.getContentType(), 0x00);
   EXPECT_EQ(data.getFreshnessPeriod(), 0);
   EXPECT_EQ(data.getIsFinalBlock(), false);
-  EXPECT_THAT(data.getContent(), T::SizeIs(0));
+  EXPECT_THAT(data.getContent(), g::SizeIs(0));
 
   std::vector<uint8_t> wire({
     0x06, 0x0C,                   // Data
@@ -28,7 +28,7 @@ TEST(Data, EncodeMinimal)
 
   Encoder encoder(region);
   ASSERT_TRUE(encoder.prepend(data.sign(NullPrivateKey())));
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
 
   Data decoded = region.create<Data>();
@@ -38,7 +38,7 @@ TEST(Data, EncodeMinimal)
   EXPECT_EQ(decoded.getContentType(), 0x00);
   EXPECT_EQ(decoded.getFreshnessPeriod(), 0);
   EXPECT_EQ(decoded.getIsFinalBlock(), false);
-  EXPECT_THAT(decoded.getContent(), T::SizeIs(0));
+  EXPECT_THAT(decoded.getContent(), g::SizeIs(0));
 }
 
 TEST(Data, EncodeFull)
@@ -73,11 +73,11 @@ TEST(Data, EncodeFull)
       sigInfo.sigType = 0x10;
       sigInfo.name = Name(&wire[37], 3);
     });
-    EXPECT_CALL(key, doSign(T::ElementsAreArray(&wire[2], &wire[40]), T::_))
-      .WillOnce(T::DoAll(T::SetArrayArgument<1>(&wire[42], &wire[46]), T::Return(4)));
+    EXPECT_CALL(key, doSign(g::ElementsAreArray(&wire[2], &wire[40]), g::_))
+      .WillOnce(g::DoAll(g::SetArrayArgument<1>(&wire[42], &wire[46]), g::Return(4)));
     ASSERT_TRUE(encoder.prepend(data.sign(key)));
   }
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
 
   Data decoded = region.create<Data>();
@@ -87,19 +87,19 @@ TEST(Data, EncodeFull)
   EXPECT_EQ(decoded.getContentType(), 0x01);
   EXPECT_EQ(decoded.getFreshnessPeriod(), 500);
   EXPECT_EQ(decoded.getIsFinalBlock(), true);
-  EXPECT_THAT(decoded.getContent(), T::SizeIs(2));
+  EXPECT_THAT(decoded.getContent(), g::SizeIs(2));
 
   {
     MockPublicKey key;
-    EXPECT_CALL(key, doVerify(T::ElementsAreArray(&wire[2], &wire[40]),
-                              T::ElementsAreArray(&wire[42], &wire[46])))
-      .WillOnce(T::Return(true));
+    EXPECT_CALL(key, doVerify(g::ElementsAreArray(&wire[2], &wire[40]),
+                              g::ElementsAreArray(&wire[42], &wire[46])))
+      .WillOnce(g::Return(true));
     EXPECT_TRUE(decoded.verify(key));
   }
 
   {
     MockPublicKey key;
-    EXPECT_CALL(key, doVerify(T::_, T::_)).WillOnce(T::Return(false));
+    EXPECT_CALL(key, doVerify(g::_, g::_)).WillOnce(g::Return(false));
     EXPECT_FALSE(decoded.verify(key));
   }
 }

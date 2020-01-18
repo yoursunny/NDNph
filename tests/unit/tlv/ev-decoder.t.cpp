@@ -243,8 +243,8 @@ TEST(EvDecoder, All)
     Target3 target;
     ASSERT_TRUE((it++)->decode(target));
     EXPECT_EQ(target.sum(), 2100);
-    EXPECT_THAT(target.unknownCbTypes, T::ElementsAre(0xA2, 0xA1, 0xA1, 0xA6));
-    EXPECT_THAT(target.unknownCbOrders, T::ElementsAre(0, 0, 7, 7));
+    EXPECT_THAT(target.unknownCbTypes, g::ElementsAre(0xA2, 0xA1, 0xA1, 0xA6));
+    EXPECT_THAT(target.unknownCbOrders, g::ElementsAre(0, 0, 7, 7));
   }
 
   EXPECT_TRUE(it == end);

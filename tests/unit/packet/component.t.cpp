@@ -16,7 +16,7 @@ TEST(Component, Construct)
     EXPECT_EQ(comp.type(), 0xA1);
     EXPECT_EQ(comp.size(), 6);
     EXPECT_THAT(std::vector<uint8_t>(comp.tlv(), comp.tlv() + comp.size()),
-                T::ElementsAre(0xA1, 0x04, 0xC0, 0xC1, 0xC2, 0xC3));
+                g::ElementsAre(0xA1, 0x04, 0xC0, 0xC1, 0xC2, 0xC3));
     region.reset();
   }
 
@@ -26,7 +26,7 @@ TEST(Component, Construct)
     EXPECT_EQ(comp.type(), TT::GenericNameComponent);
     EXPECT_EQ(comp.size(), 6);
     EXPECT_THAT(std::vector<uint8_t>(comp.tlv(), comp.tlv() + comp.size()),
-                T::ElementsAre(0x08, 0x04, 0xC0, 0xC1, 0xC2, 0xC3));
+                g::ElementsAre(0x08, 0x04, 0xC0, 0xC1, 0xC2, 0xC3));
     region.reset();
   }
 
@@ -47,7 +47,7 @@ TEST(Component, Parse)
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), TT::GenericNameComponent);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
-                T::ElementsAre(0x41));
+                g::ElementsAre(0x41));
     region.reset();
   }
 
@@ -56,7 +56,7 @@ TEST(Component, Parse)
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), 56);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
-                T::ElementsAre(0x39, 0x3D, 0xA6));
+                g::ElementsAre(0x39, 0x3D, 0xA6));
     region.reset();
   }
 
@@ -73,7 +73,7 @@ TEST(Component, Parse)
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), 56);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
-                T::ElementsAre(0x2E));
+                g::ElementsAre(0x2E));
     region.reset();
   }
 
@@ -82,7 +82,7 @@ TEST(Component, Parse)
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), 255);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
-                T::ElementsAre(0x2E, 0x2E, 0x44, 0x2E, 0x2E));
+                g::ElementsAre(0x2E, 0x2E, 0x44, 0x2E, 0x2E));
     region.reset();
   }
 
@@ -91,7 +91,7 @@ TEST(Component, Parse)
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), 56);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
-                T::ElementsAre(0x39, 0x3D, 0xA6));
+                g::ElementsAre(0x39, 0x3D, 0xA6));
     region.reset();
   }
 

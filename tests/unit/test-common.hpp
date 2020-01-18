@@ -5,6 +5,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-namespace T = testing;
+namespace g = testing;
 
 #endif // NDNPH_TEST_COMMON_HPP

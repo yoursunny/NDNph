@@ -30,10 +30,10 @@ TEST(Encoder, Room)
   EXPECT_EQ(encoder.size(), 35);
 
   room = encoder.prependRoom(30);
-  EXPECT_THAT(room, T::IsNull());
+  EXPECT_THAT(room, g::IsNull());
   EXPECT_TRUE(!encoder);
   EXPECT_EQ(encoder.size(), 0);
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::SizeIs(0));
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::SizeIs(0));
 }
 
 TEST(Encoder, TrimDiscard)
@@ -43,7 +43,7 @@ TEST(Encoder, TrimDiscard)
   EXPECT_EQ(region.available(), 0);
 
   uint8_t* room = encoder.prependRoom(20);
-  EXPECT_THAT(room, T::NotNull());
+  EXPECT_THAT(room, g::NotNull());
 
   encoder.trim();
   EXPECT_EQ(region.available(), 40);
@@ -64,13 +64,13 @@ TEST(Encoder, TrimErrorDiscard)
   Encoder encoder(region);
 
   uint8_t* room = encoder.prependRoom(20);
-  EXPECT_THAT(room, T::NotNull());
+  EXPECT_THAT(room, g::NotNull());
 
   encoder.trim();
   EXPECT_EQ(region.available(), 40);
 
   room = encoder.prependRoom(1);
-  EXPECT_THAT(room, T::IsNull());
+  EXPECT_THAT(room, g::IsNull());
   EXPECT_TRUE(!encoder);
 
   encoder.discard();
@@ -84,7 +84,7 @@ TEST(Encoder, ErrorTrimDiscard)
   Encoder encoder(region);
 
   uint8_t* room = encoder.prependRoom(61);
-  EXPECT_THAT(room, T::IsNull());
+  EXPECT_THAT(room, g::IsNull());
   EXPECT_TRUE(!encoder);
 
   encoder.trim();
@@ -100,19 +100,19 @@ TEST(Encoder, TrimDiscardNop)
   Encoder encoder(buf, sizeof(buf));
 
   uint8_t* room = encoder.prependRoom(20);
-  EXPECT_THAT(room, T::NotNull());
+  EXPECT_THAT(room, g::NotNull());
 
   encoder.trim(); // no effect because Encoder is not created from Region
   EXPECT_FALSE(!encoder);
 
   room = encoder.prependRoom(15);
-  EXPECT_THAT(room, T::NotNull());
+  EXPECT_THAT(room, g::NotNull());
 
   encoder.discard(); // no effect because Encoder is not created from Region
   EXPECT_FALSE(!encoder);
 
   room = encoder.prependRoom(25);
-  EXPECT_THAT(room, T::NotNull());
+  EXPECT_THAT(room, g::NotNull());
 }
 
 template<int V>
@@ -152,7 +152,7 @@ TEST(Encoder, Prepend)
   EXPECT_TRUE(ok);
   EXPECT_FALSE(!encoder);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
-              T::ElementsAre(0xC2, 0x0A, 0xE0, 0xE1, 0xF0, 0xF1, 0xC3, 0x04, 0xE0, 0xE1, 0xF0,
+              g::ElementsAre(0xC2, 0x0A, 0xE0, 0xE1, 0xF0, 0xF1, 0xC3, 0x04, 0xE0, 0xE1, 0xF0,
                              0xF1, // C2 nested C3
                              0xC1,
                              0x00, // C1 not omitted, C0 omitted

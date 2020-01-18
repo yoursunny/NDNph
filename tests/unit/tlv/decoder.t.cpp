@@ -30,26 +30,26 @@ TEST(Decoder, DecodeGood)
   ASSERT_TRUE(it != end);
   EXPECT_EQ(it->type, 0x02);
   EXPECT_EQ(it->length, 1);
-  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), T::ElementsAre(0xA1));
+  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), g::ElementsAre(0xA1));
 
   ++it;
   ASSERT_TRUE(it != end);
   EXPECT_EQ(it->type, 0xFD);
   EXPECT_EQ(it->length, 3);
   EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length),
-              T::ElementsAre(0xA3, 0xA3, 0xA3));
+              g::ElementsAre(0xA3, 0xA3, 0xA3));
 
   ++it;
   ASSERT_TRUE(it != end);
   EXPECT_EQ(it->type, 0x0100);
   EXPECT_EQ(it->length, 2);
-  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), T::ElementsAre(0xA2, 0xA2));
+  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), g::ElementsAre(0xA2, 0xA2));
 
   ++it;
   ASSERT_TRUE(it != end);
   EXPECT_EQ(it->type, 0xFFFFFFFF);
   EXPECT_EQ(it->length, 1);
-  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), T::ElementsAre(0xA1));
+  EXPECT_THAT(std::vector<uint8_t>(it->value, it->value + it->length), g::ElementsAre(0xA1));
 
   ++it;
   ASSERT_TRUE(it == end);

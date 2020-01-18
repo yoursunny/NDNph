@@ -12,7 +12,7 @@ TEST(Interest, EncodeMinimal)
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  EXPECT_THAT(interest.getName(), T::SizeIs(0));
+  EXPECT_THAT(interest.getName(), g::SizeIs(0));
   EXPECT_FALSE(interest.getCanBePrefix());
   EXPECT_FALSE(interest.getMustBeFresh());
   EXPECT_EQ(interest.getNonce(), 0);
@@ -28,7 +28,7 @@ TEST(Interest, EncodeMinimal)
   Encoder encoder(region);
   bool ok = encoder.prepend(interest);
   ASSERT_TRUE(ok);
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
 
   Interest decoded = region.create<Interest>();
@@ -65,7 +65,7 @@ TEST(Interest, EncodeFull)
   Encoder encoder(region);
   bool ok = encoder.prepend(interest);
   ASSERT_TRUE(ok);
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), T::ElementsAreArray(wire));
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
 
   Interest decoded = region.create<Interest>();
@@ -97,14 +97,14 @@ TEST(Interest, EncodeParameterizedReplace)
   ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
 
   auto name = decoded.getName();
-  EXPECT_THAT(name, T::SizeIs(3));
+  EXPECT_THAT(name, g::SizeIs(3));
   EXPECT_EQ(name[0].type(), 101);
   EXPECT_EQ(name[2].type(), 103);
   EXPECT_EQ(name[1].type(), TT::ParametersSha256DigestComponent);
   EXPECT_EQ(name[1].length(), NDNPH_SHA256_LEN);
 
   EXPECT_TRUE(decoded.checkDigest());
-  EXPECT_THAT(decoded.getAppParameters(), T::SizeIs(2));
+  EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(2));
 }
 
 TEST(Interest, EncodeParameterizedAppend)
@@ -125,14 +125,14 @@ TEST(Interest, EncodeParameterizedAppend)
   ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
 
   auto name = decoded.getName();
-  EXPECT_THAT(name, T::SizeIs(3));
+  EXPECT_THAT(name, g::SizeIs(3));
   EXPECT_EQ(name[0].type(), 101);
   EXPECT_EQ(name[1].type(), 102);
   EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
   EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
 
   EXPECT_TRUE(decoded.checkDigest());
-  EXPECT_THAT(decoded.getAppParameters(), T::SizeIs(2));
+  EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(2));
 }
 
 TEST(Interest, EncodeSignedBadPlaceholder)
@@ -165,8 +165,8 @@ TEST(Interest, EncodeSignedReplace)
   {
     MockPrivateKey<32> key;
     EXPECT_CALL(key, updateSigInfo).WillOnce([](SigInfo& sigInfo) { sigInfo.sigType = 0x10; });
-    EXPECT_CALL(key, doSign(T::ElementsAreArray(signedPortion), T::_))
-      .WillOnce(T::DoAll(T::SetArrayArgument<1>(sig.begin(), sig.end()), T::Return(4)));
+    EXPECT_CALL(key, doSign(g::ElementsAreArray(signedPortion), g::_))
+      .WillOnce(g::DoAll(g::SetArrayArgument<1>(sig.begin(), sig.end()), g::Return(4)));
     EXPECT_TRUE(encoder.prepend(interest.sign(key)));
   }
   encoder.trim();
@@ -176,25 +176,25 @@ TEST(Interest, EncodeSignedReplace)
   ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
 
   auto name = decoded.getName();
-  EXPECT_THAT(name, T::SizeIs(3));
+  EXPECT_THAT(name, g::SizeIs(3));
   EXPECT_EQ(name[0].type(), 101);
   EXPECT_EQ(name[1].type(), 102);
   EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
   EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
 
   EXPECT_TRUE(decoded.checkDigest());
-  EXPECT_THAT(decoded.getAppParameters(), T::SizeIs(0));
+  EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(0));
 
   {
     MockPublicKey key;
-    EXPECT_CALL(key, doVerify(T::ElementsAreArray(signedPortion), T::ElementsAreArray(sig)))
-      .WillOnce(T::Return(true));
+    EXPECT_CALL(key, doVerify(g::ElementsAreArray(signedPortion), g::ElementsAreArray(sig)))
+      .WillOnce(g::Return(true));
     EXPECT_TRUE(decoded.verify(key));
   }
 
   {
     MockPublicKey key;
-    EXPECT_CALL(key, doVerify(T::_, T::_)).WillOnce(T::Return(false));
+    EXPECT_CALL(key, doVerify(g::_, g::_)).WillOnce(g::Return(false));
     EXPECT_FALSE(decoded.verify(key));
   }
 }
@@ -238,7 +238,7 @@ TEST(Interest, MatchImplicitDigest)
   data.setName(Name::parse(region, "/A"));
   {
     Encoder encoder(region);
-    T::NiceMock<MockPrivateKey<0>> key;
+    g::NiceMock<MockPrivateKey<0>> key;
     ASSERT_TRUE(encoder.prepend(data.sign(key)));
     encoder.trim();
 
