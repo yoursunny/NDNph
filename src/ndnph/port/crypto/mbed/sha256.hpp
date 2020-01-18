@@ -1,12 +1,12 @@
-#ifndef NDNPH_PORT_MBEDTLS_SHA256_HPP
-#define NDNPH_PORT_MBEDTLS_SHA256_HPP
+#ifndef NDNPH_PORT_CRYPTO_MBED_SHA256_HPP
+#define NDNPH_PORT_CRYPTO_MBED_SHA256_HPP
 
-#include "../../core/common.hpp"
+#include "../../../core/common.hpp"
 
 #include <mbedtls/sha256.h>
 
 namespace ndnph {
-namespace port_mbedtls {
+namespace port_crypto_mbed {
 
 class Sha256
 {
@@ -38,7 +38,7 @@ private:
   bool m_hasError = false;
 };
 
-} // namespace port_mbedtls
+} // namespace port_crypto_mbed
 } // namespace ndnph
 
-#endif // NDNPH_PORT_MBEDTLS_SHA256_HPP
+#endif // NDNPH_PORT_CRYPTO_MBED_SHA256_HPP

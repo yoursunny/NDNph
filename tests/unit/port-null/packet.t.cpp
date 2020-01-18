@@ -1,4 +1,5 @@
-#include "ndnph/port/null/typedef.hpp"
+#define NDNPH_PORT_CRYPTO_NULL
+#include "ndnph/port/crypto/null/typedef.hpp"
 
 #include "../mock-key.hpp"
 #include "../test-common.hpp"
@@ -28,6 +29,29 @@ TEST(PortNull, Interest)
     EXPECT_FALSE(encoder.prepend(interest.sign(key)));
     encoder.discard();
   }
+}
+
+TEST(PortNull, Data)
+{
+  StaticRegion<1024> region;
+  Data data = region.create<Data>();
+  ASSERT_FALSE(!data);
+  data.setName(Name(region, { 0x08, 0x01, 0x41 }));
+
+  data.setName(Name::parse(region, "/A"));
+  {
+    Encoder encoder(region);
+    T::NiceMock<MockPrivateKey<0>> key;
+    ASSERT_TRUE(encoder.prepend(data.sign(key)));
+    encoder.trim();
+
+    data = region.create<Data>();
+    ASSERT_FALSE(!data);
+    ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(data));
+  }
+
+  uint8_t digest[NDNPH_SHA256_LEN] = { 0 };
+  EXPECT_FALSE(data.computeImplicitDigest(digest));
 }
 
 } // namespace

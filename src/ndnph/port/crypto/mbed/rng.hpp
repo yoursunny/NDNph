@@ -1,10 +1,10 @@
-#ifndef NDNPH_PORT_MBEDTLS_RNG_HPP
-#define NDNPH_PORT_MBEDTLS_RNG_HPP
+#ifndef NDNPH_PORT_CRYPTO_MBED_RNG_HPP
+#define NDNPH_PORT_CRYPTO_MBED_RNG_HPP
 
-#include "../../core/common.hpp"
+#include "../../../core/common.hpp"
 
 namespace ndnph {
-namespace port_mbedtls {
+namespace port_crypto_mbed {
 namespace detail {
 
 template<typename RandomSrc>
@@ -28,7 +28,7 @@ private:
 };
 
 } // namespace detail
-} // namespace port_mbedtls
+} // namespace port_crypto_mbed
 } // namespace ndnph
 
-#endif // NDNPH_PORT_MBEDTLS_RNG_HPP
+#endif // NDNPH_PORT_CRYPTO_MBED_RNG_HPP

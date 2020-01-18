@@ -1,15 +1,15 @@
 mbedcrypto = meson.get_compiler('cpp').find_library('mbedcrypto', required: false)
 if mbedcrypto.found()
-  mbedcrypto_dep = declare_dependency(compile_args: ['-DNDNPH_PORT_MBEDTLS=1'], dependencies: [mbedcrypto])
+  mbedcrypto_dep = declare_dependency(compile_args: ['-DNDNPH_PORT_CRYPTO_MBEDTLS'], dependencies: [mbedcrypto])
 else
-  mbedcrypto_dep = declare_dependency(compile_args: ['-DNDNPH_PORT_MBEDTLS=0'])
+  mbedcrypto_dep = declare_dependency()
 endif
 
-if meson.is_cross_build()
-  urandom = false
+urandom = not meson.is_cross_build() and run_command('test', '-r', '/dev/urandom').returncode() == 0
+if urandom
+  urandom_dep = declare_dependency(compile_args: ['-DNDNPH_PORT_RANDOM_URANDOM'])
 else
-  urandom = run_command('test', '-r', '/dev/urandom').returncode() == 0
+  urandom_dep = declare_dependency()
 endif
-urandom_dep = declare_dependency(compile_args: ['-DNDNPH_PORT_URANDOM=@0@'.format(0 + urandom)])
 
 lib_dep = declare_dependency(include_directories: ['.'], dependencies: [mbedcrypto_dep, urandom_dep])

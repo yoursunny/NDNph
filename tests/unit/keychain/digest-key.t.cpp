@@ -1,7 +1,5 @@
 #include "ndnph/keychain/digest-key.hpp"
-#include "ndnph/packet/data.hpp"
-#include "ndnph/packet/interest.hpp"
-#include "ndnph/port/mbedtls/typedef.hpp"
+#include "ndnph/port/crypto/port.hpp"
 
 #include "../test-common.hpp"
 #include "key-common.hpp"

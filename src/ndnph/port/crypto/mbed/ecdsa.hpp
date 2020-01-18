@@ -1,12 +1,12 @@
-#ifndef NDNPH_PORT_MBEDTLS_ECDSA_HPP
-#define NDNPH_PORT_MBEDTLS_ECDSA_HPP
+#ifndef NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
+#define NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
 
 #include "rng.hpp"
 
 #include <mbedtls/ecdsa.h>
 
 namespace ndnph {
-namespace port_mbedtls {
+namespace port_crypto_mbed {
 
 namespace detail {
 
@@ -162,7 +162,7 @@ public:
   }
 };
 
-} // namespace port_mbedtls
+} // namespace port_crypto_mbed
 } // namespace ndnph
 
-#endif // NDNPH_PORT_MBEDTLS_ECDSA_HPP
+#endif // NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
