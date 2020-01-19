@@ -9,6 +9,16 @@ namespace ndnph {
 class Region
 {
 public:
+  enum
+  {
+    ALIGNMENT = sizeof(void*),
+  };
+
+  static constexpr size_t sizeofAligned(size_t size)
+  {
+    return size % ALIGNMENT == 0 ? size : (size | (ALIGNMENT - 1)) + 1;
+  }
+
   /** @brief Allocate a buffer with no alignment requirement. */
   uint8_t* alloc(size_t size)
   {
@@ -32,9 +42,7 @@ public:
   /** @brief Allocate a region aligned to multiple of sizeof(void*). */
   uint8_t* allocA(size_t size)
   {
-    if (size % NDNPH_ALIGNMENT != 0) {
-      size = (size | (NDNPH_ALIGNMENT - 1)) + 1;
-    }
+    size = sizeofAligned(size);
     if (m_right - m_left < static_cast<ssize_t>(size)) {
       return nullptr;
     }

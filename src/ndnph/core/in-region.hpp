@@ -49,6 +49,11 @@ protected:
 
 protected:
   ObjType* obj = nullptr;
+
+  friend Region& regionOf(const RefRegion<Obj>& ref)
+  {
+    return regionOf(ref.obj);
+  }
 };
 
 } // namespace detail

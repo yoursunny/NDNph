@@ -4,7 +4,11 @@
 #include "ndnph/core/common.hpp"
 #include "ndnph/core/in-region.hpp"
 #include "ndnph/core/input-iterator-pointer-proxy.hpp"
+#include "ndnph/core/operators.hpp"
 #include "ndnph/core/region.hpp"
+#include "ndnph/core/simple-queue.hpp"
+#include "ndnph/face/face.hpp"
+#include "ndnph/face/transport.hpp"
 #include "ndnph/keychain/common.hpp"
 #include "ndnph/keychain/digest-key.hpp"
 #include "ndnph/keychain/ecdsa-key.hpp"
@@ -21,4 +25,5 @@
 #include "ndnph/tlv/varnum.hpp"
 #include "ndnph/port/crypto/port.hpp"
 #include "ndnph/port/random/port.hpp"
+#include "ndnph/port/transport/port.hpp"
 #endif // NDNPH_H

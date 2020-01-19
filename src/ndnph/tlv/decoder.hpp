@@ -1,6 +1,7 @@
 #ifndef NDNPH_TLV_DECODER_HPP
 #define NDNPH_TLV_DECODER_HPP
 
+#include "../core/operators.hpp"
 #include "varnum.hpp"
 
 namespace ndnph {

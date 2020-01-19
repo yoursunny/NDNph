@@ -34,14 +34,14 @@ TEST(Region, AllocA)
 
   uint8_t* a0 = region.allocA(9);
   EXPECT_THAT(a0, g::NotNull());
-  EXPECT_EQ(region.size(), NDNPH_ALIGNMENT == 8 ? 16 : 12);
-  EXPECT_EQ(region.available(), NDNPH_ALIGNMENT == 8 ? 44 : 48);
+  EXPECT_EQ(region.size(), Region::ALIGNMENT == 8 ? 16 : 12);
+  EXPECT_EQ(region.available(), Region::ALIGNMENT == 8 ? 44 : 48);
 
   uint8_t* a1 = region.allocA(8);
   EXPECT_THAT(a1, g::NotNull());
-  EXPECT_EQ(a1 - a0, NDNPH_ALIGNMENT == 8 ? 16 : 12);
-  EXPECT_EQ(region.size(), NDNPH_ALIGNMENT == 8 ? 24 : 20);
-  EXPECT_EQ(region.available(), NDNPH_ALIGNMENT == 8 ? 36 : 40);
+  EXPECT_EQ(a1 - a0, Region::ALIGNMENT == 8 ? 16 : 12);
+  EXPECT_EQ(region.size(), Region::ALIGNMENT == 8 ? 24 : 20);
+  EXPECT_EQ(region.available(), Region::ALIGNMENT == 8 ? 36 : 40);
 
   uint8_t* a2 = region.allocA(50);
   EXPECT_THAT(a2, g::IsNull());
@@ -72,8 +72,8 @@ public:
 
 TEST(Region, Create)
 {
-  static_assert(sizeof(MyObj) > NDNPH_ALIGNMENT && sizeof(MyObj) <= 2 * NDNPH_ALIGNMENT, "");
-  StaticRegion<NDNPH_ALIGNMENT * 5 - 1> region;
+  static_assert(sizeof(MyObj) > Region::ALIGNMENT && sizeof(MyObj) <= 2 * Region::ALIGNMENT, "");
+  StaticRegion<Region::ALIGNMENT * 5 - 1> region;
 
   MyRef ref = region.create<MyRef>();
   ASSERT_FALSE(!ref);
@@ -83,7 +83,7 @@ TEST(Region, Create)
   ref = region.create<MyRef>(42);
   ASSERT_FALSE(!ref);
   EXPECT_EQ(ref.getObj()->x, 42);
-  EXPECT_EQ(region.size(), NDNPH_ALIGNMENT * 4);
+  EXPECT_EQ(region.size(), Region::ALIGNMENT * 4);
 
   ref = region.create<MyRef>();
   ASSERT_TRUE(!ref);

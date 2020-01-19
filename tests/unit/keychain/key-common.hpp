@@ -1,5 +1,5 @@
-#ifndef NDNPH_TEST_KEY_COMMON_TEST_HPP
-#define NDNPH_TEST_KEY_COMMON_TEST_HPP
+#ifndef NDNPH_TEST_KEYCHAIN_KEY_COMMON_HPP
+#define NDNPH_TEST_KEYCHAIN_KEY_COMMON_HPP
 
 #include "../test-common.hpp"
 
@@ -77,4 +77,4 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
 } // namespace
 } // namespace ndnph
 
-#endif // NDNPH_TEST_KEY_COMMON_TEST_HPP
+#endif // NDNPH_TEST_KEYCHAIN_KEY_COMMON_HPP
