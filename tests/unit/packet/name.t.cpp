@@ -7,6 +7,14 @@ namespace {
 
 BOOST_CONCEPT_ASSERT((boost::InputIterator<Name::Iterator>));
 
+std::string
+toUri(const Name& name)
+{
+  std::string uri;
+  bool ok = boost::conversion::try_lexical_convert(name, uri);
+  return ok ? uri : "boost::bad_lexical_cast";
+}
+
 TEST(Name, Decode)
 {
   Name name;
@@ -18,6 +26,7 @@ TEST(Name, Decode)
   EXPECT_EQ(name.length(), 3);
   EXPECT_EQ(name.value(), wire.data());
   EXPECT_EQ(name.size(), 1);
+  EXPECT_EQ(toUri(name), "/8=A");
 
   Component comp = name[0];
   EXPECT_FALSE(!comp);
@@ -46,6 +55,7 @@ TEST(Name, Decode)
   EXPECT_THAT(std::vector<uint8_t>(name.value(), name.value() + name.length()),
               g::ElementsAreArray(wire.begin(), wire.end()));
   EXPECT_EQ(name.size(), 2);
+  EXPECT_EQ(toUri(name), "/9=A/8=B");
 
   comp = name[-2];
   EXPECT_FALSE(!comp);
@@ -76,6 +86,7 @@ TEST(Name, Parse)
     auto name = Name::parse(region, "/");
     ASSERT_FALSE(!name);
     EXPECT_EQ(name.size(), 0);
+    EXPECT_EQ(toUri(name), "/");
     region.reset();
   }
 

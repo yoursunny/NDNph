@@ -3,8 +3,6 @@
 
 #include "../../core/common.hpp"
 
-#include <cstdio>
-
 namespace ndnph {
 namespace port_random_null {
 

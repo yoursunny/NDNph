@@ -2,7 +2,8 @@ boost = dependency('boost')
 gmock = dependency('gmock')
 gtest = dependency('gtest', main: true)
 assert(mbedcrypto.found(), 'libmbedcrypto is required to build unit tests')
-assert(urandom, 'urandom is required to build unit tests')
+assert(have_urandom, 'urandom is required to build unit tests')
+assert(have_socket_h, 'socket.h is required to build unit tests')
 
 unittest_exe = executable('unittest',
   unittest_files,

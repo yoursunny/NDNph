@@ -13,6 +13,9 @@ namespace ndnph {
  * This type is immutable, except `decodeFrom()` method.
  */
 class Component
+#ifdef NDNPH_PRINT_ARDUINO
+  : public ::Printable
+#endif
 {
 public:
   explicit Component() = default;
@@ -158,6 +161,15 @@ public:
     return true;
   }
 
+#ifdef NDNPH_PRINT_ARDUINO
+  size_t printTo(::Print& p) const override
+  {
+    size_t count = 0;
+    printImpl([&](const char* str) { count += p.print(str); });
+    return count;
+  }
+#endif
+
 private:
   static constexpr size_t computeSize(uint16_t type, size_t length)
   {
@@ -185,6 +197,36 @@ private:
     }
     return -1;
   }
+
+  template<typename F>
+  void printImpl(const F& output) const
+  {
+    char buf[7];
+    snprintf(buf, sizeof(buf), "%d=", static_cast<int>(m_type));
+    output(buf);
+    size_t nNonPeriods = 0;
+    std::for_each(m_value, m_value + m_length, [&](uint8_t ch) {
+      if (strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~", ch) !=
+          nullptr) {
+        snprintf(buf, sizeof(buf), "%c", static_cast<char>(ch));
+      } else {
+        snprintf(buf, sizeof(buf), "%%%02X", static_cast<int>(ch));
+      }
+      output(buf);
+      nNonPeriods += ch != '.';
+    });
+    if (nNonPeriods == 0) {
+      output("...");
+    }
+  }
+
+#ifdef NDNPH_PRINT_OSTREAM
+  friend std::ostream& operator<<(std::ostream& os, const Component& comp)
+  {
+    comp.printImpl([&os](const char* str) { os << str; });
+    return os;
+  }
+#endif
 
 private:
   uint16_t m_type = 0;

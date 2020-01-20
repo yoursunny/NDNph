@@ -14,16 +14,16 @@ TEST(Face, Receive)
   Face face(transport);
   MockPacketHandler hA(face, 1);
   MockPacketHandler hB(face, 9);
-
   StaticRegion<1024> region;
+
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
   interest.setName(Name(region, { 0x08, 0x01, 0x41 }));
-
   {
     g::InSequence seq;
-    EXPECT_CALL(hA, processInterest(g::_, 4946)).WillOnce(g::Return(false));
-    EXPECT_CALL(hB, processInterest(g::_, 4946)).WillOnce(g::Return(true));
+    auto matchInterestName = g::Property(&Interest::getName, g::Eq(interest.getName()));
+    EXPECT_CALL(hA, processInterest(matchInterestName, 4946)).WillOnce(g::Return(false));
+    EXPECT_CALL(hB, processInterest(matchInterestName, 4946)).WillOnce(g::Return(true));
   }
   ASSERT_TRUE(transport.receive(interest, 4946));
 
@@ -31,7 +31,8 @@ TEST(Face, Receive)
   ASSERT_FALSE(!data);
   data.setName(Name(region, { 0x08, 0x01, 0x42 }));
   {
-    EXPECT_CALL(hA, processData(g::_, 2223)).WillOnce(g::Return(true));
+    auto matchDataName = g::Property(&Data::getName, g::Eq(data.getName()));
+    EXPECT_CALL(hA, processData(matchDataName, 2223)).WillOnce(g::Return(true));
     EXPECT_CALL(hB, processData).Times(0);
   }
   ASSERT_TRUE(transport.receive(data.sign(NullPrivateKey()), 2223));

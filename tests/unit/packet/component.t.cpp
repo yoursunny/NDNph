@@ -5,6 +5,14 @@
 namespace ndnph {
 namespace {
 
+std::string
+toUri(const Component& comp)
+{
+  std::string uri;
+  bool ok = boost::conversion::try_lexical_convert(comp, uri);
+  return ok ? uri : "boost::bad_lexical_cast";
+}
+
 TEST(Component, Construct)
 {
   StaticRegion<1024> region;
@@ -17,6 +25,7 @@ TEST(Component, Construct)
     EXPECT_EQ(comp.size(), 6);
     EXPECT_THAT(std::vector<uint8_t>(comp.tlv(), comp.tlv() + comp.size()),
                 g::ElementsAre(0xA1, 0x04, 0xC0, 0xC1, 0xC2, 0xC3));
+    EXPECT_EQ(toUri(comp), "161=%C0%C1%C2%C3");
     region.reset();
   }
 
@@ -27,6 +36,7 @@ TEST(Component, Construct)
     EXPECT_EQ(comp.size(), 6);
     EXPECT_THAT(std::vector<uint8_t>(comp.tlv(), comp.tlv() + comp.size()),
                 g::ElementsAre(0x08, 0x04, 0xC0, 0xC1, 0xC2, 0xC3));
+    EXPECT_EQ(toUri(comp), "8=%C0%C1%C2%C3");
     region.reset();
   }
 
@@ -48,6 +58,7 @@ TEST(Component, Parse)
     EXPECT_EQ(comp.type(), TT::GenericNameComponent);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
                 g::ElementsAre(0x41));
+    EXPECT_EQ(toUri(comp), "8=A");
     region.reset();
   }
 
@@ -57,6 +68,7 @@ TEST(Component, Parse)
     EXPECT_EQ(comp.type(), 56);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
                 g::ElementsAre(0x39, 0x3D, 0xA6));
+    EXPECT_EQ(toUri(comp), "56=9%3D%A6");
     region.reset();
   }
 
@@ -65,6 +77,7 @@ TEST(Component, Parse)
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), TT::GenericNameComponent);
     EXPECT_EQ(comp.length(), 0);
+    EXPECT_EQ(toUri(comp), "8=...");
     region.reset();
   }
 
@@ -74,6 +87,7 @@ TEST(Component, Parse)
     EXPECT_EQ(comp.type(), 56);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
                 g::ElementsAre(0x2E));
+    EXPECT_EQ(toUri(comp), "56=....");
     region.reset();
   }
 
@@ -83,15 +97,7 @@ TEST(Component, Parse)
     EXPECT_EQ(comp.type(), 255);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
                 g::ElementsAre(0x2E, 0x2E, 0x44, 0x2E, 0x2E));
-    region.reset();
-  }
-
-  {
-    auto comp = Component::parse(region, "56=9%3D%a6");
-    ASSERT_FALSE(!comp);
-    EXPECT_EQ(comp.type(), 56);
-    EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
-                g::ElementsAre(0x39, 0x3D, 0xA6));
+    EXPECT_EQ(toUri(comp), "255=..D..");
     region.reset();
   }
 

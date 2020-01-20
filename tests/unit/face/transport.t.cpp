@@ -2,8 +2,6 @@
 
 #include "transport-common.hpp"
 
-#include <sys/socket.h>
-
 namespace ndnph {
 namespace {
 

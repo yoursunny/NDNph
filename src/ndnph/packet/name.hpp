@@ -13,6 +13,9 @@ namespace ndnph {
  * This type is immutable, except `decodeFrom()` method.
  */
 class Name
+#ifdef NDNPH_PRINT_ARDUINO
+  : public ::Printable
+#endif
 {
 public:
   /** @brief Construct referencing TLV-VALUE. */
@@ -257,6 +260,23 @@ public:
     return decodeValue(d.value, d.length);
   }
 
+#ifdef NDNPH_PRINT_ARDUINO
+  /** @brief Print name as URI. */
+  size_t printTo(::Print& p) const override
+  {
+    size_t count = 0;
+    if (m_nComps == 0) {
+      count += p.print('/');
+    } else {
+      for (auto comp : *this) {
+        count += p.print('/');
+        count += p.print(comp);
+      }
+    }
+    return count;
+  }
+#endif
+
 private:
   explicit Name(const uint8_t* value, size_t length, size_t nComps)
     : m_value(value)
@@ -344,6 +364,21 @@ operator<(const Name& lhs, const Name& rhs)
 
 NDNPH_DECLARE_NE(Name, inline)
 NDNPH_DECLARE_GT_LE_GE(Name, inline)
+
+#ifdef NDNPH_PRINT_OSTREAM
+/** @brief Print name as URI. */
+inline std::ostream&
+operator<<(std::ostream& os, const Name& name)
+{
+  if (name.size() == 0) {
+    return os << '/';
+  }
+  for (auto comp : name) {
+    os << '/' << comp;
+  }
+  return os;
+}
+#endif
 
 } // namespace ndnph
 
