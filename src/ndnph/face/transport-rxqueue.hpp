@@ -45,9 +45,10 @@ protected:
       bool ok = false;
       std::tie(m_item, ok) = transport.m_allocQ.pop();
       if (ok) {
-        m_item.region->reset();
-        m_bufLen = m_item.region->available();
-        m_item.pkt = m_item.region->alloc(m_bufLen);
+        Region& region = *m_item.region;
+        region.reset();
+        m_bufLen = region.availableA();
+        m_item.pkt = region.allocA(m_bufLen);
         m_item.pktLen = -1;
       }
     }
@@ -83,10 +84,7 @@ protected:
     {
       m_item.pktLen = pktLen;
       m_item.endpointId = endpointId;
-      m_item.region->reset();
-      uint8_t* room = m_item.region->alloc(pktLen);
-      std::memmove(room, m_item.pkt, pktLen);
-      m_item.pkt = room;
+      m_item.region->free(m_item.pkt + pktLen, m_item.pkt + m_bufLen);
     }
 
   private:

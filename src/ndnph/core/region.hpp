@@ -14,7 +14,8 @@ public:
     ALIGNMENT = sizeof(void*),
   };
 
-  static constexpr size_t sizeofAligned(size_t size)
+  template<typename T>
+  static constexpr T sizeofAligned(T size)
   {
     return size % ALIGNMENT == 0 ? size : (size | (ALIGNMENT - 1)) + 1;
   }
@@ -29,33 +30,46 @@ public:
   /** @brief Allocate a buffer with no alignment requirement. */
   uint8_t* alloc(size_t size)
   {
-    if (m_right - m_left < static_cast<ssize_t>(size)) {
+    if (available() < size) {
       return nullptr;
     }
     m_right -= size;
     return m_right;
   }
 
-  /** @brief Deallocate (front part of) last buffer from alloc(). */
-  bool free(const uint8_t* ptr, size_t size)
-  {
-    if (ptr != m_right || m_end - m_right < static_cast<ssize_t>(size)) {
-      return false;
-    }
-    m_right += size;
-    return true;
-  }
-
   /** @brief Allocate a region aligned to multiple of sizeof(void*). */
   uint8_t* allocA(size_t size)
   {
-    size = sizeofAligned(size);
-    if (m_right - m_left < static_cast<ssize_t>(size)) {
+    uint8_t* room = alignUp(m_left);
+    if (m_right - room < static_cast<ssize_t>(size)) {
       return nullptr;
     }
-    uint8_t* room = m_left;
-    m_left += size;
+    m_left = room + size;
     return room;
+  }
+
+  /**
+   * @brief Deallocate (part of) last allocated buffer.
+   * @retval true [first, last) is either front part of last buffer from alloc(),
+   *              or back part of last buffer from allocA(), and has been freed.
+   * @retval false [first, last) cannot be freed.
+   */
+  bool free(const uint8_t* first, const uint8_t* last)
+  {
+    if (first == m_right && last <= m_end) {
+      m_right = const_cast<uint8_t*>(last);
+      return true;
+    }
+    if (last == m_left && first >= m_begin) {
+      m_left = const_cast<uint8_t*>(first);
+      return true;
+    }
+    return false;
+  }
+
+  bool free(const uint8_t* ptr, size_t size)
+  {
+    return free(ptr, ptr + size);
   }
 
   /** @brief Allocate and create an item, and return its pointer. */
@@ -99,10 +113,16 @@ public:
     m_right = m_end;
   }
 
-  /** @brief Compute remaining space. */
+  /** @brief Compute remaining space for alloc(). */
   size_t available() const
   {
     return m_right - m_left;
+  }
+
+  /** @brief Compute remaining space for allocA(). */
+  size_t availableA() const
+  {
+    return std::max<ssize_t>(0, m_right - alignUp(m_left));
   }
 
   /** @brief Compute utilized space. */
@@ -115,6 +135,13 @@ protected:
   uint8_t* getArray()
   {
     return m_begin;
+  }
+
+private:
+  static uint8_t* alignUp(uint8_t* ptr)
+  {
+    return reinterpret_cast<uint8_t*>(
+      sizeofAligned(reinterpret_cast<uintptr_t>(reinterpret_cast<void*>(ptr))));
   }
 
 private:
@@ -157,7 +184,7 @@ public:
 };
 
 /** @brief Compute total size of several sub Regions of given capacity. */
-inline size_t
+constexpr size_t
 sizeofSubRegions(size_t capacity, size_t count = 1)
 {
   return count * (Region::sizeofAligned(capacity) + Region::sizeofAligned(sizeof(Region)));
