@@ -8,6 +8,8 @@
 #include "ndnph/core/region.hpp"
 #include "ndnph/core/simple-queue.hpp"
 #include "ndnph/face/face.hpp"
+#include "ndnph/face/packet-handler.hpp"
+#include "ndnph/face/transport-rxqueue.hpp"
 #include "ndnph/face/transport.hpp"
 #include "ndnph/keychain/common.hpp"
 #include "ndnph/keychain/digest-key.hpp"

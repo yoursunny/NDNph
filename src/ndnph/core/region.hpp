@@ -19,6 +19,13 @@ public:
     return size % ALIGNMENT == 0 ? size : (size | (ALIGNMENT - 1)) + 1;
   }
 
+  Region(uint8_t* buf, size_t cap)
+    : m_begin(buf)
+    , m_end(buf + cap)
+  {
+    reset();
+  }
+
   /** @brief Allocate a buffer with no alignment requirement. */
   uint8_t* alloc(size_t size)
   {
@@ -105,16 +112,12 @@ public:
   }
 
 protected:
-  Region(uint8_t* buf, size_t cap)
-    : m_begin(buf)
-    , m_end(buf + cap)
+  uint8_t* getArray()
   {
-    reset();
+    return m_begin;
   }
 
-  ~Region() = default;
-
-protected:
+private:
   uint8_t* const m_begin;
   uint8_t* const m_end;
   uint8_t* m_left;  ///< [m_begin, m_left) is allocated for aligned items
@@ -149,9 +152,27 @@ public:
 
   ~DynamicRegion()
   {
-    delete[] m_begin;
+    delete[] getArray();
   }
 };
+
+/** @brief Compute total size of several sub Regions of given capacity. */
+inline size_t
+sizeofSubRegions(size_t capacity, size_t count = 1)
+{
+  return count * (Region::sizeofAligned(capacity) + Region::sizeofAligned(sizeof(Region)));
+}
+
+/** @brief Create Region inside a parent Region. */
+inline Region*
+makeSubRegion(Region& parent, size_t capacity)
+{
+  uint8_t* room = parent.allocA(capacity);
+  if (room == nullptr) {
+    return nullptr;
+  }
+  return parent.make<Region>(room, capacity);
+}
 
 } // namespace ndnph
 

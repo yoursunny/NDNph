@@ -342,8 +342,8 @@ operator<(const Name& lhs, const Name& rhs)
   return cmp == Name::CMP_LT || cmp == Name::CMP_LPREFIX;
 }
 
-NDNPH_DECLARE_NE(Name)
-NDNPH_DECLARE_GT_LE_GE(Name)
+NDNPH_DECLARE_NE(Name, inline)
+NDNPH_DECLARE_GT_LE_GE(Name, inline)
 
 } // namespace ndnph
 

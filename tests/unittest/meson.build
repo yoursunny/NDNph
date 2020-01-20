@@ -7,5 +7,6 @@ assert(urandom, 'urandom is required to build unit tests')
 unittest_exe = executable('unittest',
   unittest_files,
   dependencies: [lib_dep, boost, gmock, gtest],
+  include_directories: ['..'],
 )
 test('unittest', unittest_exe)

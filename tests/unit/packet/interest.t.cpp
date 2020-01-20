@@ -1,8 +1,8 @@
 #include "ndnph/packet/interest.hpp"
 #include "ndnph/port/crypto/port.hpp"
 
-#include "../mock-key.hpp"
-#include "../test-common.hpp"
+#include "mock/mock-key.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

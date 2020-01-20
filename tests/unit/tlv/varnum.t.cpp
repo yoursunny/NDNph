@@ -1,6 +1,6 @@
 #include "ndnph/tlv/varnum.hpp"
 
-#include "../test-common.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

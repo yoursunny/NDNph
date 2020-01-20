@@ -2,8 +2,8 @@
 #include "ndnph/port/crypto/null/typedef.hpp"
 #include "ndnph/port/random/port.hpp"
 
-#include "../mock-key.hpp"
-#include "../test-common.hpp"
+#include "mock/mock-key.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

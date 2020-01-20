@@ -3,8 +3,8 @@
 #include "ndnph/port/random/null.hpp"
 #include "ndnph/port/random/port.hpp"
 
-#include "../test-common.hpp"
 #include "key-common.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

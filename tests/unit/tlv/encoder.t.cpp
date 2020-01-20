@@ -1,7 +1,7 @@
 #include "ndnph/tlv/encoder.hpp"
 #include "ndnph/tlv/value.hpp"
 
-#include "../test-common.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

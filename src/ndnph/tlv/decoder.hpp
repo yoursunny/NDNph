@@ -133,6 +133,8 @@ public:
       return (lhs.m_end - lhs.m_pos) == (rhs.m_end - rhs.m_pos);
     }
 
+    NDNPH_DECLARE_NE(Iterator, friend)
+
   private:
     void tryRead()
     {
@@ -178,8 +180,6 @@ private:
   const uint8_t* m_begin;
   const uint8_t* m_end;
 };
-
-NDNPH_DECLARE_NE(Decoder::Iterator)
 
 } // namespace ndnph
 

@@ -1,7 +1,7 @@
 #ifndef NDNPH_PORT_TRANSPORT_SOCKET_UDP_UNICAST_HPP
 #define NDNPH_PORT_TRANSPORT_SOCKET_UDP_UNICAST_HPP
 
-#include "../../../face/transport.hpp"
+#include "../../../face/transport-rxqueue.hpp"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -12,9 +12,13 @@
 namespace ndnph {
 namespace port_transport_socket {
 
-class UdpUnicastTransport : public Transport
+class UdpUnicastTransport
+  : public virtual Transport
+  , public transport::DynamicRxQueueMixin
 {
 public:
+  explicit UdpUnicastTransport() = default;
+
   bool beginListen(const sockaddr_in* laddr)
   {
     return (createSocket() && bindSocket(laddr)) || closeSocketOnError();
@@ -56,27 +60,31 @@ public:
     return ok == 0;
   }
 
-  bool isUp() const final
+private:
+  bool doIsUp() const final
   {
     return m_fd >= 0;
   }
 
-  void asyncReceive(void* pctx, uint8_t* buf, size_t bufLen) final
+  void doLoop() final
   {
-    sockaddr_in raddr;
-    socklen_t raddrLen = sizeof(raddr);
-    ssize_t pktLen = recvfrom(m_fd, buf, bufLen, 0, reinterpret_cast<sockaddr*>(&raddr), &raddrLen);
-    if (pktLen >= 0) {
+    while (auto r = receiving()) {
+      sockaddr_in raddr;
+      socklen_t raddrLen = sizeof(raddr);
+      ssize_t pktLen =
+        recvfrom(m_fd, r.buf(), r.bufLen(), 0, reinterpret_cast<sockaddr*>(&raddr), &raddrLen);
+      if (pktLen < 0) {
+        clearSocketError();
+        break;
+      }
       uint64_t endpointId = (static_cast<uint64_t>(raddr.sin_port) << 32) | raddr.sin_addr.s_addr;
-      invokeRxCallback(pctx, buf, pktLen, endpointId);
-      return;
+      r(pktLen, endpointId);
     }
 
-    clearSocketError();
-    invokeRxCallback(pctx, nullptr, -1);
+    loopRxQueue();
   }
 
-  void asyncSend(void* pctx, const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final
+  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final
   {
     const sockaddr* raddr = nullptr;
     socklen_t raddrLen = 0;
@@ -90,12 +98,10 @@ public:
     }
     ssize_t sentLen = sendto(m_fd, pkt, pktLen, 0, raddr, raddrLen);
     if (sentLen >= 0) {
-      invokeTxCallback(pctx, true);
-      return;
+      return true;
     }
-
     clearSocketError();
-    invokeTxCallback(pctx, false);
+    return false;
   }
 
 private:

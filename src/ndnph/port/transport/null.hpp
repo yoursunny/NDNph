@@ -7,20 +7,20 @@ namespace ndnph {
 
 class NullTransport : public Transport
 {
-public:
-  bool isUp() const final
+private:
+  bool doIsUp() const final
   {
     return false;
   }
 
-  void asyncReceive(void* pctx, uint8_t*, size_t) final
-  {
-    invokeRxCallback(pctx, nullptr, -1);
-  }
+  // void doAsyncReceive(void* pctx, uint8_t*, size_t) final
+  // {
+  //   invokeRxCallback(pctx, nullptr, -1);
+  // }
 
-  void asyncSend(void* pctx, const uint8_t*, size_t, uint64_t) final
+  bool doSend(const uint8_t*, size_t, uint64_t) final
   {
-    invokeTxCallback(pctx, false);
+    return false;
   }
 };
 

@@ -1,8 +1,8 @@
 #include "ndnph/keychain/digest-key.hpp"
 #include "ndnph/port/crypto/port.hpp"
 
-#include "../test-common.hpp"
 #include "key-common.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

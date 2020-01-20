@@ -1,7 +1,7 @@
 #ifndef NDNPH_TEST_KEYCHAIN_KEY_COMMON_HPP
 #define NDNPH_TEST_KEYCHAIN_KEY_COMMON_HPP
 
-#include "../test-common.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

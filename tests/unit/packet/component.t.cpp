@@ -1,6 +1,6 @@
 #include "ndnph/packet/component.hpp"
 
-#include "../test-common.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {

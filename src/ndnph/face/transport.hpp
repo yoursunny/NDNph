@@ -4,55 +4,58 @@
 #include "../core/region.hpp"
 
 namespace ndnph {
+namespace transport {
 
 class Transport
 {
 public:
   virtual ~Transport() = default;
 
-  virtual bool isUp() const = 0;
+  virtual bool isUp() const
+  {
+    return doIsUp();
+  }
 
-  virtual void loop() {}
+  virtual void loop()
+  {
+    doLoop();
+  }
 
-  using RxCallback = void (*)(void* gctx, void* pctx, const uint8_t* pkt, ssize_t pktLen,
+  using RxCallback = void (*)(void* ctx, Region& region, const uint8_t* pkt, size_t pktLen,
                               uint64_t endpointId);
 
-  void setRxCallback(RxCallback cb, void* gctx)
+  void setRxCallback(RxCallback cb, void* ctx)
   {
     m_rxCb = cb;
-    m_rxCtx = gctx;
+    m_rxCtx = ctx;
   }
 
-  using TxCallback = void (*)(void* gctx, void* pctx, bool ok);
-
-  void setTxCallback(TxCallback cb, void* gctx)
+  bool send(const uint8_t* pkt, size_t pktLen, uint64_t endpointId = 0)
   {
-    m_txCb = cb;
-    m_txCtx = gctx;
+    return doSend(pkt, pktLen, endpointId);
   }
-
-  virtual void asyncReceive(void* pctx, uint8_t* buf, size_t bufLen) = 0;
-
-  virtual void asyncSend(void* pctx, const uint8_t* pkt, size_t pktLen,
-                         uint64_t endpointId = 0) = 0;
 
 protected:
-  void invokeRxCallback(void* pctx, const uint8_t* pkt, ssize_t pktLen, uint64_t endpointId = 0)
+  void invokeRxCallback(Region& region, const uint8_t* pkt, size_t pktLen, uint64_t endpointId = 0)
   {
-    m_rxCb(m_rxCtx, pctx, pkt, pktLen, endpointId);
+    m_rxCb(m_rxCtx, region, pkt, pktLen, endpointId);
   }
 
-  void invokeTxCallback(void* pctx, bool ok)
-  {
-    m_txCb(m_txCtx, pctx, ok);
-  }
+private:
+  virtual bool doIsUp() const = 0;
+
+  virtual void doLoop() = 0;
+
+  virtual bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) = 0;
 
 private:
   RxCallback m_rxCb = nullptr;
   void* m_rxCtx = nullptr;
-  TxCallback m_txCb = nullptr;
-  void* m_txCtx = nullptr;
 };
+
+} // namespace transport
+
+using Transport = transport::Transport;
 
 } // namespace ndnph
 

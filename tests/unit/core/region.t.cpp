@@ -1,12 +1,12 @@
 #include "ndnph/core/region.hpp"
 #include "ndnph/core/in-region.hpp"
 
-#include "../test-common.hpp"
+#include "test-common.hpp"
 
 namespace ndnph {
 namespace {
 
-TEST(Region, Alloc_Dup)
+TEST(Region, Alloc)
 {
   StaticRegion<60> region;
   EXPECT_EQ(region.size(), 0);
@@ -112,6 +112,29 @@ TEST(Region, Free)
 
   region.reset();
   EXPECT_EQ(region.size(), 0);
+}
+
+TEST(Region, SubRegion)
+{
+  size_t total = sizeofSubRegions(18, 5);
+  EXPECT_GE(total, 18 * 5);
+  DynamicRegion parent(total);
+
+  std::vector<uint8_t*> subRegionRooms;
+  for (uint8_t i = 0; i < 5; ++i) {
+    Region* sub = makeSubRegion(parent, 18);
+    ASSERT_THAT(sub, g::NotNull());
+    EXPECT_GE(sub->available(), 18);
+    uint8_t* room = sub->alloc(18);
+    ASSERT_THAT(room, g::NotNull());
+    std::fill_n(room, 18, i);
+    subRegionRooms.push_back(room);
+  }
+
+  for (uint8_t i = 0; i < 5; ++i) {
+    uint8_t* room = subRegionRooms[i];
+    EXPECT_EQ(std::count(room, room + 18, i), 18);
+  }
 }
 
 } // namespace
