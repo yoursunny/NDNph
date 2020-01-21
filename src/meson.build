@@ -1,3 +1,8 @@
+boost = dependency('boost', required: false)
+if boost.found()
+  add_project_arguments('-DNDNPH_PORT_QUEUE_BOOSTLF', language: 'cpp')
+endif
+
 mbedcrypto = meson.get_compiler('cpp').find_library('mbedcrypto', required: false)
 if mbedcrypto.found()
   add_project_arguments('-DNDNPH_PORT_CRYPTO_MBEDTLS', language: 'cpp')
@@ -13,4 +18,4 @@ if have_socket_h
   add_project_arguments('-DNDNPH_PORT_TRANSPORT_SOCKET', language: 'cpp')
 endif
 
-lib_dep = declare_dependency(include_directories: ['.'], dependencies: [mbedcrypto])
+lib_dep = declare_dependency(include_directories: ['.'], dependencies: [boost, mbedcrypto])

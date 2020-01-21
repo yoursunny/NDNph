@@ -6,16 +6,19 @@
 namespace ndnph {
 namespace transport {
 
+/** @brief Base class of low-level transport. */
 class Transport
 {
 public:
   virtual ~Transport() = default;
 
+  /** @brief Determine whether transport is connected. */
   virtual bool isUp() const
   {
     return doIsUp();
   }
 
+  /** @brief Process periodical events, such as receiving packets. */
   virtual void loop()
   {
     doLoop();
@@ -24,18 +27,21 @@ public:
   using RxCallback = void (*)(void* ctx, Region& region, const uint8_t* pkt, size_t pktLen,
                               uint64_t endpointId);
 
+  /** @brief Set incoming packet callback. */
   void setRxCallback(RxCallback cb, void* ctx)
   {
     m_rxCb = cb;
     m_rxCtx = ctx;
   }
 
+  /** @brief Synchronously transmit a packet. */
   bool send(const uint8_t* pkt, size_t pktLen, uint64_t endpointId = 0)
   {
     return doSend(pkt, pktLen, endpointId);
   }
 
 protected:
+  /** @brief Invoke incoming packet callback for a received packet. */
   void invokeRxCallback(Region& region, const uint8_t* pkt, size_t pktLen, uint64_t endpointId = 0)
   {
     m_rxCb(m_rxCtx, region, pkt, pktLen, endpointId);

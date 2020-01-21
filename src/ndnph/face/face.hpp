@@ -9,6 +9,15 @@
 
 namespace ndnph {
 
+/**
+ * @class Face
+ * @brief Network layer face.
+ */
+/**
+ * @brief Network layer face.
+ * @tparam PktTypes declaration of packet types.
+ * @note A port is expected to typedef this template as `Face` type.
+ */
 template<typename PktTypes>
 class BasicFace
 {
@@ -24,6 +33,10 @@ public:
     m_transport.setRxCallback(transportRx, this);
   }
 
+  /**
+   * @brief Add a packet handler.
+   * @param prio priority, smaller number means higher priority.
+   */
   bool addHandler(PacketHandler& h, int8_t prio = 0)
   {
     if (h.m_face != nullptr) {
@@ -40,6 +53,7 @@ public:
     return true;
   }
 
+  /** @brief Remove a packet handler. */
   bool removeHandler(PacketHandler& h)
   {
     if (h.m_face != this) {
@@ -56,6 +70,11 @@ public:
     return false;
   }
 
+  /**
+   * @brief Process periodical events.
+   *
+   * This must be invoked periodically.
+   */
   void loop()
   {
     m_transport.loop();

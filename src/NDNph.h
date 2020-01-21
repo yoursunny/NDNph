@@ -7,6 +7,7 @@
 #include "ndnph/core/operators.hpp"
 #include "ndnph/core/region.hpp"
 #include "ndnph/core/simple-queue.hpp"
+#include "ndnph/face/bridge-transport.hpp"
 #include "ndnph/face/face.hpp"
 #include "ndnph/face/packet-handler.hpp"
 #include "ndnph/face/transport-rxqueue.hpp"
@@ -26,6 +27,7 @@
 #include "ndnph/tlv/value.hpp"
 #include "ndnph/tlv/varnum.hpp"
 #include "ndnph/port/crypto/port.hpp"
+#include "ndnph/port/queue/port.hpp"
 #include "ndnph/port/random/port.hpp"
 #include "ndnph/port/transport/port.hpp"
 #endif // NDNPH_H

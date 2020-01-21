@@ -6,9 +6,7 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"/..
   echo '#ifndef NDNPH_H'
   echo '#define NDNPH_H'
   find . -path ./port -prune -o -name '*.hpp' -printf '%P\n' | sed 's|.*|#include "ndnph/\0"|'
-  echo '#include "ndnph/port/crypto/port.hpp"'
-  echo '#include "ndnph/port/random/port.hpp"'
-  echo '#include "ndnph/port/transport/port.hpp"'
+  find ./port -path './port/*/port.hpp' -printf '%P\n' | sed 's|.*|#include "ndnph/port/\0"|'
   echo '#endif // NDNPH_H'
 ) > src/NDNph.h
 

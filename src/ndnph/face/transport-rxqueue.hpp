@@ -15,23 +15,34 @@ struct RxQueueItem
   ssize_t pktLen = -1;
 };
 
-template<typename Queue>
+/**
+ * @brief Mixin of RX queue in Transport.
+ * @tparam Queue a queue of RxQueueItem.
+ */
+template<typename Queue = DynamicSimpleQueue<RxQueueItem>>
 class RxQueueMixin : public virtual Transport
 {
 protected:
-  using RxQueueMixinT = RxQueueMixin<Queue>;
-  using RxQueueT = Queue;
-
-  template<typename F>
-  explicit RxQueueMixin(const F& makeQueue)
-    : m_allocQ(makeQueue())
-    , m_rxQ(makeQueue())
+  explicit RxQueueMixin(size_t capacity)
+    : m_allocQ(capacity)
+    , m_rxQ(capacity)
+    , m_cap(capacity)
   {}
 
+  /**
+   * @brief Allocate receive buffers during initialization.
+   * @tparam F `Region* (*)()`
+   */
   template<typename F>
-  void allocBuffers(const F& populate)
+  void initAllocBuffers(const F& makeRegion)
   {
-    populate(m_allocQ);
+    for (size_t i = 0; i < m_cap; ++i) {
+      RxQueueItem item;
+      item.region = makeRegion();
+      if (item.region == nullptr || !m_allocQ.push(item)) {
+        break;
+      }
+    }
   }
 
   class RxContext
@@ -58,11 +69,13 @@ protected:
       if (m_item.region == nullptr) {
         return;
       }
+      bool ok = false;
       if (m_item.pktLen < 0) {
-        m_transport.m_allocQ.push(m_item);
+        ok = m_transport.m_allocQ.push(m_item);
       } else {
-        m_transport.m_rxQ.push(m_item);
+        ok = m_transport.m_rxQ.push(m_item);
       }
+      assert(ok);
     }
 
     operator bool() const
@@ -93,11 +106,30 @@ protected:
     size_t m_bufLen;
   };
 
+  /**
+   * @brief Receive packets in a loop.
+   *
+   * @code
+   * while (auto r = receiving()) {
+   *   if (receiveInto(r.buf(), r.bufLen())) {
+   *     r(pktLen);
+   *   } else {
+   *     break;
+   *   }
+   * }
+   * @endcode
+   */
   RxContext receiving()
   {
     return RxContext(*this);
   }
 
+  /**
+   * @brief Process periodical events.
+   *
+   * This delivers received packets to Face.
+   * This should be called in `loop()`.
+   */
   void loopRxQueue()
   {
     while (true) {
@@ -115,22 +147,27 @@ protected:
 private:
   Queue m_allocQ;
   Queue m_rxQ;
+  size_t m_cap = 0;
 };
 
-class DynamicRxQueueMixin : public RxQueueMixin<DynamicSimpleQueue<RxQueueItem>>
+/**
+ * @brief Mixin of RX queue in Transport, allocating buffers from DynamicRegion.
+ * @tparam Queue a queue of RxQueueItem.
+ */
+template<typename Queue = DynamicSimpleQueue<RxQueueItem>>
+class DynamicRxQueueMixin : public RxQueueMixin<Queue>
 {
 protected:
+  /**
+   * @brief Constructor.
+   * @param nBuffers number of buffers, also queue capacity.
+   * @param bufLen buffer length, typically MTU.
+   */
   explicit DynamicRxQueueMixin(size_t nBuffers = 4, size_t bufLen = 1500)
-    : RxQueueMixinT([nBuffers] { return RxQueueT(nBuffers); })
+    : RxQueueMixin<Queue>(nBuffers)
     , m_region(sizeofSubRegions(bufLen, nBuffers))
   {
-    allocBuffers([this, bufLen](RxQueueT& allocQ) {
-      while (Region* sub = makeSubRegion(m_region, bufLen)) {
-        RxQueueItem item;
-        item.region = sub;
-        allocQ.push(item);
-      }
-    });
+    this->initAllocBuffers([=] { return makeSubRegion(m_region, bufLen); });
   }
 
 private:
