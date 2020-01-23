@@ -2,6 +2,7 @@
 #define NDNPH_FACE_PACKET_HANDLER_HPP
 
 #include "../core/common.hpp"
+#include "../packet/lp.hpp"
 
 namespace ndnph {
 
@@ -25,6 +26,8 @@ protected:
   using PacketHandler = BasicPacketHandler<PktTypes>;
   using Interest = typename PktTypes::Interest;
   using Data = typename PktTypes::Data;
+  using Nack = typename PktTypes::Nack;
+  using PacketInfo = typename Face::PacketInfo;
 
   /** @brief Construct without adding to Face. */
   explicit BasicPacketHandler() = default;
@@ -40,11 +43,52 @@ protected:
     return m_face;
   }
 
-  /** @brief Transmit a packet. */
-  template<typename... Arg>
-  bool send(Arg... arg)
+  /**
+   * @brief Retrieve information about current processing packet.
+   * @pre one of processInterest, processData, or processNack is executing.
+   */
+  PacketInfo* getCurrentPacketInfo() const
   {
-    return m_face != nullptr && m_face->send(std::forward<Arg>(arg)...);
+    return m_face == nullptr ? nullptr : m_face->getCurrentPacketInfo();
+  }
+
+  /**
+   * @brief Synchronously transmit a packet.
+   * @tparam Packet Interest, Data, their signed variants, or Nack.
+   * @return whether success.
+   * @post if successful, wire encoding is kept in encoder.
+   */
+  template<typename Packet>
+  bool send(Encoder& encoder, const Packet& packet, PacketInfo pi = {})
+  {
+    return m_face != nullptr && encoder.prepend(lp::encode(packet, pi.pitToken)) &&
+           m_face->getTransport().send(encoder.begin(), encoder.size(), pi.endpointId);
+  }
+
+  /** @brief Synchronously transmit a packet. */
+  template<typename Packet>
+  bool send(const Packet& packet, PacketInfo pi = {})
+  {
+    Region& region = regionOf(packet);
+    Encoder encoder(region);
+    bool ok = send(encoder, packet, pi);
+    encoder.discard();
+    return ok;
+  }
+
+  /**
+   * @brief Synchronously transmit a packet in reply to current processing packet.
+   * @pre one of processInterest, processData, or processNack is executing.
+   *
+   * Parameters: same as send() except PacketInfo.
+   * This is most useful in processInterest, replying a Data or Nack to the same endpointId
+   * and copying the PIT token from current processing Interest.
+   */
+  template<typename... Arg>
+  bool reply(Arg&&... arg)
+  {
+    PacketInfo* pi = getCurrentPacketInfo();
+    return pi != nullptr && send(std::forward<Arg>(arg)..., *pi);
   }
 
 private:
@@ -53,10 +97,8 @@ private:
    * @retval true packet has been accepted by this handler.
    * @retval false packet is not accepted, and should go to the next handler.
    */
-  virtual bool processInterest(Interest interest, uint64_t endpointId)
+  virtual bool processInterest(Interest)
   {
-    (void)interest;
-    (void)endpointId;
     return false;
   }
 
@@ -65,10 +107,18 @@ private:
    * @retval true packet has been accepted by this handler.
    * @retval false packet is not accepted, and should go to the next handler.
    */
-  virtual bool processData(Data data, uint64_t endpointId)
+  virtual bool processData(Data)
   {
-    (void)data;
-    (void)endpointId;
+    return false;
+  }
+
+  /**
+   * @brief Override to receive Nack packets.
+   * @retval true packet has been accepted by this handler.
+   * @retval false packet is not accepted, and should go to the next handler.
+   */
+  virtual bool processNack(Nack)
+  {
     return false;
   }
 

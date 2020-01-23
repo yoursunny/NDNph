@@ -8,6 +8,7 @@
 namespace ndnph {
 namespace detail {
 
+/** @brief Fields in parameterized/signed Interest. */
 struct InterestParams
 {
   tlv::Value appParameters;
@@ -17,13 +18,15 @@ struct InterestParams
   tlv::Value allParams;
 };
 
-class InterestObj : public detail::InRegion
+/** @brief Fields in Interest or Nack. */
+class InterestObj : public InRegion
 {
 public:
   explicit InterestObj(Region& region)
     : InRegion(region)
     , canBePrefix(false)
     , mustBeFresh(false)
+    , nackReason(0)
   {}
 
   enum
@@ -40,6 +43,7 @@ public:
   uint8_t hopLimit = MaxHopLimit;
   bool canBePrefix : 1;
   bool mustBeFresh : 1;
+  uint8_t nackReason : 3;
 };
 
 class InterestRefBase : public RefRegion<InterestObj>

@@ -18,6 +18,8 @@
 #include "ndnph/packet/component.hpp"
 #include "ndnph/packet/data.hpp"
 #include "ndnph/packet/interest.hpp"
+#include "ndnph/packet/lp.hpp"
+#include "ndnph/packet/nack.hpp"
 #include "ndnph/packet/name.hpp"
 #include "ndnph/packet/sig-info.hpp"
 #include "ndnph/tlv/decoder.hpp"

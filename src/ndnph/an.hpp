@@ -41,6 +41,12 @@ enum
 
   Delegation = 0x1F,
   Preference = 0x1E,
+
+  LpPacket = 0x64,
+  LpPayload = 0x50,
+  PitToken = 0x62,
+  Nack = 0x0320,
+  NackReason = 0x0321,
 };
 } // namespace TT
 

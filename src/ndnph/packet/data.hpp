@@ -7,6 +7,7 @@
 namespace ndnph {
 namespace detail {
 
+/** @brief Fields in Data signature. */
 struct DataSigned
 {
   DSigInfo sigInfo;
@@ -15,6 +16,7 @@ struct DataSigned
   tlv::Value wholePacket;
 };
 
+/** @brief Fields in Data. */
 class DataObj : public detail::InRegion
 {
 public:

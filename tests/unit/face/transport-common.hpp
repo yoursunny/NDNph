@@ -52,7 +52,7 @@ public:
     {}
 
   private:
-    bool processInterest(Interest interest, uint64_t) final
+    bool processInterest(Interest interest) final
     {
       EXPECT_EQ(received.count(interest.getNonce()), 0);
       received.insert(interest.getNonce());

@@ -186,7 +186,7 @@ public:
    */
   template<int type, bool repeatable = false, int order = 0, typename Fn = void,
            typename R = detail::EvdElementDefFn<type, repeatable, order, Fn>>
-  static R def(const Fn& f, const decltype(&Fn::operator())* = nullptr)
+  static R def(const Fn& f, decltype(&Fn::operator())* = nullptr)
   {
     return R(f);
   }
@@ -197,7 +197,7 @@ public:
    */
   template<int type, bool repeatable = false, int order = 0, typename Decodable = void,
            typename R = detail::EvdElementDefDecodable<type, repeatable, order, Decodable>>
-  static R def(Decodable* decodable, const decltype(&Decodable::decodeFrom)* = nullptr)
+  static R def(Decodable* decodable, decltype(&Decodable::decodeFrom)* = nullptr)
   {
     return R(decodable);
   }

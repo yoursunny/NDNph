@@ -1,4 +1,5 @@
 #include "ndnph/packet/interest.hpp"
+#include "ndnph/packet/lp.hpp"
 #include "ndnph/port/crypto/port.hpp"
 
 #include "mock/mock-key.hpp"
@@ -34,7 +35,7 @@ TEST(Interest, EncodeMinimal)
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(decoded));
-  EXPECT_TRUE(decoded.getName() == interest.getName());
+  EXPECT_EQ(decoded.getName(), interest.getName());
   EXPECT_EQ(decoded.getCanBePrefix(), false);
   EXPECT_EQ(decoded.getMustBeFresh(), false);
   EXPECT_EQ(decoded.getNonce(), 0xA0A1A2A3);
@@ -47,15 +48,18 @@ TEST(Interest, EncodeFull)
   ASSERT_FALSE(!interest);
 
   std::vector<uint8_t> wire({
-    0x05, 0x16,                         // Interest
-    0x07, 0x03, 0x08, 0x01, 0x41,       // Name
-    0x21, 0x00,                         // CanBePrefix
-    0x12, 0x00,                         // MustBeFresh
-    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3, // Nonce
-    0x0C, 0x02, 0x20, 0x06,             // InterestLifetime
-    0x22, 0x01, 0x05,                   // HopLimit
+    0x64, 0x24,                                                 // LpPacket
+    0x62, 0x08, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, // PitToken
+    0x50, 0x18,                                                 // LpPayload
+    0x05, 0x16,                                                 // Interest
+    0x07, 0x03, 0x08, 0x01, 0x41,                               // Name
+    0x21, 0x00,                                                 // CanBePrefix
+    0x12, 0x00,                                                 // MustBeFresh
+    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3,                         // Nonce
+    0x0C, 0x02, 0x20, 0x06,                                     // InterestLifetime
+    0x22, 0x01, 0x05,                                           // HopLimit
   });
-  interest.setName(Name(&wire[4], 3));
+  interest.setName(Name::parse(region, "/A"));
   interest.setCanBePrefix(true);
   interest.setMustBeFresh(true);
   interest.setNonce(0xA0A1A2A3);
@@ -63,15 +67,20 @@ TEST(Interest, EncodeFull)
   interest.setHopLimit(5);
 
   Encoder encoder(region);
-  bool ok = encoder.prepend(interest);
+  bool ok = encoder.prepend(lp::encode(interest, 0xB0B1B2B3B4B5B6B7));
   ASSERT_TRUE(ok);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
 
+  lp::PacketClassify classify;
+  ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
+  ASSERT_EQ(classify.getType(), lp::PacketClassify::Interest);
+  EXPECT_EQ(classify.getPitToken(), 0xB0B1B2B3B4B5B6B7);
+
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(decoded));
-  EXPECT_TRUE(decoded.getName() == interest.getName());
+  ASSERT_TRUE(classify.decodeInterest(decoded));
+  EXPECT_EQ(decoded.getName(), interest.getName());
   EXPECT_EQ(decoded.getCanBePrefix(), true);
   EXPECT_EQ(decoded.getMustBeFresh(), true);
   EXPECT_EQ(decoded.getNonce(), 0xA0A1A2A3);
@@ -117,7 +126,7 @@ TEST(Interest, EncodeParameterizedAppend)
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
   Encoder encoder(region);
-  ASSERT_TRUE(encoder.prepend(interest.parameterize(appParams)));
+  ASSERT_TRUE(encoder.prepend(lp::encode(interest.parameterize(appParams))));
   encoder.trim();
 
   Interest decoded = region.create<Interest>();
@@ -163,11 +172,12 @@ TEST(Interest, EncodeSignedReplace)
   std::vector<uint8_t> sig({ 0xF0, 0xF1, 0xF2, 0xF3 });
   Encoder encoder(region);
   {
+    g::InSequence seq;
     MockPrivateKey<32> key;
     EXPECT_CALL(key, updateSigInfo).WillOnce([](SigInfo& sigInfo) { sigInfo.sigType = 0x10; });
     EXPECT_CALL(key, doSign(g::ElementsAreArray(signedPortion), g::_))
       .WillOnce(g::DoAll(g::SetArrayArgument<1>(sig.begin(), sig.end()), g::Return(4)));
-    EXPECT_TRUE(encoder.prepend(interest.sign(key)));
+    EXPECT_TRUE(encoder.prepend(lp::encode(interest.sign(key))));
   }
   encoder.trim();
 

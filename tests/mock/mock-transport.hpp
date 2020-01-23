@@ -22,9 +22,8 @@ public:
   }
 
   template<typename Packet>
-  bool receive(Packet packet, uint64_t endpointId = 0)
+  bool receive(Region& region, Packet packet, uint64_t endpointId = 0)
   {
-    Region& region = regionOf(packet);
     Encoder encoder(region);
     if (!encoder.prepend(packet)) {
       return false;
@@ -32,6 +31,13 @@ public:
     encoder.trim();
     invokeRxCallback(region, encoder.begin(), encoder.size(), endpointId);
     return true;
+  }
+
+  template<typename Packet>
+  bool receive(Packet packet, uint64_t endpointId = 0)
+  {
+    Region& region = regionOf(packet);
+    return receive(region, packet, endpointId);
   }
 };
 

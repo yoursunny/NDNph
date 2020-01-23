@@ -1,0 +1,131 @@
+#ifndef NDNPH_PACKET_NACK_HPP
+#define NDNPH_PACKET_NACK_HPP
+
+#include "interest.hpp"
+
+namespace ndnph {
+
+/**
+ * @brief Nack reason.
+ *
+ * These are internal 3-bit representation, not assigned numbers.
+ */
+enum class NackReason : uint8_t
+{
+  None = 0,
+  Congestion = 1,
+  Duplicate = 2,
+  NoRoute = 3,
+  Unspecified = 7,
+};
+
+/** @brief Nack header field. */
+class NackHeader : public detail::RefRegion<detail::InterestObj>
+{
+public:
+  using RefRegion::RefRegion;
+
+  NackReason getReason() const
+  {
+    return static_cast<NackReason>(obj->nackReason);
+  }
+
+  void setReason(NackReason v)
+  {
+    obj->nackReason = static_cast<uint8_t>(v);
+  }
+
+  void encodeTo(Encoder& encoder) const
+  {
+    auto reason = getReason();
+    encoder.prependTlv(TT::Nack, [reason](Encoder& encoder) {
+      if (reason != NackReason::Unspecified) {
+        encoder.prependTlv(TT::NackReason, tlv::NNI(encodeNackReason(reason)));
+      }
+    });
+  }
+
+  bool decodeFrom(const Decoder::Tlv& input)
+  {
+    uint64_t nackReasonV = 0;
+    bool ok = EvDecoder::decode(input, { TT::Nack },
+                                EvDecoder::defNni<TT::NackReason, tlv::NNI>(&nackReasonV));
+    if (ok) {
+      obj->nackReason = static_cast<uint8_t>(decodeNackReason(nackReasonV));
+    }
+    return ok;
+  }
+
+private:
+  static constexpr uint64_t encodeNackReason(NackReason v)
+  {
+    return static_cast<uint64_t>(v) * 50;
+  }
+
+  static constexpr NackReason decodeNackReason(uint64_t v)
+  {
+    return v == 50 || v == 100 || v == 150 ? static_cast<NackReason>(v / 50)
+                                           : NackReason::Unspecified;
+  }
+};
+
+/**
+ * @class Nack
+ * @brief Nack packet.
+ */
+/**
+ * @brief Nack packet.
+ * @tparam InterestT Interest.
+ * @note A port is expected to typedef this template as `Nack` type.
+ */
+template<typename InterestT>
+class BasicNack : public detail::RefRegion<detail::InterestObj>
+{
+public:
+  using Interest = InterestT;
+  using Nack = BasicNack<InterestT>;
+
+  using RefRegion::RefRegion;
+
+  /** @brief Access the Nack header. */
+  NackHeader getHeader() const
+  {
+    return NackHeader(obj);
+  }
+
+  NackReason getReason() const
+  {
+    return getHeader().getReason();
+  }
+
+  /** @brief Access the Interest. */
+  Interest getInterest() const
+  {
+    return Interest(obj);
+  }
+
+  /**
+   * @brief Create a Nack packet in reply to an Interest.
+   *
+   * The enclosed Interest has Name, CanBePrefix, MustBeFresh, ForwardingHint, and Nonce
+   * only. See https://redmine.named-data.net/issues/4535#note-1 for explanation.
+   */
+  static Nack create(Interest interest, NackReason reason)
+  {
+    Region& region = regionOf(interest);
+    Nack nack = region.create<Nack>();
+    if (!!nack) {
+      nack.getHeader().setReason(reason);
+      auto ni = nack.getInterest();
+      ni.setName(interest.getName());
+      ni.setCanBePrefix(interest.getCanBePrefix());
+      ni.setMustBeFresh(interest.getMustBeFresh());
+      ni.setNonce(interest.getNonce());
+    }
+    return nack;
+  }
+};
+
+} // namespace ndnph
+
+#endif // NDNPH_PACKET_NACK_HPP

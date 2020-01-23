@@ -1,9 +1,6 @@
 #ifndef NDNPH_FACE_FACE_HPP
 #define NDNPH_FACE_FACE_HPP
 
-#include "../an.hpp"
-#include "../tlv/decoder.hpp"
-#include "../tlv/encoder.hpp"
 #include "packet-handler.hpp"
 #include "transport.hpp"
 
@@ -26,11 +23,23 @@ public:
   using PacketHandler = BasicPacketHandler<PktTypes>;
   using Interest = typename PktTypes::Interest;
   using Data = typename PktTypes::Data;
+  using Nack = typename PktTypes::Nack;
+
+  struct PacketInfo
+  {
+    uint64_t endpointId = 0;
+    uint64_t pitToken = 0;
+  };
 
   explicit BasicFace(Transport& transport)
     : m_transport(transport)
   {
     m_transport.setRxCallback(transportRx, this);
+  }
+
+  Transport& getTransport() const
+  {
+    return m_transport;
   }
 
   /**
@@ -80,66 +89,74 @@ public:
     m_transport.loop();
   }
 
-  /**
-   * @brief Synchronously transmit a packet, keeping wire encoding in Encoder.
-   * @tparam Packet an Encodable type
-   * @return whether success
-   */
-  template<typename Packet>
-  bool send(Encoder& encoder, const Packet& packet, uint64_t endpointId = 0)
+  PacketInfo* getCurrentPacketInfo() const
   {
-    return encoder.prepend(packet) && m_transport.send(encoder.begin(), encoder.size(), endpointId);
-  }
-
-  /**
-   * @brief Synchronously transmit a packet.
-   * @tparam Packet Interest, Data, or their signed variants
-   * @return whether success
-   */
-  template<typename Packet>
-  bool send(const Packet& packet, uint64_t endpointId = 0)
-  {
-    Region& region = regionOf(packet);
-    Encoder encoder(region);
-    bool ok = send(encoder, packet, endpointId);
-    encoder.discard();
-    return ok;
+    return m_currentPacketInfo;
   }
 
 private:
+  class ScopedCurrentPacketInfo
+  {
+  public:
+    explicit ScopedCurrentPacketInfo(Face& face, PacketInfo& pi)
+      : m_face(face)
+    {
+      m_face.m_currentPacketInfo = &pi;
+    }
+
+    ~ScopedCurrentPacketInfo()
+    {
+      m_face.m_currentPacketInfo = nullptr;
+    }
+
+  private:
+    Face& m_face;
+  };
+
   static void transportRx(void* self0, Region& region, const uint8_t* pkt, size_t pktLen,
                           uint64_t endpointId)
   {
     Face& self = *reinterpret_cast<Face*>(self0);
-    Decoder::Tlv d;
-    if (!Decoder::readTlv(d, pkt, pkt + pktLen)) {
+    lp::PacketClassify classify;
+    if (!Decoder(pkt, pktLen).decode(classify)) {
       return;
     }
+    PacketInfo pi;
+    pi.endpointId = endpointId;
+    pi.pitToken = classify.getPitToken();
+    ScopedCurrentPacketInfo piScoped(self, pi);
 
-    switch (d.type) {
-      case TT::Interest: {
+    switch (classify.getType()) {
+      case lp::PacketClassify::Interest: {
         Interest interest = region.create<Interest>();
-        if (!!interest && interest.decodeFrom(d)) {
-          self.process(&PacketHandler::processInterest, interest, endpointId);
+        if (!!interest && classify.decodeInterest(interest)) {
+          self.process(&PacketHandler::processInterest, interest);
         }
         break;
       }
-      case TT::Data: {
+      case lp::PacketClassify::Data: {
         Data data = region.create<Data>();
-        if (!!data && data.decodeFrom(d)) {
-          self.process(&PacketHandler::processData, data, endpointId);
+        if (!!data && classify.decodeData(data)) {
+          self.process(&PacketHandler::processData, data);
+        }
+        break;
+      }
+      case lp::PacketClassify::Nack: {
+        Nack nack = region.create<Nack>();
+        if (!!nack && classify.decodeNack(nack)) {
+          self.process(&PacketHandler::processNack, nack);
         }
         break;
       }
     }
   }
 
-  template<typename Packet, typename H = bool (PacketHandler::*)(Packet, uint64_t)>
-  bool process(H processPacket, Packet packet, uint64_t endpointId)
+  template<typename Packet, typename H = bool (PacketHandler::*)(Packet)>
+  bool process(H processPacket, Packet packet)
   {
     bool isAccepted = false;
     for (PacketHandler* h = m_handler; h != nullptr && !isAccepted; h = h->m_next) {
-      isAccepted = (h->*processPacket)(packet, endpointId);
+      isAccepted = (h->*processPacket)(packet);
     }
     return isAccepted;
   }
@@ -147,6 +164,7 @@ private:
 private:
   Transport& m_transport;
   PacketHandler* m_handler = nullptr;
+  PacketInfo* m_currentPacketInfo = nullptr;
 };
 
 } // namespace ndnph

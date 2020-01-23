@@ -5,7 +5,7 @@
 #include "../../keychain/digest-key.hpp"
 #include "../../keychain/ecdsa-key.hpp"
 #include "../../packet/data.hpp"
-#include "../../packet/interest.hpp"
+#include "../../packet/nack.hpp"
 
 /**
  * @brief Declare types dependent on crypto port.
@@ -18,10 +18,12 @@
   {                                                                                                \
     using Interest = BasicInterest<Sha256Port>;                                                    \
     using Data = BasicData<Sha256Port>;                                                            \
+    using Nack = BasicNack<Interest>;                                                              \
   };                                                                                               \
   }                                                                                                \
   using Interest = detail::PktTypes::Interest;                                                     \
   using Data = detail::PktTypes::Data;                                                             \
+  using Nack = detail::PktTypes::Nack;                                                             \
   using Face = BasicFace<detail::PktTypes>;                                                        \
   using PacketHandler = BasicPacketHandler<detail::PktTypes>;                                      \
   using DigestKey = BasicDigestKey<Sha256Port>;                                                    \

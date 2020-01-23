@@ -70,6 +70,24 @@ TEST(NNI, Decode)
   {
     auto it = decoder.begin(), end = decoder.end();
     uint64_t n = 0;
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_TRUE(tlv::NNI8::decode(*it++, n));
+    EXPECT_EQ(n, 0xA0A1A2A3A4A5A6A7);
+    EXPECT_FALSE(tlv::NNI8::decode(*it++, n));
+    EXPECT_TRUE(it == end);
+    EXPECT_FALSE(it.hasError());
+  }
+
+  {
+    auto it = decoder.begin(), end = decoder.end();
+    uint64_t n = 0;
     EXPECT_FALSE(tlv::NNI::decode(*it++, n));
     EXPECT_TRUE(tlv::NNI::decode(*it++, n));
     EXPECT_EQ(n, 0xA0);
@@ -136,36 +154,32 @@ TEST(NNI, Encode)
   encoder.prependTlv(0x40, tlv::NNI4(0x00));
   encoder.prependTlv(0x41, tlv::NNI4(0x0100));
   encoder.prependTlv(0x42, tlv::NNI4(0xA0A1A2A3));
+  encoder.prependTlv(0x80, tlv::NNI8(0x00));
+  encoder.prependTlv(0x81, tlv::NNI8(0x0000A0A1A2A3A4A5));
   encoder.prependTlv(0xC0, tlv::NNI(0x00));
   encoder.prependTlv(0xC1, tlv::NNI(0x0100));
   encoder.prependTlv(0xC2, tlv::NNI(0xA0A1A2A3));
-  encoder.prependTlv(0xC3, tlv::NNI(0xB0B1B2B3B4B5B6B7));
+  encoder.prependTlv(0xC3, tlv::NNI(0x00B0B1B2B3B4B5B6));
 
   ASSERT_FALSE(!encoder);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
-              g::ElementsAre(0xC3, 0x08, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6,
-                             0xB7, // C3
-                             0xC2, 0x04, 0xA0, 0xA1, 0xA2,
-                             0xA3, // C2
-                             0xC1, 0x02, 0x01,
-                             0x00, // C1
-                             0xC0, 0x01,
-                             0x00, // C0
-                             0x42, 0x04, 0xA0, 0xA1, 0xA2,
-                             0xA3, // 42
-                             0x41, 0x04, 0x00, 0x00, 0x01,
-                             0x00, // 41
-                             0x40, 0x04, 0x00, 0x00, 0x00,
-                             0x00, // 40
-                             0x11, 0x01,
-                             0xA0, // 11
-                             0x10, 0x01,
-                             0x00 // 10
-                             ));
+              g::ElementsAreArray({
+                0xC3, 0x08, 0x00, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, // C3
+                0xC2, 0x04, 0xA0, 0xA1, 0xA2, 0xA3,                         // C2
+                0xC1, 0x02, 0x01, 0x00,                                     // C1
+                0xC0, 0x01, 0x00,                                           // C0
+                0x81, 0x08, 0x00, 0x00, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, // 81
+                0x80, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 80
+                0x42, 0x04, 0xA0, 0xA1, 0xA2, 0xA3,                         // 42
+                0x41, 0x04, 0x00, 0x00, 0x01, 0x00,                         // 41
+                0x40, 0x04, 0x00, 0x00, 0x00, 0x00,                         // 40
+                0x11, 0x01, 0xA0,                                           // 11
+                0x10, 0x01, 0x00                                            // 10
+              }));
 
   encoder.trim();
-  encoder.prepend(tlv::NNI1(0x00), tlv::NNI4(0x00), tlv::NNI(0x00), tlv::NNI(0x0100),
-                  tlv::NNI(0x00010000), tlv::NNI(0x0000000100000000));
+  encoder.prepend(tlv::NNI1(0x00), tlv::NNI4(0x00), tlv::NNI8(0x00), tlv::NNI(0x00),
+                  tlv::NNI(0x0100), tlv::NNI(0x00010000), tlv::NNI(0x0000000100000000));
   EXPECT_TRUE(!encoder);
 }
 
