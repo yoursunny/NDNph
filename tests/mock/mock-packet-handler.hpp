@@ -11,18 +11,11 @@ namespace ndnph {
 class MockPacketHandler : public PacketHandler
 {
 public:
-  explicit MockPacketHandler(Face& face, int8_t prio = 0)
-    : PacketHandler(face, prio)
-  {}
-
   using PacketHandler::getCurrentPacketInfo;
-  using PacketHandler::reply;
-  using PacketHandler::send;
+  using PacketHandler::PacketHandler;
 
   MOCK_METHOD(bool, processInterest, (Interest), (override));
-
   MOCK_METHOD(bool, processData, (Data), (override));
-
   MOCK_METHOD(bool, processNack, (Nack), (override));
 };
 

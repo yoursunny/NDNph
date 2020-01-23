@@ -21,7 +21,7 @@ class BasicFace;
 template<typename PktTypes>
 class BasicPacketHandler
 {
-protected:
+public:
   using Face = BasicFace<PktTypes>;
   using PacketHandler = BasicPacketHandler<PktTypes>;
   using Interest = typename PktTypes::Interest;
@@ -35,6 +35,7 @@ protected:
   /** @brief Construct and add handler to Face. */
   explicit BasicPacketHandler(Face& face, int8_t prio = 0);
 
+protected:
   /** @brief Remove handler from Face. */
   virtual ~BasicPacketHandler();
 
@@ -65,13 +66,69 @@ protected:
            m_face->getTransport().send(encoder.begin(), encoder.size(), pi.endpointId);
   }
 
-  /** @brief Synchronously transmit a packet. */
-  template<typename Packet>
-  bool send(const Packet& packet, PacketInfo pi = {})
+  /** @brief Set EndpointId of PacketInfo. */
+  class WithEndpointId
+  {
+  public:
+    explicit WithEndpointId(uint64_t endpointId)
+      : endpointId(endpointId)
+    {}
+
+    void operator()(PacketInfo& pi) const
+    {
+      pi.endpointId = endpointId;
+    }
+
+  public:
+    uint64_t endpointId = 0;
+  };
+
+  /** @brief Set PIT token of PacketInfo. */
+  class WithPitToken
+  {
+  public:
+    explicit WithPitToken(uint64_t pitToken)
+      : pitToken(pitToken)
+    {}
+
+    void operator()(PacketInfo& pi) const
+    {
+      pi.pitToken = pitToken;
+    }
+
+  public:
+    uint64_t pitToken = 0;
+  };
+
+  /**
+   * @brief Synchronously transmit a packet.
+   * @tparam PacketInfoModifier WithEndpointId or WithPitToken
+   */
+  template<typename Packet, typename... PacketInfoModifier>
+  bool send(Encoder& encoder, const Packet& packet, const PacketInfoModifier&... pim)
+  {
+    return send(encoder, packet, PacketInfo(), pim...);
+  }
+
+  /**
+   * @brief Synchronously transmit a packet.
+   * @tparam Arg either a sequence of `PacketInfoModifier` or `PacketInfo`.
+   *
+   * @code
+   * send(interest);
+   * send(interest, WithEndpointId(4688));
+   * send(interest, WithPitToken(0x013CA61E013F0B7A), WithEndpointId(4688));
+   * send(interest, myPacketInfo);
+   * @endcode
+   */
+  template<typename Packet, typename... Arg,
+           typename = typename std::enable_if<
+             !std::is_same<Encoder, typename std::decay<Packet>::type>::value>::type>
+  bool send(const Packet& packet, Arg&&... arg)
   {
     Region& region = regionOf(packet);
     Encoder encoder(region);
-    bool ok = send(encoder, packet, pi);
+    bool ok = send(encoder, packet, std::forward<Arg>(arg)...);
     encoder.discard();
     return ok;
   }
@@ -79,10 +136,10 @@ protected:
   /**
    * @brief Synchronously transmit a packet in reply to current processing packet.
    * @pre one of processInterest, processData, or processNack is executing.
+   * @param arg either `Encoder&, const Packet&` or `const Packet&`.
    *
-   * Parameters: same as send() except PacketInfo.
-   * This is most useful in processInterest, replying a Data or Nack to the same endpointId
-   * and copying the PIT token from current processing Interest.
+   * This is most useful in processInterest, replying a Data or Nack carrying the PIT token of
+   * current Interest to the endpointId of current Interest.
    */
   template<typename... Arg>
   bool reply(Arg&&... arg)
@@ -120,6 +177,14 @@ private:
   virtual bool processNack(Nack)
   {
     return false;
+  }
+
+  template<typename Packet, typename PimFirst, typename... PimRest>
+  bool send(Encoder& encoder, const Packet& packet, PacketInfo pi, const PimFirst& pimFirst,
+            const PimRest&... pimRest)
+  {
+    pimFirst(pi);
+    return send(encoder, packet, pi, pimRest...);
   }
 
 private:

@@ -62,46 +62,72 @@ TEST(Face, Receive)
   ASSERT_TRUE(transport.receive(region, lp::encode(nack, 0xDE249BD0398EC80F)));
 }
 
+class MyPacketHandler : public MockPacketHandler
+{
+public:
+  using MockPacketHandler::MockPacketHandler;
+
+  void setupExpect()
+  {
+    EXPECT_CALL(*this, processInterest(g::Property(&Interest::getName, g::Eq(request.getName()))))
+      .WillOnce([this](Interest) {
+        send(data.sign(NullPrivateKey()));
+        reply(nack);
+        send(interest, WithEndpointId(2035), WithPitToken(0xA31A71CE4C365FF4));
+        return true;
+      });
+  }
+
+public:
+  Interest request;
+  Data data;
+  Nack nack;
+  Interest interest;
+};
+
 TEST(Face, Send)
 {
   MockTransport transport;
   Face face(transport);
-  MockPacketHandler hA(face);
+  MyPacketHandler hA(face);
   StaticRegion<1024> region;
 
-  Interest interest = region.create<Interest>();
-  ASSERT_FALSE(!interest);
-  interest.setName(Name::parse(region, "/A"));
-  interest.setCanBePrefix(true);
+  hA.request = region.create<Interest>();
+  ASSERT_FALSE(!hA.request);
+  hA.request.setName(Name::parse(region, "/A"));
+  hA.request.setCanBePrefix(true);
 
-  Data data = region.create<Data>();
-  ASSERT_FALSE(!data);
-  data.setName(Name::parse(region, "/A/1"));
+  hA.data = region.create<Data>();
+  ASSERT_FALSE(!hA.data);
+  hA.data.setName(Name::parse(region, "/A/1"));
   Encoder encoderD(region);
-  encoderD.prepend(data.sign(NullPrivateKey()));
+  encoderD.prepend(hA.data.sign(NullPrivateKey()));
   encoderD.trim();
 
-  Nack nack = Nack::create(interest, NackReason::NoRoute);
-  ASSERT_FALSE(!nack);
+  hA.nack = Nack::create(hA.request, NackReason::NoRoute);
+  ASSERT_FALSE(!hA.nack);
   Encoder encoderN(region);
-  encoderN.prepend(lp::encode(nack, 0xDE249BD0398EC80F));
+  encoderN.prepend(lp::encode(hA.nack, 0xDE249BD0398EC80F));
   encoderN.trim();
 
-  EXPECT_CALL(hA, processInterest(g::Property(&Interest::getName, g::Eq(interest.getName()))))
-    .WillOnce(g::DoAll(g::WithoutArgs([&] {
-                         hA.send(data.sign(NullPrivateKey()));
-                         hA.reply(nack);
-                         return true;
-                       }),
-                       g::Return(true)));
+  hA.interest = region.create<Interest>();
+  ASSERT_FALSE(!hA.interest);
+  hA.interest.setName(Name::parse(region, "/B"));
+  Encoder encoderI(region);
+  encoderI.prepend(lp::encode(hA.interest, 0xA31A71CE4C365FF4));
+  encoderI.trim();
+
+  hA.setupExpect();
   {
     g::InSequence seq;
     EXPECT_CALL(transport, doSend(g::ElementsAreArray(encoderD.begin(), encoderD.end()), 0))
       .WillOnce(g::Return(true));
     EXPECT_CALL(transport, doSend(g::ElementsAreArray(encoderN.begin(), encoderN.end()), 3202))
       .WillOnce(g::Return(true));
+    EXPECT_CALL(transport, doSend(g::ElementsAreArray(encoderI.begin(), encoderI.end()), 2035))
+      .WillOnce(g::Return(true));
   }
-  EXPECT_TRUE(transport.receive(region, lp::encode(interest, 0xDE249BD0398EC80F), 3202));
+  EXPECT_TRUE(transport.receive(region, lp::encode(hA.request, 0xDE249BD0398EC80F), 3202));
 }
 
 } // namespace
