@@ -96,7 +96,7 @@ private:
 
 } // namespace detail
 
-/** @brief TLV-VALUE decoder that understands Packet Format v0.3 evolvability guidelines. */
+/** @brief TLV decoder that understands Packet Format v0.3 evolvability guidelines. */
 class EvDecoder
 {
 public:
@@ -139,7 +139,7 @@ public:
    * @param input TLV element from Decoder.
    * @param topTypes a list of acceptable top-level TLV-TYPE numbers;
    *                 if empty, top-level TLV-TYPE is not checked.
-   * @param unknownCb callback to handle TLV with unrecognized TLV-TYPE number.
+   * @param unknownCb callback to handle TLV with TLV-TYPE number not in defs.
    * @param isCritical callback to determine whether an unrecognized TLV-TYPE number
    *                   is 'critical' and should cause a decode error.
    * @param defs a sequence of ElementDef to recognize each sub TLV element.
@@ -186,7 +186,7 @@ public:
    */
   template<int type, bool repeatable = false, int order = 0, typename Fn = void,
            typename R = detail::EvdElementDefFn<type, repeatable, order, Fn>>
-  static R def(const Fn& f, decltype(&Fn::operator())* = nullptr)
+  static R def(const Fn& f, decltype(&Fn::operator()) = nullptr)
   {
     return R(f);
   }
@@ -197,7 +197,7 @@ public:
    */
   template<int type, bool repeatable = false, int order = 0, typename Decodable = void,
            typename R = detail::EvdElementDefDecodable<type, repeatable, order, Decodable>>
-  static R def(Decodable* decodable, decltype(&Decodable::decodeFrom)* = nullptr)
+  static R def(Decodable* decodable, decltype(&Decodable::decodeFrom) = nullptr)
   {
     return R(decodable);
   }

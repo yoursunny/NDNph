@@ -22,9 +22,15 @@ public:
     }
     encoder.prependTlv(TT::LpPacket,
                        [this](Encoder& encoder) {
-                         pitToken != 0 && encoder.prependTlv(TT::PitToken, tlv::NNI8(pitToken));
+                         if (pitToken != 0) {
+                           encoder.prependTlv(TT::PitToken, tlv::NNI8(pitToken));
+                         }
                        },
-                       [this](Encoder& encoder) { !!nack && encoder.prepend(nack); },
+                       [this](Encoder& encoder) {
+                         if (!!nack) {
+                           encoder.prepend(nack);
+                         }
+                       },
                        [this](Encoder& encoder) { encoder.prependTlv(TT::LpPayload, l3); });
   }
 
@@ -44,7 +50,7 @@ namespace lp {
  */
 template<typename L3, typename R = detail::LpEncodable<L3>>
 R
-encode(L3 l3, uint64_t pitToken = 0, decltype(&L3::encodeTo)* = nullptr)
+encode(L3 l3, uint64_t pitToken = 0, decltype(&L3::encodeTo) = nullptr)
 {
   R encodable(l3);
   encodable.pitToken = pitToken;
@@ -58,7 +64,7 @@ encode(L3 l3, uint64_t pitToken = 0, decltype(&L3::encodeTo)* = nullptr)
  */
 template<typename NackT, typename R = detail::LpEncodable<typename NackT::Interest>>
 R
-encode(NackT nack, uint64_t pitToken = 0, decltype(&NackT::getHeader)* = nullptr)
+encode(NackT nack, uint64_t pitToken = 0, decltype(&NackT::getHeader) = nullptr)
 {
   R encodable(nack.getInterest());
   encodable.nack = nack.getHeader();
@@ -91,31 +97,31 @@ public:
         return false;
     }
 
-    return EvDecoder::decodeEx(
-             input, { TT::LpPacket }, EvDecoder::DefaultUnknownCb(),
-             [](uint32_t type) { return type < 800 || type > 959 || (type & 0x03) != 0x00; },
-             EvDecoder::defNni<TT::PitToken, tlv::NNI8>(&m_pitToken),
-             EvDecoder::def<TT::Nack>([this](const Decoder::Tlv& d) {
-               m_type = Nack;
-               m_nack = d;
-             }),
-             EvDecoder::def<TT::LpPayload>([this](const Decoder::Tlv& d) {
-               for (auto l3 : d.vd()) {
-                 m_l3 = l3;
-                 switch (l3.type) {
-                   case TT::Interest:
-                     m_type = m_type == Nack ? Nack : Interest;
-                     return true;
-                   case TT::Data:
-                     m_type = Data;
-                     return true;
-                   default:
-                     return false;
-                 }
-               }
-               return false;
-             })) &&
-           m_type != static_cast<Type>(0);
+    bool ok = EvDecoder::decodeEx(
+      input, { TT::LpPacket }, EvDecoder::DefaultUnknownCb(),
+      [](uint32_t type) { return type < 800 || type > 959 || (type & 0x03) != 0x00; },
+      EvDecoder::defNni<TT::PitToken, tlv::NNI8>(&m_pitToken),
+      EvDecoder::def<TT::Nack>([this](const Decoder::Tlv& d) {
+        m_type = Nack;
+        m_nack = d;
+      }),
+      EvDecoder::def<TT::LpPayload>([this](const Decoder::Tlv& d) {
+        for (auto l3 : d.vd()) {
+          m_l3 = l3;
+          switch (l3.type) {
+            case TT::Interest:
+              m_type = m_type == Nack ? Nack : Interest;
+              return true;
+            case TT::Data:
+              m_type = Data;
+              return true;
+            default:
+              return false;
+          }
+        }
+        return false;
+      }));
+    return ok && m_type != static_cast<Type>(0);
   }
 
   /** @brief Determine L3 packet type. */

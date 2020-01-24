@@ -89,7 +89,7 @@ public:
     m_transport.loop();
   }
 
-  PacketInfo* getCurrentPacketInfo() const
+  const PacketInfo* getCurrentPacketInfo() const
   {
     return m_currentPacketInfo;
   }
@@ -164,7 +164,7 @@ private:
 private:
   Transport& m_transport;
   PacketHandler* m_handler = nullptr;
-  PacketInfo* m_currentPacketInfo = nullptr;
+  const PacketInfo* m_currentPacketInfo = nullptr;
 };
 
 } // namespace ndnph

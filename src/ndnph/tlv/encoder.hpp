@@ -191,13 +191,13 @@ private:
   }
 
   template<typename T>
-  void prependOne(const T& encodeFunc, decltype(&T::operator())* = nullptr)
+  void prependOne(const T& encodeFunc, decltype(&T::operator()) = nullptr)
   {
     encodeFunc(*this);
   }
 
   template<typename T>
-  void prependOne(const T& encodable, decltype(&T::encodeTo)* = nullptr)
+  void prependOne(const T& encodable, decltype(&T::encodeTo) = nullptr)
   {
     encodable.encodeTo(*this);
   }

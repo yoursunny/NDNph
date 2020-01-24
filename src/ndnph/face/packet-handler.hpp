@@ -48,7 +48,7 @@ protected:
    * @brief Retrieve information about current processing packet.
    * @pre one of processInterest, processData, or processNack is executing.
    */
-  PacketInfo* getCurrentPacketInfo() const
+  const PacketInfo* getCurrentPacketInfo() const
   {
     return m_face == nullptr ? nullptr : m_face->getCurrentPacketInfo();
   }
@@ -144,7 +144,7 @@ protected:
   template<typename... Arg>
   bool reply(Arg&&... arg)
   {
-    PacketInfo* pi = getCurrentPacketInfo();
+    const PacketInfo* pi = getCurrentPacketInfo();
     return pi != nullptr && send(std::forward<Arg>(arg)..., *pi);
   }
 

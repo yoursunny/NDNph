@@ -57,15 +57,21 @@ public:
   }
 
 private:
-  static constexpr uint64_t encodeNackReason(NackReason v)
+  static uint64_t encodeNackReason(NackReason v)
   {
     return static_cast<uint64_t>(v) * 50;
   }
 
-  static constexpr NackReason decodeNackReason(uint64_t v)
+  static NackReason decodeNackReason(uint64_t v)
   {
-    return v == 50 || v == 100 || v == 150 ? static_cast<NackReason>(v / 50)
-                                           : NackReason::Unspecified;
+    switch (v) {
+      case 50:
+      case 100:
+      case 150:
+        return static_cast<NackReason>(v / 50);
+      default:
+        return NackReason::Unspecified;
+    }
   }
 };
 
