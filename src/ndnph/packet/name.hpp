@@ -12,10 +12,7 @@ namespace ndnph {
  *
  * This type is immutable, except `decodeFrom()` method.
  */
-class Name
-#ifdef NDNPH_PRINT_ARDUINO
-  : public ::Printable
-#endif
+class Name : public detail::Printable
 {
 public:
   /** @brief Construct referencing TLV-VALUE. */
@@ -262,7 +259,7 @@ public:
 
 #ifdef NDNPH_PRINT_ARDUINO
   /** @brief Print name as URI. */
-  size_t printTo(::Print& p) const override
+  size_t printTo(::Print& p) const final
   {
     size_t count = 0;
     if (m_nComps == 0) {
@@ -270,7 +267,8 @@ public:
     } else {
       for (auto comp : *this) {
         count += p.print('/');
-        count += p.print(comp);
+        // count += p.print(comp);
+        count += comp.printTo(p);
       }
     }
     return count;

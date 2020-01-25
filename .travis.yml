@@ -50,6 +50,7 @@ install:
     sudo ninja install
   - |
     : install Arduino
+    sudo iptables -A INPUT -p udp -m udp --dport 5353 -j DROP
     export INSTALL_PLATFORMS='esp8266,esp32,nrf52'
     source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh | \
              sed -e '/sudo pip3/ d' -e 's/pip3 install --user/pip install/')

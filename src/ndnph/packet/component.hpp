@@ -2,6 +2,7 @@
 #define NDNPH_PACKET_COMPONENT_HPP
 
 #include "../an.hpp"
+#include "../core/printing.hpp"
 #include "../core/region.hpp"
 #include "../tlv/decoder.hpp"
 
@@ -12,10 +13,7 @@ namespace ndnph {
  *
  * This type is immutable, except `decodeFrom()` method.
  */
-class Component
-#ifdef NDNPH_PRINT_ARDUINO
-  : public ::Printable
-#endif
+class Component : public detail::Printable
 {
 public:
   explicit Component() = default;
@@ -162,7 +160,7 @@ public:
   }
 
 #ifdef NDNPH_PRINT_ARDUINO
-  size_t printTo(::Print& p) const override
+  size_t printTo(::Print& p) const final
   {
     size_t count = 0;
     printImpl([&](const char* str) { count += p.print(str); });
