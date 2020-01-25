@@ -1,6 +1,8 @@
 #ifndef NDNPH_PACKET_LP_HPP
 #define NDNPH_PACKET_LP_HPP
 
+#include "data.hpp"
+#include "interest.hpp"
 #include "nack.hpp"
 
 namespace ndnph {
@@ -50,7 +52,7 @@ namespace lp {
  */
 template<typename L3, typename R = detail::LpEncodable<L3>>
 R
-encode(L3 l3, uint64_t pitToken = 0, decltype(&L3::encodeTo) = nullptr)
+encode(L3 l3, uint64_t pitToken = 0)
 {
   R encodable(l3);
   encodable.pitToken = pitToken;
@@ -59,16 +61,13 @@ encode(L3 l3, uint64_t pitToken = 0, decltype(&L3::encodeTo) = nullptr)
 
 /**
  * @brief Encode Nack as LpPacket, optionally with PIT token.
- * @tparam NackT Nack.
  * @return an Encodable object.
  */
-template<typename NackT, typename R = detail::LpEncodable<typename NackT::Interest>>
-R
-encode(NackT nack, uint64_t pitToken = 0, decltype(&NackT::getHeader) = nullptr)
+inline detail::LpEncodable<Interest>
+encode(Nack nack, uint64_t pitToken = 0)
 {
-  R encodable(nack.getInterest());
+  auto encodable = encode(nack.getInterest(), pitToken);
   encodable.nack = nack.getHeader();
-  encodable.pitToken = pitToken;
   return encodable;
 }
 
@@ -140,8 +139,7 @@ public:
    * @brief Decode payload as Interest.
    * @pre getType() == Interest
    */
-  template<typename InterestT>
-  bool decodeInterest(InterestT interest) const
+  bool decodeInterest(::ndnph::Interest interest) const
   {
     return m_type == Interest && interest.decodeFrom(m_l3);
   }
@@ -150,8 +148,7 @@ public:
    * @brief Decode payload as Data.
    * @pre getType() == Data
    */
-  template<typename DataT>
-  bool decodeData(DataT data) const
+  bool decodeData(::ndnph::Data data) const
   {
     return m_type == Data && data.decodeFrom(m_l3);
   }
@@ -160,8 +157,7 @@ public:
    * @brief Decode Nack.
    * @pre getType() == Nack
    */
-  template<typename NackT>
-  bool decodeNack(NackT nack) const
+  bool decodeNack(::ndnph::Nack nack) const
   {
     return m_type == Nack && nack.getHeader().decodeFrom(m_nack) &&
            nack.getInterest().decodeFrom(m_l3);

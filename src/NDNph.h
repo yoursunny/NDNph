@@ -1,5 +1,8 @@
 #ifndef NDNPH_H
 #define NDNPH_H
+#include "ndnph/port/crypto/port.hpp"
+#include "ndnph/port/random/port.hpp"
+#include "ndnph/port/queue/port.hpp"
 #include "ndnph/an.hpp"
 #include "ndnph/core/common.hpp"
 #include "ndnph/core/in-region.hpp"
@@ -28,8 +31,5 @@
 #include "ndnph/tlv/nni.hpp"
 #include "ndnph/tlv/value.hpp"
 #include "ndnph/tlv/varnum.hpp"
-#include "ndnph/port/crypto/port.hpp"
-#include "ndnph/port/queue/port.hpp"
-#include "ndnph/port/random/port.hpp"
 #include "ndnph/port/transport/port.hpp"
 #endif // NDNPH_H

@@ -6,59 +6,47 @@
 
 namespace ndnph {
 
-/**
- * @brief ECDSA public key.
- * @tparam Sha256Port platform-specific SHA256 implementation.
- * @tparam EcdsaPort platform-specific ECDSA implementation.
- */
-template<typename Sha256Port, typename EcdsaPort, typename PubPort = typename EcdsaPort::PublicKey>
-class BasicEcdsaPublicKey
+/** @brief ECDSA public key. */
+class EcdsaPublicKey
 {
 public:
-  explicit BasicEcdsaPublicKey() = default;
+  explicit EcdsaPublicKey() = default;
 
-  explicit BasicEcdsaPublicKey(const Name&, std::unique_ptr<PubPort> key)
+  explicit EcdsaPublicKey(const Name&, std::unique_ptr<port::Ecdsa::PublicKey> key)
     : m_key(std::move(key))
   {}
 
   bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig, size_t sigLen) const
   {
     uint8_t digest[NDNPH_SHA256_LEN];
-    return m_key != nullptr && detail::computeDigest<Sha256Port>(chunks, digest) &&
+    return m_key != nullptr && detail::computeDigest(chunks, digest) &&
            m_key->verify(digest, sig, sigLen);
   }
 
 private:
-  std::unique_ptr<PubPort> m_key;
+  std::unique_ptr<port::Ecdsa::PublicKey> m_key;
 };
 
-/**
- * @brief ECDSA private key.
- * @tparam Sha256Port platform-specific SHA256 implementation.
- * @tparam EcdsaPort platform-specific ECDSA implementation.
- */
-template<typename Sha256Port, typename EcdsaPort, typename PvtPort = typename EcdsaPort::PrivateKey>
-class BasicEcdsaPrivateKey
+/** @brief ECDSA private key. */
+class EcdsaPrivateKey
 {
 public:
-  template<typename RandomSrc, typename PubPort = typename EcdsaPort::PublicKey>
-  static bool generate(RandomSrc& rng, const Name& name,
-                       BasicEcdsaPrivateKey<Sha256Port, EcdsaPort>& pvt,
-                       BasicEcdsaPublicKey<Sha256Port, EcdsaPort>& pub)
+  template<typename RandomSrc>
+  static bool generate(RandomSrc& rng, const Name& name, EcdsaPrivateKey& pvt, EcdsaPublicKey& pub)
   {
-    std::unique_ptr<PvtPort> portPvt(new PvtPort());
-    std::unique_ptr<PubPort> portPub(new PubPort());
-    if (!EcdsaPort::generateKey(rng, *portPvt, *portPub)) {
+    std::unique_ptr<port::Ecdsa::PrivateKey> portPvt(new port::Ecdsa::PrivateKey());
+    std::unique_ptr<port::Ecdsa::PublicKey> portPub(new port::Ecdsa::PublicKey());
+    if (!port::Ecdsa::generateKey(rng, *portPvt, *portPub)) {
       return false;
     }
-    pvt = BasicEcdsaPrivateKey<Sha256Port, EcdsaPort>(name, std::move(portPvt));
-    pub = BasicEcdsaPublicKey<Sha256Port, EcdsaPort>(name, std::move(portPub));
+    pvt = EcdsaPrivateKey(name, std::move(portPvt));
+    pub = EcdsaPublicKey(name, std::move(portPub));
     return true;
   }
 
-  explicit BasicEcdsaPrivateKey() = default;
+  explicit EcdsaPrivateKey() = default;
 
-  explicit BasicEcdsaPrivateKey(const Name& name, std::unique_ptr<PvtPort> key)
+  explicit EcdsaPrivateKey(const Name& name, std::unique_ptr<port::Ecdsa::PrivateKey> key)
     : m_name(name)
     , m_key(std::move(key))
   {}
@@ -69,19 +57,18 @@ public:
     sigInfo.name = m_name;
   }
 
-  using MaxSigLen = typename EcdsaPort::Curve::MaxSigLen;
+  using MaxSigLen = port::Ecdsa::Curve::MaxSigLen;
 
   ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const
   {
     uint8_t digest[NDNPH_SHA256_LEN];
-    return m_key == nullptr || !detail::computeDigest<Sha256Port>(chunks, digest)
-             ? -1
-             : m_key->sign(digest, sig);
+    return m_key == nullptr || !detail::computeDigest(chunks, digest) ? -1
+                                                                      : m_key->sign(digest, sig);
   }
 
 private:
   Name m_name;
-  std::unique_ptr<PvtPort> m_key;
+  std::unique_ptr<port::Ecdsa::PrivateKey> m_key;
 };
 
 } // namespace ndnph

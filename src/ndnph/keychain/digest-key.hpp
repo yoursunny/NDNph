@@ -6,13 +6,8 @@
 
 namespace ndnph {
 
-/**
- * @brief DigestSha256 signing and verification.
- * @tparam Sha256Port platform-specific SHA256 implementation.
- * @tparam TimingSafeEqual platform-specific timing safe equal implementation.
- */
-template<typename Sha256Port, typename TimingSafeEqual = DefaultTimingSafeEqual>
-class BasicDigestKey
+/** @brief DigestSha256 signing and verification. */
+class DigestKey
 {
 public:
   void updateSigInfo(SigInfo& sigInfo) const
@@ -25,15 +20,15 @@ public:
 
   ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const
   {
-    bool ok = detail::computeDigest<Sha256Port>(chunks, sig);
+    bool ok = detail::computeDigest(chunks, sig);
     return ok ? NDNPH_SHA256_LEN : -1;
   }
 
   bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig, size_t sigLen) const
   {
     uint8_t digest[NDNPH_SHA256_LEN];
-    return detail::computeDigest<Sha256Port>(chunks, digest) &&
-           TimingSafeEqual()(digest, NDNPH_SHA256_LEN, sig, sigLen);
+    return detail::computeDigest(chunks, digest) &&
+           port::TimingSafeEqual()(digest, NDNPH_SHA256_LEN, sig, sigLen);
   }
 };
 

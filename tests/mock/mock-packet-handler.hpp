@@ -2,7 +2,6 @@
 #define NDNPH_TEST_MOCK_PACKET_HANDLER_HPP
 
 #include "ndnph/face/packet-handler.hpp"
-#include "ndnph/port/crypto/port.hpp"
 
 #include "test-common.hpp"
 

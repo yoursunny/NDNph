@@ -7,25 +7,17 @@ namespace ndnph {
 
 /**
  * @brief Virtual transport that connects to an peer.
- * @tparam Queue a queue of RxQueueItem; it should be thread-safe if the two
- *               bridged transports are used in different threads.
- * @note A port is expected to typedef this template as `BridgeTransport` type.
- *
- * Queue capacity and MTU may be adjusted via constructor.
  */
-template<typename Queue, typename QM = transport::DynamicRxQueueMixin<Queue>>
-class BasicBridgeTransport
+class BridgeTransport
   : public virtual Transport
-  , public QM
+  , public transport::DynamicRxQueueMixin
 {
 public:
-  using BridgeTransport = BasicBridgeTransport<Queue>;
-
-  using QM::QM;
+  using transport::DynamicRxQueueMixin::DynamicRxQueueMixin;
 
   /**
    * @brief Connect to peer transport.
-   * @post Packets sent on one transport are received at the other.
+   * @post Packets sent on one transport are received at the peer.
    */
   bool begin(BridgeTransport& peer)
   {

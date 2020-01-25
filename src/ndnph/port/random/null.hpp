@@ -24,7 +24,9 @@ public:
 } // namespace port_random_null
 
 #ifdef NDNPH_PORT_RANDOM_NULL
+namespace port {
 using RandomSource = port_random_null::RandomSource;
+} // namespace port
 #endif
 
 } // namespace ndnph

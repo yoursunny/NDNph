@@ -2,7 +2,9 @@
 #define NDNPH_PORT_QUEUE_PORT_HPP
 
 #if defined(NDNPH_PORT_QUEUE_CUSTOM)
-// Custom queue port will be included later.
+// using custom queue port
+#elif defined(NDNPH_PORT_QUEUE_SIMPLE)
+#include "simple.hpp"
 #elif defined(NDNPH_PORT_QUEUE_BOOSTLF)
 #include "boostlf.hpp"
 #else

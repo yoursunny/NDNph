@@ -75,22 +75,10 @@ private:
   }
 };
 
-/**
- * @class Nack
- * @brief Nack packet.
- */
-/**
- * @brief Nack packet.
- * @tparam InterestT Interest.
- * @note A port is expected to typedef this template as `Nack` type.
- */
-template<typename InterestT>
-class BasicNack : public detail::RefRegion<detail::InterestObj>
+/** @brief Nack packet. */
+class Nack : public detail::RefRegion<detail::InterestObj>
 {
 public:
-  using Interest = InterestT;
-  using Nack = BasicNack<InterestT>;
-
   using RefRegion::RefRegion;
 
   /** @brief Access the Nack header. */

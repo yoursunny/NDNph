@@ -1,5 +1,6 @@
 #include "ndnph/keychain/ecdsa-key.hpp"
-#include "ndnph/port/crypto/port.hpp"
+#include "ndnph/packet/data.hpp"
+#include "ndnph/packet/interest.hpp"
 #include "ndnph/port/random/null.hpp"
 #include "ndnph/port/random/port.hpp"
 
@@ -14,7 +15,7 @@ TEST(EcdsaKey, SignVerify)
   StaticRegion<1024> region;
   Name nameKA(region, { 0x08, 0x02, 0x4B, 0x41 });
   Name nameKB(region, { 0x08, 0x02, 0x4B, 0x42 });
-  RandomSource rng;
+  port::RandomSource rng;
   EcdsaPrivateKey pvtA, pvtB;
   EcdsaPublicKey pubA, pubB;
   ASSERT_TRUE(EcdsaPrivateKey::generate(rng, nameKA, pvtA, pubA));

@@ -2,7 +2,7 @@
 #define NDNPH_PORT_RANDOM_PORT_HPP
 
 #if defined(NDNPH_PORT_RANDOM_CUSTOM)
-// Custom random port will be included later.
+// using custom random port
 #elif defined(NDNPH_PORT_RANDOM_URANDOM)
 #include "urandom.hpp"
 #else

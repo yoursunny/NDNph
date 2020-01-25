@@ -15,7 +15,7 @@ public:
   static_assert(std::is_move_constructible<T>::value, "");
   using Item = T;
 
-  bool push(T item)
+  bool push(Item item)
   {
     size_t newTail = nextIndex(m_tail);
     if (newTail == m_head) {
@@ -27,12 +27,12 @@ public:
     return true;
   }
 
-  std::tuple<T, bool> pop()
+  std::tuple<Item, bool> pop()
   {
     if (m_head == m_tail) {
       return std::make_tuple(T(), false);
     }
-    T item = std::move(m_arr[m_head]);
+    Item item = std::move(m_arr[m_head]);
     m_arr[m_head] = T();
     m_head = nextIndex(m_head);
     return std::make_tuple(std::move(item), true);
@@ -59,12 +59,12 @@ protected:
    * @param arr array of cap+1 items
    * @param cap maximum number of items
    */
-  explicit SimpleQueue(T* arr, size_t cap)
+  explicit SimpleQueue(Item* arr, size_t cap)
     : m_arr(arr)
     , m_cap1(cap + 1)
   {}
 
-  T* getArray()
+  Item* getArray()
   {
     return m_arr;
   }
@@ -76,7 +76,7 @@ private:
   }
 
 private:
-  T* m_arr;
+  Item* m_arr;
   size_t m_cap1 = 0;
   size_t m_head = 0;
   size_t m_tail = 0;

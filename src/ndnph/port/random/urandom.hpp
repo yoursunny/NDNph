@@ -33,7 +33,9 @@ private:
 } // namespace port_random_urandom
 
 #ifdef NDNPH_PORT_RANDOM_URANDOM
+namespace port {
 using RandomSource = port_random_urandom::RandomSource;
+} // namespace port
 #endif
 
 } // namespace ndnph

@@ -2,7 +2,7 @@
 #define NDNPH_PACKET_INTEREST_HPP
 
 #include "../core/in-region.hpp"
-#include "../keychain/common.hpp"
+#include "../port/crypto/port.hpp"
 #include "sig-info.hpp"
 
 namespace ndnph {
@@ -93,10 +93,6 @@ protected:
   }
 };
 
-template<typename Sha256Port, typename Key>
-class SignedInterestRef;
-
-template<typename Sha256Port>
 class ParameterizedInterestRef : public InterestRefBase
 {
 public:
@@ -115,7 +111,7 @@ protected:
 
   void encodeName(Encoder& encoder, const tlv::Value& params) const
   {
-    Sha256Port hash;
+    port::Sha256 hash;
     hash.update(params.begin(), params.size());
     uint8_t digestComp[34];
     if (!hash.final(&digestComp[2])) {
@@ -166,13 +162,13 @@ protected:
   tlv::Value m_appParameters;
 };
 
-template<typename Sha256Port, typename Key>
-class SignedInterestRef : public ParameterizedInterestRef<Sha256Port>
+template<typename Key>
+class SignedInterestRef : public ParameterizedInterestRef
 {
 public:
   explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters, const Key& key,
                              ISigInfo sigInfo)
-    : ParameterizedInterestRef<Sha256Port>(interest, std::move(appParameters))
+    : ParameterizedInterestRef(interest, std::move(appParameters))
     , m_key(key)
     , m_sigInfo(std::move(sigInfo))
   {}
@@ -228,18 +224,8 @@ private:
 
 } // namespace detail
 
-/**
- * @class Interest
- * @brief Interest packet.
- */
-/**
- * @brief Interest packet.
- * @tparam Sha256Port platform-specific SHA256 implementation.
- * @tparam TimingSafeEqual platform-specific timing safe equal implementation.
- * @note A port is expected to typedef this template as `Interest` type.
- */
-template<typename Sha256Port, typename TimingSafeEqual = DefaultTimingSafeEqual>
-class BasicInterest : public detail::InterestRefBase
+/** @brief Interest packet. */
+class Interest : public detail::InterestRefBase
 {
 public:
   using InterestRefBase::InterestRefBase;
@@ -333,12 +319,12 @@ public:
                        [this](Encoder& encoder) { encodeMiddle(encoder); });
   }
 
-  class Parameterized : public detail::ParameterizedInterestRef<Sha256Port>
+  class Parameterized : public detail::ParameterizedInterestRef
   {
   public:
-    using detail::ParameterizedInterestRef<Sha256Port>::ParameterizedInterestRef;
+    using detail::ParameterizedInterestRef::ParameterizedInterestRef;
 
-    template<typename Key, typename R = detail::SignedInterestRef<Sha256Port, Key>>
+    template<typename Key, typename R = detail::SignedInterestRef<Key>>
     R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
     {
       return R(obj, this->m_appParameters, key, std::move(sigInfo));
@@ -372,7 +358,7 @@ public:
    * To create a signed Interest with AppParameters, call parameterize() first, then
    * call sign() on its return value.
    */
-  template<typename Key, typename R = detail::SignedInterestRef<Sha256Port, Key>>
+  template<typename Key, typename R = detail::SignedInterestRef<Key>>
   R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
   {
     return R(obj, tlv::Value(), key, std::move(sigInfo));
@@ -428,10 +414,11 @@ public:
     Component paramsDigest = obj->name[posParamsDigest];
 
     uint8_t digest[NDNPH_SHA256_LEN];
-    Sha256Port hash;
+    port::Sha256 hash;
     hash.update(obj->params->allParams.begin(), obj->params->allParams.size());
     return hash.final(digest) &&
-           TimingSafeEqual()(digest, sizeof(digest), paramsDigest.value(), paramsDigest.length());
+           port::TimingSafeEqual()(digest, sizeof(digest), paramsDigest.value(),
+                                   paramsDigest.length());
   }
 
   /**
@@ -460,7 +447,6 @@ public:
 
   /**
    * @brief Determine whether Data can satisfy Interest.
-   * @tparam DataT the `Data` type.
    *
    * This method only works reliably on decoded packets. For packets that are being constructed
    * or modified, this method may give incorrect results for parameterized/signed Interests or
@@ -484,7 +470,7 @@ public:
         return obj->name.size() == dataName.size() + 1 &&
                lastComp.type() == TT::ImplicitSha256DigestComponent &&
                data.computeImplicitDigest(digest) &&
-               TimingSafeEqual()(digest, sizeof(digest), lastComp.value(), lastComp.length());
+               port::TimingSafeEqual()(digest, sizeof(digest), lastComp.value(), lastComp.length());
       }
       default:
         return false;

@@ -2,6 +2,7 @@
 #define NDNPH_PACKET_DATA_HPP
 
 #include "../core/in-region.hpp"
+#include "../port/crypto/port.hpp"
 #include "sig-info.hpp"
 
 namespace ndnph {
@@ -125,17 +126,8 @@ private:
 
 } // namespace detail
 
-/**
- * @class Data
- * @brief Data packet.
- */
-/**
- * @brief Data packet.
- * @tparam Sha256Port platform-specific SHA256 implementation.
- * @note A port is expected to typedef this template as `Data` type.
- */
-template<typename Sha256Port>
-class BasicData : public detail::RefRegion<detail::DataObj>
+/** @brief Data packet. */
+class Data : public detail::RefRegion<detail::DataObj>
 {
 public:
   using RefRegion::RefRegion;
@@ -271,7 +263,7 @@ public:
     if (obj->sig == nullptr) {
       return false;
     }
-    Sha256Port hash;
+    port::Sha256 hash;
     hash.update(obj->sig->wholePacket.begin(), obj->sig->wholePacket.size());
     return hash.final(digest);
   }

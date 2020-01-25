@@ -14,7 +14,7 @@ namespace port_transport_socket {
 
 class UdpUnicastTransport
   : public virtual Transport
-  , public transport::DynamicRxQueueMixin<>
+  , public transport::DynamicRxQueueMixin
 {
 public:
   explicit UdpUnicastTransport() = default;

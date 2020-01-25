@@ -2,7 +2,6 @@
 #define NDNPH_TEST_FACE_TRANSPORT_COMMON_HPP
 
 #include "ndnph/face/face.hpp"
-#include "ndnph/port/crypto/port.hpp"
 
 #include "test-common.hpp"
 #include <atomic>

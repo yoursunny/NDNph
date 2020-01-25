@@ -1,43 +1,33 @@
 #ifndef NDNPH_FACE_PACKET_HANDLER_HPP
 #define NDNPH_FACE_PACKET_HANDLER_HPP
 
-#include "../core/common.hpp"
-#include "../packet/lp.hpp"
+#include "face.hpp"
 
 namespace ndnph {
 
-template<typename PktTypes>
-class BasicFace;
-
-/**
- * @class PacketHandler
- * @brief Base class to receive packets from Face.
- */
-/**
- * @brief Base class to receive packets from Face.
- * @tparam PktTypes declaration of packet types.
- * @note A port is expected to typedef this template as `PacketHandler` type.
- */
-template<typename PktTypes>
-class BasicPacketHandler
+/** @brief Base class to receive packets from Face. */
+class PacketHandler
 {
 public:
-  using Face = BasicFace<PktTypes>;
-  using PacketHandler = BasicPacketHandler<PktTypes>;
-  using Interest = typename PktTypes::Interest;
-  using Data = typename PktTypes::Data;
-  using Nack = typename PktTypes::Nack;
-  using PacketInfo = typename Face::PacketInfo;
+  using PacketInfo = Face::PacketInfo;
 
   /** @brief Construct without adding to Face. */
-  explicit BasicPacketHandler() = default;
+  explicit PacketHandler() = default;
 
   /** @brief Construct and add handler to Face. */
-  explicit BasicPacketHandler(Face& face, int8_t prio = 0);
+  explicit PacketHandler(Face& face, int8_t prio = 0)
+  {
+    face.addHandler(*this, prio);
+  }
 
 protected:
   /** @brief Remove handler from Face. */
-  virtual ~BasicPacketHandler();
+  virtual ~PacketHandler()
+  {
+    if (m_face != nullptr) {
+      m_face->removeHandler(*this);
+    }
+  }
 
   Face* getFace() const
   {
@@ -196,24 +186,7 @@ private:
 
 } // namespace ndnph
 
-#include "face.hpp"
-
-namespace ndnph {
-
-template<typename PktTypes>
-BasicPacketHandler<PktTypes>::BasicPacketHandler(Face& face, int8_t prio)
-{
-  face.addHandler(*this, prio);
-}
-
-template<typename PktTypes>
-BasicPacketHandler<PktTypes>::~BasicPacketHandler()
-{
-  if (m_face != nullptr) {
-    m_face->removeHandler(*this);
-  }
-}
-
-} // namespace ndnph
+#define NDNPH_FACE_PACKET_HANDLER_HPP_END
+#include "face-impl.inc"
 
 #endif // NDNPH_FACE_PACKET_HANDLER_HPP

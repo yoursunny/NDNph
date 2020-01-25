@@ -1,8 +1,12 @@
 #ifndef NDNPH_FACE_TRANSPORT_RXQUEUE_HPP
 #define NDNPH_FACE_TRANSPORT_RXQUEUE_HPP
 
-#include "../core/simple-queue.hpp"
+#include "../port/queue/port.hpp"
 #include "transport.hpp"
+
+#ifndef NDNPH_TRANSPORT_RXQUEUELEN
+#define NDNPH_TRANSPORT_RXQUEUELEN 8
+#endif
 
 namespace ndnph {
 namespace transport {
@@ -15,20 +19,10 @@ struct RxQueueItem
   ssize_t pktLen = -1;
 };
 
-/**
- * @brief Mixin of RX queue in Transport.
- * @tparam Queue a queue of RxQueueItem.
- */
-template<typename Queue = DynamicSimpleQueue<RxQueueItem>>
+/** @brief Mixin of RX queue in Transport. */
 class RxQueueMixin : public virtual Transport
 {
 protected:
-  explicit RxQueueMixin(size_t capacity)
-    : m_allocQ(capacity)
-    , m_rxQ(capacity)
-    , m_cap(capacity)
-  {}
-
   /**
    * @brief Allocate receive buffers during initialization.
    * @tparam F `Region* (*)()`
@@ -36,7 +30,7 @@ protected:
   template<typename F>
   void initAllocBuffers(const F& makeRegion)
   {
-    for (size_t i = 0; i < m_cap; ++i) {
+    for (size_t i = 0; i < NDNPH_TRANSPORT_RXQUEUELEN; ++i) {
       RxQueueItem item;
       item.region = makeRegion();
       if (item.region == nullptr || !m_allocQ.push(item)) {
@@ -48,9 +42,7 @@ protected:
   class RxContext
   {
   public:
-    using TransportT = RxQueueMixin<Queue>;
-
-    explicit RxContext(TransportT& transport)
+    explicit RxContext(RxQueueMixin& transport)
       : m_transport(transport)
     {
       bool ok = false;
@@ -101,7 +93,7 @@ protected:
     }
 
   private:
-    TransportT& m_transport;
+    RxQueueMixin& m_transport;
     RxQueueItem m_item;
     size_t m_bufLen;
   };
@@ -145,27 +137,22 @@ protected:
   }
 
 private:
-  Queue m_allocQ;
-  Queue m_rxQ;
-  size_t m_cap = 0;
+  port::SafeQueue<RxQueueItem, NDNPH_TRANSPORT_RXQUEUELEN> m_allocQ;
+  port::SafeQueue<RxQueueItem, NDNPH_TRANSPORT_RXQUEUELEN> m_rxQ;
 };
 
 /**
  * @brief Mixin of RX queue in Transport, allocating buffers from DynamicRegion.
- * @tparam Queue a queue of RxQueueItem.
  */
-template<typename Queue = DynamicSimpleQueue<RxQueueItem>>
-class DynamicRxQueueMixin : public RxQueueMixin<Queue>
+class DynamicRxQueueMixin : public RxQueueMixin
 {
 protected:
   /**
    * @brief Constructor.
-   * @param nBuffers number of buffers, also queue capacity.
    * @param bufLen buffer length, typically MTU.
    */
-  explicit DynamicRxQueueMixin(size_t nBuffers = 4, size_t bufLen = 1500)
-    : RxQueueMixin<Queue>(nBuffers)
-    , m_region(sizeofSubRegions(bufLen, nBuffers))
+  explicit DynamicRxQueueMixin(size_t bufLen = 1500)
+    : m_region(sizeofSubRegions(bufLen, NDNPH_TRANSPORT_RXQUEUELEN))
   {
     this->initAllocBuffers([=] { return makeSubRegion(m_region, bufLen); });
   }
