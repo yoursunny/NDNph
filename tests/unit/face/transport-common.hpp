@@ -4,10 +4,7 @@
 #include "ndnph/face/face.hpp"
 
 #include "test-common.hpp"
-#include <atomic>
-#include <chrono>
 #include <set>
-#include <thread>
 
 namespace ndnph {
 namespace {

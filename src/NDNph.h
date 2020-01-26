@@ -1,13 +1,16 @@
 #ifndef NDNPH_H
 #define NDNPH_H
+#include "ndnph/port/clock/port.hpp"
 #include "ndnph/port/crypto/port.hpp"
 #include "ndnph/port/random/port.hpp"
 #include "ndnph/port/queue/port.hpp"
 #include "ndnph/an.hpp"
+#include "ndnph/app/ping-client.hpp"
 #include "ndnph/core/common.hpp"
 #include "ndnph/core/in-region.hpp"
 #include "ndnph/core/input-iterator-pointer-proxy.hpp"
 #include "ndnph/core/operators.hpp"
+#include "ndnph/core/printing.hpp"
 #include "ndnph/core/region.hpp"
 #include "ndnph/core/simple-queue.hpp"
 #include "ndnph/face/bridge-transport.hpp"

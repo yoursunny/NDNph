@@ -139,6 +139,9 @@ protected:
   }
 
 private:
+  /** @brief Override to be invoked periodically. */
+  virtual void loop() {}
+
   /**
    * @brief Override to receive Interest packets.
    * @retval true packet has been accepted by this handler.

@@ -5,6 +5,7 @@
 #include "../core/printing.hpp"
 #include "../core/region.hpp"
 #include "../tlv/decoder.hpp"
+#include "../tlv/encoder.hpp"
 
 namespace ndnph {
 
@@ -62,6 +63,21 @@ public:
     tlv::writeVarNum(&buf[sizeofT], length);
     m_tlv = buf;
     m_value = valueBuf;
+  }
+
+  template<typename... Arg>
+  static Component from(Region& region, uint16_t type, const Arg&... arg)
+  {
+    Encoder encoder(region);
+    Decoder::Tlv d;
+    Component comp;
+    if (encoder.prependTlv(type, arg...) && Decoder::readTlv(d, encoder.begin(), encoder.end()) &&
+        comp.decodeFrom(d)) {
+      encoder.trim();
+    } else {
+      encoder.discard();
+    }
+    return comp;
   }
 
   /**

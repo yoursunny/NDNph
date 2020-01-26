@@ -18,4 +18,16 @@ if have_socket_h
   add_project_arguments('-DNDNPH_PORT_TRANSPORT_SOCKET', language: 'cpp')
 endif
 
+have_this_thread = meson.get_compiler('cpp').compiles('''
+#include <chrono>
+#include <thread>
+int main()
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(1));
+}
+''')
+if not have_this_thread
+  add_project_arguments('-DNDNPH_PORT_CHRONO_BUSY_SLEEP', language: 'cpp')
+endif
+
 lib_dep = declare_dependency(include_directories: ['.'], dependencies: [boost, mbedcrypto])

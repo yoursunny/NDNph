@@ -1,4 +1,5 @@
 #include "ndnph/packet/component.hpp"
+#include "ndnph/tlv/value.hpp"
 
 #include "test-common.hpp"
 
@@ -46,6 +47,19 @@ TEST(Component, Construct)
     EXPECT_TRUE(!comp);
     region.reset();
   }
+}
+
+TEST(Component, From)
+{
+  StaticRegion<1024> region;
+
+  std::vector<uint8_t> value1({ 0xA0, 0xA1 });
+  std::vector<uint8_t> value2({ 0xB0, 0xB1, 0xB2 });
+
+  Component comp = Component::from(region, 0x04, tlv::Value(value1.data(), value1.size()),
+                                   tlv::Value(value2.data(), value2.size()));
+  EXPECT_THAT(std::vector<uint8_t>(comp.tlv(), comp.tlv() + comp.size()),
+              g::ElementsAre(0x04, 0x05, 0xA0, 0xA1, 0xB0, 0xB1, 0xB2));
 }
 
 TEST(Component, Parse)

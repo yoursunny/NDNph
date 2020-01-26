@@ -5,6 +5,7 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"/..
   cd src/ndnph
   echo '#ifndef NDNPH_H'
   echo '#define NDNPH_H'
+  echo '#include "ndnph/port/clock/port.hpp"'
   echo '#include "ndnph/port/crypto/port.hpp"'
   echo '#include "ndnph/port/random/port.hpp"'
   echo '#include "ndnph/port/queue/port.hpp"'

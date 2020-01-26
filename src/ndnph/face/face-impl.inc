@@ -36,6 +36,14 @@ inline bool Face::removeHandler(PacketHandler& h)
   return false;
 }
 
+inline void Face::loop()
+{
+  m_transport.loop();
+  for (PacketHandler* h = m_handler; h != nullptr; h = h->m_next) {
+    h->loop();
+  }
+}
+
 inline void Face::transportRx(void* self0, Region& region, const uint8_t* pkt, size_t pktLen,
                         uint64_t endpointId)
 {

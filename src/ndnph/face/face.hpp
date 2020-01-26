@@ -43,10 +43,7 @@ public:
    *
    * This must be invoked periodically.
    */
-  void loop()
-  {
-    m_transport.loop();
-  }
+  void loop();
 
   const PacketInfo* getCurrentPacketInfo() const
   {
