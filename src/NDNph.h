@@ -6,6 +6,7 @@
 #include "ndnph/port/queue/port.hpp"
 #include "ndnph/an.hpp"
 #include "ndnph/app/ping-client.hpp"
+#include "ndnph/app/ping-server.hpp"
 #include "ndnph/core/common.hpp"
 #include "ndnph/core/in-region.hpp"
 #include "ndnph/core/input-iterator-pointer-proxy.hpp"
