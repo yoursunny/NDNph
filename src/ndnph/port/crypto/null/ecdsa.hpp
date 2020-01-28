@@ -53,11 +53,9 @@ public:
 
   /**
    * @brief Generate key pair.
-   * @tparam RandomSrc platform-specific random bytes generator.
    * @return whether success.
    */
-  template<typename RandomSrc>
-  static bool generateKey(RandomSrc&, PrivateKey&, PublicKey&)
+  static bool generateKey(PrivateKey&, PublicKey&)
   {
     return false;
   }

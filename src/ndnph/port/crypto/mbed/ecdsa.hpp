@@ -1,7 +1,7 @@
 #ifndef NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
 #define NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
 
-#include "rng.hpp"
+#include "../../random/port.hpp"
 
 #include <mbedtls/ecdsa.h>
 
@@ -122,18 +122,23 @@ template<typename Curve>
 class EcKeyGen : public EcKeyBase<Curve>
 {
 public:
-  template<typename Rng>
-  bool generate(Rng& rng, uint8_t pvtBits[Curve::PvtLen::value],
-                uint8_t pubBits[Curve::PubLen::value])
+  bool generate(uint8_t pvtBits[Curve::PvtLen::value], uint8_t pubBits[Curve::PubLen::value])
   {
     size_t pubLen;
-    return mbedtls_ecp_gen_keypair(&this->keypair.grp, &this->keypair.d, &this->keypair.Q, Rng::rng,
-                                   &rng) == 0 &&
+    return mbedtls_ecp_gen_keypair(&this->keypair.grp, &this->keypair.d, &this->keypair.Q, rng,
+                                   nullptr) == 0 &&
            mbedtls_mpi_write_binary(&this->keypair.d, pvtBits, Curve::PvtLen::value) == 0 &&
            mbedtls_ecp_point_write_binary(&this->keypair.grp, &this->keypair.Q,
                                           MBEDTLS_ECP_PF_UNCOMPRESSED, &pubLen, pubBits,
                                           Curve::PubLen::value) == 0 &&
            pubLen == Curve::PubLen::value;
+  }
+
+private:
+  static int rng(void*, uint8_t* output, size_t count)
+  {
+    bool ok = port::RandomSource::generate(output, count);
+    return ok ? 0 : -1;
   }
 };
 
@@ -151,14 +156,12 @@ public:
   using PrivateKey = detail::EcPvt<Curve>;
   using PublicKey = detail::EcPub<Curve>;
 
-  template<typename RandomSrc>
-  static bool generateKey(RandomSrc& randomSource, PrivateKey& pvt, PublicKey& pub)
+  static bool generateKey(PrivateKey& pvt, PublicKey& pub)
   {
-    detail::Rng<RandomSrc> rng(randomSource);
     uint8_t pvtBits[Curve::PvtLen::value];
     uint8_t pubBits[Curve::PubLen::value];
     detail::EcKeyGen<Curve> gen;
-    return gen.generate(rng, pvtBits, pubBits) && pvt.import(pvtBits) && pub.import(pubBits);
+    return gen.generate(pvtBits, pubBits) && pvt.import(pvtBits) && pub.import(pubBits);
   }
 };
 

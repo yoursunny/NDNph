@@ -31,7 +31,7 @@ public:
     , m_interval(interval)
     , m_next(port::Clock::add(port::Clock::now(), interval))
   {
-    port::RandomSource().fill(reinterpret_cast<uint8_t*>(&m_seqNum), sizeof(m_seqNum));
+    port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_seqNum), sizeof(m_seqNum));
   }
 
   Counters readCounters() const

@@ -10,11 +10,13 @@ namespace port_random_null {
 class RandomSource
 {
 public:
+  RandomSource() = delete;
+
   /**
    * @brief Fill output[0:count] with random bytes.
    * @return whether success.
    */
-  bool fill(uint8_t* output, size_t count)
+  static bool generate(uint8_t* output, size_t count)
   {
     std::fill_n(output, count, 0);
     return false;

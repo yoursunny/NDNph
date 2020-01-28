@@ -31,12 +31,11 @@ private:
 class EcdsaPrivateKey
 {
 public:
-  template<typename RandomSrc>
-  static bool generate(RandomSrc& rng, const Name& name, EcdsaPrivateKey& pvt, EcdsaPublicKey& pub)
+  static bool generate(const Name& name, EcdsaPrivateKey& pvt, EcdsaPublicKey& pub)
   {
     std::unique_ptr<port::Ecdsa::PrivateKey> portPvt(new port::Ecdsa::PrivateKey());
     std::unique_ptr<port::Ecdsa::PublicKey> portPub(new port::Ecdsa::PublicKey());
-    if (!port::Ecdsa::generateKey(rng, *portPvt, *portPub)) {
+    if (!port::Ecdsa::generateKey(*portPvt, *portPub)) {
       return false;
     }
     pvt = EcdsaPrivateKey(name, std::move(portPvt));

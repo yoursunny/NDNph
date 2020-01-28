@@ -10,24 +10,17 @@ namespace port_random_urandom {
 class RandomSource
 {
 public:
-  explicit RandomSource(const char* filename = "/dev/urandom")
-    : m_fd(fopen(filename, "r"))
-  {}
+  RandomSource() = delete;
 
-  ~RandomSource()
+  /**
+   * @brief Fill output[0:count] with random bytes.
+   * @return whether success.
+   */
+  static bool generate(uint8_t* output, size_t count)
   {
-    if (m_fd != nullptr) {
-      fclose(m_fd);
-    }
+    static FILE* fd = std::fopen("/dev/urandom", "r");
+    return fd != nullptr && std::fread(output, 1, count, fd) == count;
   }
-
-  bool fill(uint8_t* output, size_t count)
-  {
-    return m_fd != nullptr && fread(output, 1, count, m_fd) == count;
-  }
-
-private:
-  FILE* m_fd = nullptr;
 };
 
 } // namespace port_random_urandom
