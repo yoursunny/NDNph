@@ -3,6 +3,7 @@
 
 #include "../core/in-region.hpp"
 #include "../port/crypto/port.hpp"
+#include "../port/random/port.hpp"
 #include "sig-info.hpp"
 
 namespace ndnph {
@@ -27,7 +28,9 @@ public:
     , canBePrefix(false)
     , mustBeFresh(false)
     , nackReason(0)
-  {}
+  {
+    port::RandomSource::generate(reinterpret_cast<uint8_t*>(&nonce), sizeof(nonce));
+  }
 
   enum
   {

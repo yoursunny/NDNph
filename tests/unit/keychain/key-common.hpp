@@ -1,10 +1,36 @@
 #ifndef NDNPH_TEST_KEYCHAIN_KEY_COMMON_HPP
 #define NDNPH_TEST_KEYCHAIN_KEY_COMMON_HPP
 
+#include "ndnph/packet/data.hpp"
+#include "ndnph/packet/interest.hpp"
+
 #include "test-common.hpp"
 
 namespace ndnph {
 namespace {
+
+template<typename Pkt>
+Pkt
+makePacket(Region& region, const Name& name);
+
+template<>
+Interest
+makePacket<Interest>(Region& region, const Name& name)
+{
+  Interest interest = region.create<Interest>();
+  interest.setName(name);
+  interest.setNonce(0x7A156BB2);
+  return interest;
+}
+
+template<>
+Data
+makePacket<Data>(Region& region, const Name& name)
+{
+  Data data = region.create<Data>();
+  data.setName(name);
+  return data;
+}
 
 template<typename Pkt, typename PvtKey, typename PubKey>
 void
@@ -15,17 +41,13 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
   Name nameA(region, { 0x08, 0x01, 0x41 });
   Name nameB(region, { 0x08, 0x01, 0x42 });
 
-  Pkt pktA = region.create<Pkt>();
-  ASSERT_FALSE(!pktA);
-  pktA.setName(nameA);
+  Pkt pktA = makePacket<Pkt>(region, nameA);
   Encoder encoderA(region);
   ASSERT_TRUE(encoderA.prepend(pktA.sign(pvtA)));
   encoderA.trim();
 
   {
-    Pkt pktAr = region.create<Pkt>();
-    ASSERT_FALSE(!pktAr);
-    pktAr.setName(nameA);
+    Pkt pktAr = makePacket<Pkt>(region, nameA);
     Encoder encoderAr(region);
     ASSERT_TRUE(encoderAr.prepend(pktAr.sign(pvtA)));
     if (deterministic) {
@@ -44,9 +66,7 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
   std::vector<uint8_t> sigInfoExtB({ 0x20, 0x00 });
   sigInfoB.extensions = tlv::Value(sigInfoExtB.data(), sigInfoExtB.size());
 
-  Pkt pktB = region.create<Pkt>();
-  ASSERT_FALSE(!pktB);
-  pktB.setName(nameB);
+  Pkt pktB = makePacket<Pkt>(region, nameB);
   Encoder encoderB(region);
   ASSERT_TRUE(encoderB.prepend(pktB.sign(pvtB, sigInfoB)));
   encoderB.trim();

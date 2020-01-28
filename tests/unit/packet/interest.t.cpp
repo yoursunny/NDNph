@@ -15,7 +15,16 @@ TEST(Interest, EncodeMinimal)
   EXPECT_THAT(interest.getName(), g::SizeIs(0));
   EXPECT_FALSE(interest.getCanBePrefix());
   EXPECT_FALSE(interest.getMustBeFresh());
-  EXPECT_EQ(interest.getNonce(), 0);
+  {
+    std::set<uint32_t> nonces({ interest.getNonce() });
+    DynamicRegion region2(4096);
+    for (int i = 0; i < 4; ++i) {
+      Interest interest2 = region.create<Interest>();
+      ASSERT_FALSE(!interest2);
+      nonces.insert(interest2.getNonce());
+    }
+    EXPECT_THAT(nonces, g::SizeIs(g::Ge(3)));
+  }
 
   std::vector<uint8_t> wire({
     0x05, 0x0B,                         // Interest

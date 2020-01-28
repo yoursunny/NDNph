@@ -3,7 +3,6 @@
 
 #include "../face/packet-handler.hpp"
 #include "../port/clock/port.hpp"
-#include "../port/random/port.hpp"
 
 namespace ndnph {
 
@@ -62,7 +61,6 @@ private:
     assert(!!interest);
     interest.setName(name);
     interest.setMustBeFresh(true);
-    interest.setNonce(static_cast<uint32_t>(m_seqNum));
 
     if (!send(interest)) {
       return false;
