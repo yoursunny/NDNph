@@ -28,11 +28,22 @@ public:
   {
   public:
     /**
+     * @brief Import raw key.
+     * @return whether success.
+     */
+    bool import(const uint8_t[Curve::PubLen::value])
+    {
+      return false;
+    }
+
+    /**
      * @brief Perform signing on a SHA256 digest.
      * @return signature length, or -1 upon failure.
      */
-    ssize_t sign(const uint8_t[NDNPH_SHA256_LEN], uint8_t[Curve::MaxSigLen::value]) const
+    ssize_t sign(const uint8_t digest[NDNPH_SHA256_LEN], uint8_t sig[Curve::MaxSigLen::value]) const
     {
+      (void)digest;
+      (void)sig;
       return -1;
     }
   };
@@ -42,21 +53,37 @@ public:
   {
   public:
     /**
+     * @brief Import raw key.
+     * @return whether success.
+     */
+    bool import(const uint8_t[Curve::PubLen::value])
+    {
+      return false;
+    }
+
+    /**
      * @brief Perform verification on a SHA256 digest against a given signature.
      * @return verification result.
      */
-    bool verify(const uint8_t[NDNPH_SHA256_LEN], const uint8_t*, size_t) const
+    bool verify(const uint8_t digest[NDNPH_SHA256_LEN], const uint8_t* sig, size_t sigLen) const
     {
+      (void)digest;
+      (void)sig;
+      (void)sigLen;
       return false;
     }
   };
 
   /**
    * @brief Generate key pair.
+   * @param[out] pvt raw private key.
+   * @param[out] pub raw public key.
    * @return whether success.
    */
-  static bool generateKey(PrivateKey&, PublicKey&)
+  static bool generateKey(uint8_t pvt[Curve::PvtLen::value], uint8_t pub[Curve::PubLen::value])
   {
+    (void)pvt;
+    (void)pub;
     return false;
   }
 };

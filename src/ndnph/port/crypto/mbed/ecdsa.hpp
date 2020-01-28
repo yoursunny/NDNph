@@ -73,7 +73,8 @@ class EcPvt : public EcKeyBase<Curve>
 public:
   bool import(const uint8_t bits[Curve::PvtLen::value])
   {
-    return mbedtls_mpi_read_binary(&this->keypair.d, bits, Curve::PvtLen::value) == 0;
+    return mbedtls_mpi_read_binary(&this->keypair.d, bits, Curve::PvtLen::value) == 0 &&
+           mbedtls_ecp_check_privkey(&this->keypair.grp, &this->keypair.d) == 0;
   }
 
   ssize_t sign(const uint8_t digest[NDNPH_SHA256_LEN], uint8_t sig[Curve::MaxSigLen::value]) const
@@ -103,7 +104,8 @@ public:
   bool import(const uint8_t bits[Curve::PubLen::value])
   {
     return mbedtls_ecp_point_read_binary(&this->keypair.grp, &this->keypair.Q, bits,
-                                         Curve::PubLen::value) == 0;
+                                         Curve::PubLen::value) == 0 &&
+           mbedtls_ecp_check_pubkey(&this->keypair.grp, &this->keypair.Q) == 0;
   }
 
   bool verify(const uint8_t digest[NDNPH_SHA256_LEN], const uint8_t* sig, size_t sigLen) const
@@ -156,12 +158,10 @@ public:
   using PrivateKey = detail::EcPvt<Curve>;
   using PublicKey = detail::EcPub<Curve>;
 
-  static bool generateKey(PrivateKey& pvt, PublicKey& pub)
+  static bool generateKey(uint8_t pvt[Curve::PvtLen::value], uint8_t pub[Curve::PubLen::value])
   {
-    uint8_t pvtBits[Curve::PvtLen::value];
-    uint8_t pubBits[Curve::PubLen::value];
     detail::EcKeyGen<Curve> gen;
-    return gen.generate(pvtBits, pubBits) && pvt.import(pvtBits) && pub.import(pubBits);
+    return gen.generate(pvt, pub);
   }
 };
 
