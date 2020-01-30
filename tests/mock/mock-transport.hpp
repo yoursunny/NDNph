@@ -2,6 +2,7 @@
 #define NDNPH_TEST_MOCK_TRANSPORT_HPP
 
 #include "ndnph/face/transport.hpp"
+#include "ndnph/tlv/encoder.hpp"
 
 #include "test-common.hpp"
 
@@ -19,6 +20,13 @@ public:
   bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) override
   {
     return doSend(std::vector<uint8_t>(pkt, pkt + pktLen), endpointId);
+  }
+
+  bool receive(const std::vector<uint8_t>& wire, uint64_t endpointId = 0)
+  {
+    StaticRegion<1024> region;
+    invokeRxCallback(region, wire.data(), wire.size(), endpointId);
+    return true;
   }
 
   template<typename Packet>

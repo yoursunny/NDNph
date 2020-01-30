@@ -1,6 +1,8 @@
 #include "ndnph/face/bridge-transport.hpp"
+#include "ndnph/face/transport-force-endpointid.hpp"
 #include "ndnph/port/transport/port.hpp"
 
+#include "mock/mock-transport.hpp"
 #include "transport-common.hpp"
 
 namespace ndnph {
@@ -26,6 +28,41 @@ TEST(Transport, Bridge)
 
   EXPECT_TRUE(transportB.end());
   EXPECT_FALSE(transportB.end());
+}
+
+TEST(Transport, ForceEndpointId)
+{
+  MockTransport transportA;
+  MockTransport transportB;
+
+  EXPECT_CALL(transportA, doIsUp).Times(g::AtLeast(1)).WillRepeatedly(g::Return(true));
+  EXPECT_CALL(transportA, doLoop).Times(g::AtLeast(1));
+  EXPECT_CALL(transportA, doSend)
+    .Times(g::AtLeast(1))
+    .WillRepeatedly([&](std::vector<uint8_t> pkt, uint64_t endpointId) {
+      EXPECT_EQ(endpointId, 0);
+      return transportB.receive(pkt, endpointId);
+    });
+
+  EXPECT_CALL(transportB, doIsUp).Times(g::AtLeast(1)).WillRepeatedly(g::Return(true));
+  EXPECT_CALL(transportB, doLoop).Times(g::AtLeast(1));
+  EXPECT_CALL(transportB, doSend)
+    .Times(g::AtLeast(1))
+    .WillRepeatedly([&](std::vector<uint8_t> pkt, uint64_t endpointId) {
+      EXPECT_EQ(endpointId, 1933);
+      return transportA.receive(pkt, endpointId);
+    });
+
+  transport::ForceEndpointId transportAw(transportA);
+  transport::ForceEndpointId transportBw(transportB, 1933);
+
+  EXPECT_TRUE(transportAw.isUp());
+  EXPECT_TRUE(transportBw.isUp());
+
+  Face faceA(transportAw);
+  Face faceB(transportBw);
+  TransportTest(faceA, faceB).run().check();
+  TransportTest(faceB, faceA).run().check();
 }
 
 TEST(Transport, UdpUnicast)

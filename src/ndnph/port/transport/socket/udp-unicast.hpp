@@ -12,6 +12,7 @@
 namespace ndnph {
 namespace port_transport_socket {
 
+/** @brief A transport that communicates over IPv4 unicast UDP tunnel. */
 class UdpUnicastTransport
   : public virtual Transport
   , public transport::DynamicRxQueueMixin
@@ -19,11 +20,13 @@ class UdpUnicastTransport
 public:
   explicit UdpUnicastTransport() = default;
 
+  /** @brief Start listening on given local address. */
   bool beginListen(const sockaddr_in* laddr)
   {
     return (createSocket() && bindSocket(laddr)) || closeSocketOnError();
   }
 
+  /** @brief Start listening on given local port. */
   bool beginListen(uint16_t localPort = 6363)
   {
     sockaddr_in laddr = {};
@@ -33,11 +36,17 @@ public:
     return beginListen(&laddr);
   }
 
+  /** @brief Connect to given remote address. */
   bool beginTunnel(const sockaddr_in* raddr)
   {
     return (createSocket() && connectSocket(raddr)) || closeSocketOnError();
   }
 
+  /**
+   * @brief Connect to given remote IP and port.
+   * @param remoteHost four octets to represent IPv4 address.
+   * @param remotePort port number.
+   */
   bool beginTunnel(std::initializer_list<uint8_t> remoteHost, uint16_t remotePort = 6363)
   {
     sockaddr_in raddr = {};
@@ -50,6 +59,7 @@ public:
     return beginTunnel(&raddr);
   }
 
+  /** @brief Stop listening or close connection. */
   bool end()
   {
     if (m_fd < 0) {

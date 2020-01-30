@@ -4,7 +4,8 @@
 
 namespace ndnph {
 
-inline bool Face::addHandler(PacketHandler& h, int8_t prio)
+inline bool
+Face::addHandler(PacketHandler& h, int8_t prio)
 {
   if (h.m_face != nullptr) {
     return false;
@@ -20,7 +21,8 @@ inline bool Face::addHandler(PacketHandler& h, int8_t prio)
   return true;
 }
 
-inline bool Face::removeHandler(PacketHandler& h)
+inline bool
+Face::removeHandler(PacketHandler& h)
 {
   if (h.m_face != this) {
     return false;
@@ -36,7 +38,8 @@ inline bool Face::removeHandler(PacketHandler& h)
   return false;
 }
 
-inline void Face::loop()
+inline void
+Face::loop()
 {
   m_transport.loop();
   for (PacketHandler* h = m_handler; h != nullptr; h = h->m_next) {
@@ -44,8 +47,9 @@ inline void Face::loop()
   }
 }
 
-inline void Face::transportRx(void* self0, Region& region, const uint8_t* pkt, size_t pktLen,
-                        uint64_t endpointId)
+inline void
+Face::transportRx(void* self0, Region& region, const uint8_t* pkt, size_t pktLen,
+                  uint64_t endpointId)
 {
   Face& self = *reinterpret_cast<Face*>(self0);
   lp::PacketClassify classify;
@@ -83,7 +87,8 @@ inline void Face::transportRx(void* self0, Region& region, const uint8_t* pkt, s
 }
 
 template<typename Packet, typename H>
-bool Face::process(H processPacket, Packet packet)
+bool
+Face::process(H processPacket, Packet packet)
 {
   bool isAccepted = false;
   for (PacketHandler* h = m_handler; h != nullptr && !isAccepted; h = h->m_next) {
@@ -95,4 +100,4 @@ bool Face::process(H processPacket, Packet packet)
 } // namespace ndnph
 
 #endif // NDNPH_FACE_FACE_IMPL_INC
-#endif
+#endif // defined(NDNPH_FACE_FACE_HPP_END) && defined(NDNPH_FACE_PACKET_HANDLER_HPP_END)

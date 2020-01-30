@@ -122,7 +122,8 @@ TEST(Ping, EndToEnd)
   auto cnt = clientB.readCounters();
   EXPECT_GE(cnt.nTxInterests, 5);
   EXPECT_LE(cnt.nTxInterests, 20);
-  EXPECT_EQ(cnt.nRxData, cnt.nTxInterests);
+  EXPECT_GE(cnt.nRxData, cnt.nTxInterests - 2);
+  EXPECT_LE(cnt.nRxData, cnt.nTxInterests);
 }
 
 } // namespace
