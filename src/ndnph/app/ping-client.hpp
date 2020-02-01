@@ -10,28 +10,26 @@ namespace ndnph {
 class PingClient : public PacketHandler
 {
 public:
-  struct Counters
-  {
-    uint32_t nTxInterests = 0;
-    uint32_t nRxData = 0;
-  };
-
   /**
    * @brief Constructor.
    * @param prefix name prefix to request.
    * @param face face for communication.
    * @param interval Interest interval in milliseconds.
-   * @param acceptWithin accept Data if Interest was sent in last (acceptWith * interval)
    */
-  explicit PingClient(Name prefix, Face& face, int interval = 1000, int acceptWithin = 1)
+  explicit PingClient(Name prefix, Face& face, int interval = 1000)
     : PacketHandler(face)
     , m_prefix(std::move(prefix))
-    , m_acceptWithin(acceptWithin)
     , m_interval(interval)
     , m_next(port::Clock::add(port::Clock::now(), interval))
   {
     port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_seqNum), sizeof(m_seqNum));
   }
+
+  struct Counters
+  {
+    uint32_t nTxInterests = 0;
+    uint32_t nRxData = 0;
+  };
 
   Counters readCounters() const
   {
@@ -83,7 +81,7 @@ private:
       return false;
     }
 
-    if (m_seqNum - seqNum < m_acceptWithin) {
+    if (m_seqNum == seqNum) {
       ++m_cnt.nRxData;
     }
     return true;
@@ -92,7 +90,6 @@ private:
 private:
   Name m_prefix;
   uint64_t m_seqNum = 0;
-  uint64_t m_acceptWithin = 1;
   int m_interval = 1000;
   port::Clock::Time m_next;
   Counters m_cnt;
