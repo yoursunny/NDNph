@@ -91,6 +91,9 @@ testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const
     ASSERT_THAT(sigInfoBd, g::NotNull());
     EXPECT_THAT(std::vector<uint8_t>(sigInfoBd->extensions.begin(), sigInfoBd->extensions.end()),
                 g::ElementsAreArray(sigInfoExtB));
+
+    EXPECT_TRUE(pubB.matchSigInfo(*sigInfoBd));
+    EXPECT_EQ(pubA.matchSigInfo(*sigInfoBd), sameAB);
   }
 }
 
