@@ -27,7 +27,7 @@ public:
 
   enum
   {
-    DefaultContentType = 0x00,
+    DefaultContentType = ContentType::Blob,
     DefaultFreshnessPeriod = 0,
   };
 

@@ -210,6 +210,21 @@ public:
     return Name(value, length, nComps);
   }
 
+  /**
+   * @brief Clone TLV-VALUE into given region.
+   * @return new Name that does not reference memory of this Name,
+   *         or invalid Name if allocation fails.
+   */
+  Name clone(Region& region) const
+  {
+    uint8_t* room = region.alloc(m_length);
+    if (room == nullptr) {
+      return Name();
+    }
+    std::copy_n(m_value, m_length, room);
+    return Name(room, m_length, m_nComps);
+  }
+
   /** @brief Name compare result. */
   enum CompareResult
   {

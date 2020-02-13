@@ -1,3 +1,4 @@
+#include "ndnph/keychain/ecdsa-certificate.hpp"
 #include "ndnph/keychain/ecdsa-private-key.hpp"
 #include "ndnph/keychain/ecdsa-public-key.hpp"
 
@@ -9,13 +10,39 @@ namespace {
 
 TEST(EcdsaKey, SignVerify)
 {
-  StaticRegion<1024> region;
+  DynamicRegion region(4096);
   Name nameKA(region, { 0x08, 0x02, 0x4B, 0x41 });
-  Name nameKB(region, { 0x08, 0x02, 0x4B, 0x42 });
-  EcdsaPrivateKey pvtA, pvtB;
-  EcdsaPublicKey pubA, pubB;
+  EcdsaPrivateKey pvtA;
+  EcdsaPublicKey pubA;
   ASSERT_TRUE(EcdsaPrivateKey::generate(nameKA, pvtA, pubA));
-  ASSERT_TRUE(EcdsaPrivateKey::generate(nameKB, pvtB, pubB));
+
+  uint8_t pvtRawB[EcdsaPrivateKey::KeyLen::value];
+  uint8_t pubRawB[EcdsaPublicKey::KeyLen::value];
+  ASSERT_TRUE(EcdsaPrivateKey::generateRaw(pvtRawB, pubRawB));
+
+  Name subjectNameB(region, { 0x08, 0x02, 0x4B, 0x42 });
+  Name keyNameB = Certificate::toKeyName(region, subjectNameB);
+  ASSERT_FALSE(!keyNameB);
+
+  EcdsaPrivateKey pvtB;
+  ASSERT_TRUE(EcdsaPrivateKey::import(pvtB, keyNameB, pvtRawB));
+  EcdsaPublicKey pubB;
+  {
+    ValidityPeriod validityB;
+    auto certB = EcdsaCertificate::build(region, keyNameB, pubRawB, validityB, pvtB);
+    ASSERT_FALSE(!certB);
+
+    Encoder encoder(region);
+    encoder.prepend(certB);
+    encoder.trim();
+
+    Data dataB = region.create<Data>();
+    ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(dataB));
+    encoder.discard();
+
+    ASSERT_TRUE(EcdsaCertificate::isCertificate(dataB));
+    ASSERT_TRUE(EcdsaCertificate::loadKey(region, dataB, pubB));
+  }
 
   testSignVerify<Interest>(pvtA, pubA, pvtB, pubB, true);
   testSignVerify<Data>(pvtA, pubA, pvtB, pubB, true);

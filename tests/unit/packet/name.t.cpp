@@ -180,6 +180,22 @@ TEST(Name, Append)
               g::ElementsAreArray(wire));
 }
 
+TEST(Name, Clone)
+{
+  std::vector<uint8_t> wire({ 0x08, 0x01, 0x41 });
+  Name name(wire.data(), wire.size());
+
+  StaticRegion<1024> region;
+  Name clone = name.clone(region);
+  region.alloc(region.available());
+  Name fail = name.clone(region);
+  std::fill(wire.begin(), wire.end(), 0);
+
+  EXPECT_TRUE(!fail);
+  EXPECT_FALSE(!clone);
+  EXPECT_EQ(clone[0].type(), 0x08);
+}
+
 TEST(Name, CompareComponent)
 {
   StaticRegion<1024> region;

@@ -42,6 +42,10 @@ enum
   Delegation = 0x1F,
   Preference = 0x1E,
 
+  ValidityPeriod = 0x00FD,
+  NotBefore = 0x00FE,
+  NotAfter = 0x00FF,
+
   LpPacket = 0x64,
   LpPayload = 0x50,
   PitToken = 0x62,
@@ -49,6 +53,18 @@ enum
   NackReason = 0x0321,
 };
 } // namespace TT
+
+/** @brief ContentType assigned numbers. */
+namespace ContentType {
+enum
+{
+  Blob = 0x00,
+  Link = 0x01,
+  Key = 0x02,
+  Nack = 0x03,
+  PrefixAnn = 0x05,
+};
+} // namespace ContentType
 
 /** @brief SignatureType assigned numbers. */
 namespace SigType {

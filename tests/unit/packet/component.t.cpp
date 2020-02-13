@@ -123,5 +123,24 @@ TEST(Component, Parse)
   }
 }
 
+TEST(Component, Equality)
+{
+  Component compA, compB;
+  EXPECT_EQ(compA, compB);
+
+  StaticRegion<1024> region;
+  compA = Component::parse(region, "8=A");
+  EXPECT_NE(compA, compB);
+
+  compB = Component::parse(region, "8=B");
+  EXPECT_NE(compA, compB);
+
+  compB = Component::parse(region, "8=AA");
+  EXPECT_NE(compA, compB);
+
+  compA = Component::parse(region, "8=AA");
+  EXPECT_EQ(compA, compB);
+}
+
 } // namespace
 } // namespace ndnph
