@@ -187,7 +187,7 @@ public:
 
   /**
    * @brief Append a sequence of components.
-   * @return new Name that copies TLV-VALUE of this name and all components
+   * @return new Name that copies TLV-VALUE of this name and all components.
    *
    * If you need to append multiple components, it's recommended to append them all at once,
    * so that memory is allocated and copied only once.
@@ -211,18 +211,34 @@ public:
   }
 
   /**
+   * @brief Append a component.
+   * @return new Name that copies TLV-VALUE of this name and the new component.
+   */
+  Name append(Region& region, const Component& comp) const
+  {
+    return append(region, { comp });
+  }
+
+  /**
+   * @brief Append a component from naming convention.
+   * @return new Name that copies TLV-VALUE of this name and the new component.
+   */
+  template<typename Convention, typename... Arg>
+  Name append(Region& region, Arg&&... arg) const
+  {
+    // XXX comp is allocated in Region, then copied again
+    Component comp = Convention::create(region, std::forward<Arg>(arg)...);
+    return append(region, comp);
+  }
+
+  /**
    * @brief Clone TLV-VALUE into given region.
    * @return new Name that does not reference memory of this Name,
    *         or invalid Name if allocation fails.
    */
   Name clone(Region& region) const
   {
-    uint8_t* room = region.alloc(m_length);
-    if (room == nullptr) {
-      return Name();
-    }
-    std::copy_n(m_value, m_length, room);
-    return Name(room, m_length, m_nComps);
+    return append(region, {});
   }
 
   /** @brief Name compare result. */

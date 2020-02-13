@@ -117,8 +117,7 @@ TEST(Interest, EncodeParameterizedReplace)
   EXPECT_THAT(name, g::SizeIs(3));
   EXPECT_EQ(name[0].type(), 101);
   EXPECT_EQ(name[2].type(), 103);
-  EXPECT_EQ(name[1].type(), TT::ParametersSha256DigestComponent);
-  EXPECT_EQ(name[1].length(), NDNPH_SHA256_LEN);
+  EXPECT_TRUE(name[1].is<convention::ParamsDigest>());
 
   EXPECT_TRUE(decoded.checkDigest());
   EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(2));
@@ -145,8 +144,7 @@ TEST(Interest, EncodeParameterizedAppend)
   EXPECT_THAT(name, g::SizeIs(3));
   EXPECT_EQ(name[0].type(), 101);
   EXPECT_EQ(name[1].type(), 102);
-  EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
-  EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
+  EXPECT_TRUE(name[2].is<convention::ParamsDigest>());
 
   EXPECT_TRUE(decoded.checkDigest());
   EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(2));
@@ -197,8 +195,7 @@ TEST(Interest, EncodeSignedReplace)
   EXPECT_THAT(name, g::SizeIs(3));
   EXPECT_EQ(name[0].type(), 101);
   EXPECT_EQ(name[1].type(), 102);
-  EXPECT_EQ(name[2].type(), TT::ParametersSha256DigestComponent);
-  EXPECT_EQ(name[2].length(), NDNPH_SHA256_LEN);
+  EXPECT_TRUE(name[2].is<convention::ParamsDigest>());
 
   EXPECT_TRUE(decoded.checkDigest());
   EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(0));
@@ -268,14 +265,13 @@ TEST(Interest, MatchImplicitDigest)
   uint8_t digest[NDNPH_SHA256_LEN] = { 0 };
   EXPECT_TRUE(data.computeImplicitDigest(digest));
   EXPECT_LT(std::count(digest, digest + NDNPH_SHA256_LEN, 0), NDNPH_SHA256_LEN);
-  Component digestComp(region, TT::ImplicitSha256DigestComponent, NDNPH_SHA256_LEN, digest);
 
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(data.getName().append(region, { digestComp }));
+  interest.setName(data.getName().append<convention::ImplicitDigest>(region, digest));
   EXPECT_TRUE(interest.match(data));
 
-  interest.setName(Name::parse(region, "/A/B").append(region, { digestComp }));
+  interest.setName(Name::parse(region, "/A/B").append<convention::ImplicitDigest>(region, digest));
   EXPECT_FALSE(interest.match(data));
 }
 

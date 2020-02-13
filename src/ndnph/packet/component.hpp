@@ -184,6 +184,18 @@ public:
   }
 #endif
 
+  template<typename Convention>
+  bool is() const
+  {
+    return Convention::match(*this);
+  }
+
+  template<typename Convention, typename... Arg>
+  auto as(Arg&&... arg) const -> decltype(Convention::parse(*this, std::forward<Arg>(arg)...))
+  {
+    return Convention::parse(*this, std::forward<Arg>(arg)...);
+  }
+
 private:
   static constexpr size_t computeSize(uint16_t type, size_t length)
   {

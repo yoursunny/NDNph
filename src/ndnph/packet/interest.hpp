@@ -4,6 +4,7 @@
 #include "../core/in-region.hpp"
 #include "../port/crypto/port.hpp"
 #include "../port/random/port.hpp"
+#include "convention.hpp"
 #include "sig-info.hpp"
 
 namespace ndnph {
@@ -471,8 +472,7 @@ public:
         Component lastComp = obj->name[-1];
         uint8_t digest[NDNPH_SHA256_LEN];
         return obj->name.size() == dataName.size() + 1 &&
-               lastComp.type() == TT::ImplicitSha256DigestComponent &&
-               data.computeImplicitDigest(digest) &&
+               lastComp.is<convention::ImplicitDigest>() && data.computeImplicitDigest(digest) &&
                port::TimingSafeEqual()(digest, sizeof(digest), lastComp.value(), lastComp.length());
       }
       default:

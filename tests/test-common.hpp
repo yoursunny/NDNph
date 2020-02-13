@@ -12,4 +12,19 @@
 
 namespace g = testing;
 
+namespace ndnph {
+namespace test {
+
+template<typename T>
+std::string
+toString(const T& obj)
+{
+  std::string s;
+  bool ok = boost::conversion::try_lexical_convert(obj, s);
+  return ok ? s : "boost::bad_lexical_cast";
+}
+
+} // namespace test
+} // namespace ndnph
+
 #endif // NDNPH_TEST_COMMON_HPP

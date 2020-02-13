@@ -7,14 +7,6 @@ namespace {
 
 BOOST_CONCEPT_ASSERT((boost::InputIterator<Name::Iterator>));
 
-std::string
-toUri(const Name& name)
-{
-  std::string uri;
-  bool ok = boost::conversion::try_lexical_convert(name, uri);
-  return ok ? uri : "boost::bad_lexical_cast";
-}
-
 TEST(Name, Decode)
 {
   Name name;
@@ -26,7 +18,7 @@ TEST(Name, Decode)
   EXPECT_EQ(name.length(), 3);
   EXPECT_EQ(name.value(), wire.data());
   EXPECT_EQ(name.size(), 1);
-  EXPECT_EQ(toUri(name), "/8=A");
+  EXPECT_EQ(test::toString(name), "/8=A");
 
   Component comp = name[0];
   EXPECT_FALSE(!comp);
@@ -55,7 +47,7 @@ TEST(Name, Decode)
   EXPECT_THAT(std::vector<uint8_t>(name.value(), name.value() + name.length()),
               g::ElementsAreArray(wire.begin(), wire.end()));
   EXPECT_EQ(name.size(), 2);
-  EXPECT_EQ(toUri(name), "/9=A/8=B");
+  EXPECT_EQ(test::toString(name), "/9=A/8=B");
 
   comp = name[-2];
   EXPECT_FALSE(!comp);
@@ -86,7 +78,7 @@ TEST(Name, Parse)
     auto name = Name::parse(region, "/");
     ASSERT_FALSE(!name);
     EXPECT_EQ(name.size(), 0);
-    EXPECT_EQ(toUri(name), "/");
+    EXPECT_EQ(test::toString(name), "/");
     region.reset();
   }
 
@@ -173,6 +165,9 @@ TEST(Name, Append)
 
   Component comp1;
   Decoder(&wire[3], 3).decode(comp1);
+  name2 = name.append(region, comp1);
+  EXPECT_THAT(name2, g::SizeIs(2));
+
   Component comp2(region, wire[6], wire[7], &wire[8]);
   Component comp3(region, wire[13], &wire[14]);
   name2 = name.append(region, { comp1, comp2, comp1, comp3 });

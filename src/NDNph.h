@@ -28,6 +28,7 @@
 #include "ndnph/keychain/ecdsa-public-key.hpp"
 #include "ndnph/keychain/validity-period.hpp"
 #include "ndnph/packet/component.hpp"
+#include "ndnph/packet/convention.hpp"
 #include "ndnph/packet/data.hpp"
 #include "ndnph/packet/interest.hpp"
 #include "ndnph/packet/lp.hpp"
