@@ -12,9 +12,10 @@ TEST(DigestKey, Minimal)
   tlv::Value chunk0(&wire[0], 2);
   tlv::Value chunk1(&wire[2], 4);
 
-  DigestKey key;
   uint8_t sig[NDNPH_SHA256_LEN];
-  EXPECT_EQ(decltype(key)::MaxSigLen::value, sizeof(sig));
+  EXPECT_EQ(DigestKey::get().getMaxSigLen(), sizeof(sig));
+
+  DigestKey key;
   EXPECT_EQ(key.sign({ chunk0, chunk1 }, sig), sizeof(sig));
   EXPECT_THAT(std::vector<uint8_t>(sig, sig + sizeof(sig)),
               g::ElementsAre(0x4F, 0xBF, 0x10, 0xA6, 0x42, 0xCA, 0xF3, 0xC2, 0x15, 0x78, 0x3D, 0x89,

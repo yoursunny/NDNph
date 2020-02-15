@@ -2,8 +2,9 @@
 #define NDNPH_PACKET_DATA_HPP
 
 #include "../core/in-region.hpp"
+#include "../keychain/private-key.hpp"
+#include "../keychain/public-key.hpp"
 #include "../port/crypto/port.hpp"
-#include "sig-info.hpp"
 
 namespace ndnph {
 namespace detail {
@@ -79,11 +80,10 @@ protected:
   }
 };
 
-template<typename Key>
 class SignedDataRef : public DataRefBase
 {
 public:
-  explicit SignedDataRef(DataObj* data, const Key& key, DSigInfo sigInfo)
+  explicit SignedDataRef(DataObj* data, const PrivateKey& key, DSigInfo sigInfo)
     : DataRefBase(data)
     , m_key(key)
     , m_sigInfo(std::move(sigInfo))
@@ -93,7 +93,7 @@ public:
   {
     m_key.updateSigInfo(m_sigInfo);
     uint8_t* after = const_cast<uint8_t*>(encoder.begin());
-    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLen::value);
+    uint8_t* sigBuf = encoder.prependRoom(m_key.getMaxSigLen());
     encodeSignedPortion(encoder, m_sigInfo);
     if (!encoder) {
       return;
@@ -106,7 +106,7 @@ public:
       encoder.setError();
       return;
     }
-    if (sigLen != Key::MaxSigLen::value) {
+    if (static_cast<size_t>(sigLen) != m_key.getMaxSigLen()) {
       std::copy_backward(sigBuf, sigBuf + sigLen, after);
     }
     encoder.resetFront(after);
@@ -120,7 +120,7 @@ public:
   }
 
 private:
-  const Key& m_key;
+  const PrivateKey& m_key;
   mutable DSigInfo m_sigInfo;
 };
 
@@ -193,21 +193,13 @@ public:
 
   /**
    * @brief Sign the packet with a private key.
-   * @tparam Key class with
-   *             `void updateSigInfo(SigInfo& sigInfo) const`
-   *             that writes SigType and KeyLocator into SigInfo, and
-   *             `using MaxSigLen = std::integral_constant<int, L>`
-   *             that indicates maximum possible signature length, and
-   *             `ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const`
-   *             that writes signature to sig[] and returns signature length or -1 on error.
    * @return an Encodable object. This object is valid only if Data and Key are kept alive.
    *         It's recommended to pass it to Encoder immediately without saving as variable.
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
    */
-  template<typename Key, typename R = detail::SignedDataRef<Key>>
-  R sign(const Key& key, DSigInfo sigInfo = DSigInfo()) const
+  detail::SignedDataRef sign(const PrivateKey& key, DSigInfo sigInfo = DSigInfo()) const
   {
-    return R(obj, key, std::move(sigInfo));
+    return detail::SignedDataRef(obj, key, std::move(sigInfo));
   }
 
   /** @brief Decode packet. */
@@ -240,14 +232,9 @@ public:
   /**
    * @brief Verify the packet with a public key.
    * @pre only available on decoded packet.
-   * @tparam Key class with
-   *             `bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
-                              size_t length) const`
-   *             that performs verification and returns verification result.
    * @return verification result.
    */
-  template<typename Key>
-  bool verify(const Key& key) const
+  bool verify(const PublicKey& key) const
   {
     return obj->sig != nullptr && key.verify({ obj->sig->signedPortion },
                                              obj->sig->sigValue.begin(), obj->sig->sigValue.size());

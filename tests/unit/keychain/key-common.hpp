@@ -32,10 +32,10 @@ makePacket<Data>(Region& region, const Name& name)
   return data;
 }
 
-template<typename Pkt, typename PvtKey, typename PubKey>
+template<typename Pkt>
 void
-testSignVerify(const PvtKey& pvtA, const PubKey& pubA, const PvtKey& pvtB, const PubKey& pubB,
-               bool deterministic = false, bool sameAB = false)
+testSignVerify(const PrivateKey& pvtA, const PublicKey& pubA, const PrivateKey& pvtB,
+               const PublicKey& pubB, bool deterministic = false, bool sameAB = false)
 {
   StaticRegion<1024> region;
   Name nameA(region, { 0x08, 0x01, 0x41 });

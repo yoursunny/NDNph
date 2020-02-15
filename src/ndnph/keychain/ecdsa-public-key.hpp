@@ -1,13 +1,13 @@
 #ifndef NDNPH_KEYCHAIN_ECDSA_PUBLIC_KEY_HPP
 #define NDNPH_KEYCHAIN_ECDSA_PUBLIC_KEY_HPP
 
-#include "../packet/sig-info.hpp"
-#include "common.hpp"
+#include "helper.hpp"
+#include "public-key.hpp"
 
 namespace ndnph {
 
 /** @brief ECDSA public key. */
-class EcdsaPublicKey
+class EcdsaPublicKey : public PublicKey
 {
 public:
   using KeyLen = port::Ecdsa::Curve::PubLen;
@@ -29,7 +29,7 @@ public:
   explicit EcdsaPublicKey() = default;
 
   /** @brief Determine whether packet was signed by corresponding private key. */
-  bool matchSigInfo(const SigInfo& sigInfo) const
+  bool matchSigInfo(const SigInfo& sigInfo) const final
   {
     return sigInfo.sigType == SigType::Sha256WithEcdsa && sigInfo.name.isPrefixOf(m_name);
   }
@@ -39,7 +39,8 @@ public:
    * @retval true signature is correct.
    * @retval false error or signature is incorrect.
    */
-  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig, size_t sigLen) const
+  bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
+              size_t sigLen) const final
   {
     if (m_key == nullptr) {
       return false;

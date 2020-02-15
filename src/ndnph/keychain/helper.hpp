@@ -1,5 +1,5 @@
-#ifndef NDNPH_KEYCHAIN_COMMON_HPP
-#define NDNPH_KEYCHAIN_COMMON_HPP
+#ifndef NDNPH_KEYCHAIN_HELPER_HPP
+#define NDNPH_KEYCHAIN_HELPER_HPP
 
 #include "../port/crypto/port.hpp"
 #include "../tlv/value.hpp"
@@ -20,4 +20,4 @@ computeDigest(std::initializer_list<tlv::Value> chunks, uint8_t digest[NDNPH_SHA
 } // namespace detail
 } // namespace ndnph
 
-#endif // NDNPH_KEYCHAIN_COMMON_HPP
+#endif // NDNPH_KEYCHAIN_HELPER_HPP

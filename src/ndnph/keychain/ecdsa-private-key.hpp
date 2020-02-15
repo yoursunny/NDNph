@@ -1,13 +1,13 @@
 #ifndef NDNPH_KEYCHAIN_ECDSA_PRIVATE_KEY_HPP
 #define NDNPH_KEYCHAIN_ECDSA_PRIVATE_KEY_HPP
 
-#include "../packet/sig-info.hpp"
 #include "ecdsa-public-key.hpp"
+#include "private-key.hpp"
 
 namespace ndnph {
 
 /** @brief ECDSA private key. */
-class EcdsaPrivateKey
+class EcdsaPrivateKey : public PrivateKey
 {
 public:
   using KeyLen = port::Ecdsa::Curve::PvtLen;
@@ -54,23 +54,18 @@ public:
 
   explicit EcdsaPrivateKey() = default;
 
-  /**
-   * @brief Write SigType and KeyLocator.
-   * @param[inout] sigInfo SigInfo to update; other fields are unchanged.
-   */
-  void updateSigInfo(SigInfo& sigInfo) const
+  size_t getMaxSigLen() const final
+  {
+    return MaxSigLen::value;
+  }
+
+  void updateSigInfo(SigInfo& sigInfo) const final
   {
     sigInfo.sigType = SigType::Sha256WithEcdsa;
     sigInfo.name = m_name;
   }
 
-  /**
-   * @brief Perform signing.
-   * @param chunks signed portion.
-   * @param[out] signature buffer, with MaxSigLen::value room.
-   * @return signature length, or -1 upon failure.
-   */
-  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const
+  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final
   {
     if (m_key == nullptr) {
       return -1;

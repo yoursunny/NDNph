@@ -5,9 +5,7 @@
 
 namespace ndnph {
 
-/**
- * @brief Virtual transport that connects to an peer.
- */
+/** @brief Virtual transport that connects to an peer. */
 class BridgeTransport
   : public virtual Transport
   , public transport::DynamicRxQueueMixin

@@ -20,7 +20,7 @@ public:
     return size % ALIGNMENT == 0 ? size : (size | (ALIGNMENT - 1)) + 1;
   }
 
-  Region(uint8_t* buf, size_t cap)
+  explicit Region(uint8_t* buf, size_t cap)
     : m_begin(buf)
     , m_end(buf + cap)
   {

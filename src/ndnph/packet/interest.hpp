@@ -2,10 +2,11 @@
 #define NDNPH_PACKET_INTEREST_HPP
 
 #include "../core/in-region.hpp"
+#include "../keychain/private-key.hpp"
+#include "../keychain/public-key.hpp"
 #include "../port/crypto/port.hpp"
 #include "../port/random/port.hpp"
 #include "convention.hpp"
-#include "sig-info.hpp"
 
 namespace ndnph {
 namespace detail {
@@ -166,11 +167,10 @@ protected:
   tlv::Value m_appParameters;
 };
 
-template<typename Key>
 class SignedInterestRef : public ParameterizedInterestRef
 {
 public:
-  explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters, const Key& key,
+  explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters, const PrivateKey& key,
                              ISigInfo sigInfo)
     : ParameterizedInterestRef(interest, std::move(appParameters))
     , m_key(key)
@@ -193,7 +193,7 @@ public:
 
     m_key.updateSigInfo(m_sigInfo);
     uint8_t* after = const_cast<uint8_t*>(encoder.begin());
-    uint8_t* sigBuf = encoder.prependRoom(Key::MaxSigLen::value);
+    uint8_t* sigBuf = encoder.prependRoom(m_key.getMaxSigLen());
     encoder.prepend([this](Encoder& encoder) { this->encodeAppParameters(encoder); }, m_sigInfo);
     if (!encoder) {
       return;
@@ -207,7 +207,7 @@ public:
       encoder.setError();
       return;
     }
-    if (sigLen != Key::MaxSigLen::value) {
+    if (static_cast<size_t>(sigLen) != m_key.getMaxSigLen()) {
       std::copy_backward(sigBuf, sigBuf + sigLen, after);
     }
     encoder.resetFront(after);
@@ -222,7 +222,7 @@ public:
   }
 
 private:
-  const Key& m_key;
+  const PrivateKey& m_key;
   mutable ISigInfo m_sigInfo;
 };
 
@@ -328,18 +328,17 @@ public:
   public:
     using detail::ParameterizedInterestRef::ParameterizedInterestRef;
 
-    template<typename Key, typename R = detail::SignedInterestRef<Key>>
-    R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
+    detail::SignedInterestRef sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const
     {
-      return R(obj, this->m_appParameters, key, std::move(sigInfo));
+      return detail::SignedInterestRef(obj, this->m_appParameters, key, std::move(sigInfo));
     }
   };
 
   /**
    * @brief Add AppParameters to the packet.
    * @pre Name contains zero or one ParametersSha256DigestComponent.
-   * @return an Encodable object, with an additional `sign(const Key& key)` method to
-   *         create a signed Interest. This object is valid only if Interest and
+   * @return an Encodable object, with an additional `sign(const PrivateKey&)` method
+   *         to create a signed Interest. This object is valid only if Interest and
    *         appParameters are kept alive. It's recommended to pass it to Encoder
    *         immediately without saving as variable.
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
@@ -353,7 +352,6 @@ public:
   /**
    * @brief Sign the packet with a private key.
    * @pre If Name contains ParametersSha256DigestComponent, it is the last component.
-   * @tparam Key see requirement in Data::sign().
    * @return an Encodable object. This object is valid only if Interest and Key are kept alive.
    *         It's recommended to pass it to Encoder immediately without saving as variable.
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
@@ -362,10 +360,9 @@ public:
    * To create a signed Interest with AppParameters, call parameterize() first, then
    * call sign() on its return value.
    */
-  template<typename Key, typename R = detail::SignedInterestRef<Key>>
-  R sign(const Key& key, ISigInfo sigInfo = ISigInfo()) const
+  detail::SignedInterestRef sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const
   {
-    return R(obj, tlv::Value(), key, std::move(sigInfo));
+    return detail::SignedInterestRef(obj, tlv::Value(), key, std::move(sigInfo));
   }
 
   /** @brief Decode packet. */
@@ -427,14 +424,12 @@ public:
 
   /**
    * @brief Verify the packet with a public key.
-   * @tparam Key see requirement in Data::verify().
    * @return verification result.
    *
    * This method only works on decoded packet. It does not work on packet that
    * has been modified or (re-)signed.
    */
-  template<typename Key>
-  bool verify(const Key& key)
+  bool verify(const PublicKey& key)
   {
     if (!checkDigest()) {
       return false;

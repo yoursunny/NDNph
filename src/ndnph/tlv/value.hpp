@@ -22,10 +22,12 @@ public:
   {
     return m_value;
   }
+
   const uint8_t* end() const
   {
     return m_value + m_size;
   }
+
   size_t size() const
   {
     return m_size;

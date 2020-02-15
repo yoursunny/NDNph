@@ -103,7 +103,7 @@ template<typename T>
 class DynamicSimpleQueue : public SimpleQueue<T>
 {
 public:
-  DynamicSimpleQueue(size_t capacity)
+  explicit DynamicSimpleQueue(size_t capacity)
     : SimpleQueue<T>(new T[capacity + 1], capacity)
   {}
 
