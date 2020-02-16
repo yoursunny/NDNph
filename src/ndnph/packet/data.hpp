@@ -41,15 +41,57 @@ public:
   bool isFinalBlock = false;
 };
 
-class DataRefBase : public RefRegion<DataObj>
+class SignedDataRef : public RefRegion<DataObj>
 {
 public:
-  using RefRegion::RefRegion;
+  explicit SignedDataRef(DataObj* data, const PrivateKey& key, DSigInfo sigInfo)
+    : RefRegion(data)
+    , m_key(key)
+  {
+    key.updateSigInfo(sigInfo);
+    m_sigInfo = std::move(sigInfo);
+  }
 
-protected:
-  ~DataRefBase() = default;
+  void encodeTo(Encoder& encoder) const
+  {
+    const uint8_t* afterSig = encoder.begin();
+    size_t maxSigLen = m_key.getMaxSigLen();
+    uint8_t* sigBuf = encoder.prependRoom(maxSigLen);
+    encoder.prependTypeLength(TT::DSigValue, maxSigLen);
+    const uint8_t* afterSignedPortion = encoder.begin();
+    encodeSignedPortion(encoder);
+    if (!encoder) {
+      return;
+    }
 
-  void encodeSignedPortion(Encoder& encoder, const DSigInfo& sigInfo) const
+    tlv::Value signedPortion(encoder.begin(), afterSignedPortion);
+    ssize_t sigLen = m_key.sign({ signedPortion }, sigBuf);
+    if (sigLen < 0) {
+      encoder.setError();
+      return;
+    }
+
+    encoder.resetFront(const_cast<uint8_t*>(afterSig));
+    encoder.prependTlv(TT::Data,
+                       [=](Encoder& encoder) {
+                         uint8_t* room = encoder.prependRoom(signedPortion.size());
+                         assert(room != nullptr);
+                         if (room != signedPortion.begin()) {
+                           std::memmove(room, signedPortion.begin(), signedPortion.size());
+                         }
+                       },
+                       [=](Encoder& encoder) {
+                         uint8_t* room = encoder.prependRoom(sigLen);
+                         assert(room != nullptr);
+                         if (room != sigBuf) {
+                           std::memmove(room, sigBuf, sigLen);
+                         }
+                         encoder.prependTypeLength(TT::DSigValue, sigLen);
+                       });
+  }
+
+private:
+  void encodeSignedPortion(Encoder& encoder) const
   {
     encoder.prepend(obj->name,
                     [this](Encoder& encoder) {
@@ -76,52 +118,12 @@ protected:
                     [this](Encoder& encoder) {
                       encoder.prependTlv(TT::Content, Encoder::OmitEmpty, obj->content);
                     },
-                    sigInfo);
-  }
-};
-
-class SignedDataRef : public DataRefBase
-{
-public:
-  explicit SignedDataRef(DataObj* data, const PrivateKey& key, DSigInfo sigInfo)
-    : DataRefBase(data)
-    , m_key(key)
-    , m_sigInfo(std::move(sigInfo))
-  {}
-
-  void encodeTo(Encoder& encoder) const
-  {
-    m_key.updateSigInfo(m_sigInfo);
-    uint8_t* after = const_cast<uint8_t*>(encoder.begin());
-    uint8_t* sigBuf = encoder.prependRoom(m_key.getMaxSigLen());
-    encodeSignedPortion(encoder, m_sigInfo);
-    if (!encoder) {
-      return;
-    }
-    const uint8_t* signedPortion = encoder.begin();
-    size_t sizeofSignedPortion = sigBuf - signedPortion;
-
-    ssize_t sigLen = m_key.sign({ tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
-    if (sigLen < 0) {
-      encoder.setError();
-      return;
-    }
-    if (static_cast<size_t>(sigLen) != m_key.getMaxSigLen()) {
-      std::copy_backward(sigBuf, sigBuf + sigLen, after);
-    }
-    encoder.resetFront(after);
-
-    encoder.prependTlv(TT::Data,
-                       [this](Encoder& encoder) { encodeSignedPortion(encoder, m_sigInfo); },
-                       [sigLen](Encoder& encoder) {
-                         encoder.prependRoom(sigLen); // room contains signature
-                         encoder.prependTypeLength(TT::DSigValue, sigLen);
-                       });
+                    m_sigInfo);
   }
 
 private:
   const PrivateKey& m_key;
-  mutable DSigInfo m_sigInfo;
+  DSigInfo m_sigInfo;
 };
 
 } // namespace detail
@@ -193,7 +195,7 @@ public:
 
   /**
    * @brief Sign the packet with a private key.
-   * @return an Encodable object. This object is valid only if Data and Key are kept alive.
+   * @return an Encodable object. This object is valid only if Data and PrivateKey are kept alive.
    *         It's recommended to pass it to Encoder immediately without saving as variable.
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
    */
@@ -224,7 +226,7 @@ public:
       }),
       EvDecoder::def<TT::Content>(&obj->content), EvDecoder::def<TT::DSigInfo>(&obj->sig->sigInfo),
       EvDecoder::def<TT::DSigValue>([this, &input](const Decoder::Tlv& d) {
-        obj->sig->signedPortion = tlv::Value(input.value, d.tlv - input.value);
+        obj->sig->signedPortion = tlv::Value(input.value, d.tlv);
         return obj->sig->sigValue.decodeFrom(d);
       }));
   }

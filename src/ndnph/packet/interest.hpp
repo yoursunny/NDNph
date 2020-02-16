@@ -152,14 +152,13 @@ protected:
     encoder.prependTlv(TT::Interest,
                        [this, &params](Encoder& encoder) { encodeName(encoder, params); },
                        [this](Encoder& encoder) { encodeMiddle(encoder); },
-                       [&encodeParams, &params](Encoder& encoder) {
-                         const uint8_t* paramsEnd = encoder.begin();
+                       [&](Encoder& encoder) {
+                         const uint8_t* afterParams = encoder.begin();
                          encodeParams(encoder);
                          if (!encoder) {
                            return;
                          }
-                         const uint8_t* paramsBegin = encoder.begin();
-                         params = tlv::Value(paramsBegin, paramsEnd - paramsBegin);
+                         params = tlv::Value(encoder.begin(), afterParams);
                        });
   }
 
@@ -174,56 +173,66 @@ public:
                              ISigInfo sigInfo)
     : ParameterizedInterestRef(interest, std::move(appParameters))
     , m_key(key)
-    , m_sigInfo(std::move(sigInfo))
-  {}
+  {
+    key.updateSigInfo(sigInfo);
+    m_sigInfo = std::move(sigInfo);
+  }
 
   void encodeTo(Encoder& encoder) const
   {
     tlv::Value signedName;
-    int posParamsDigest = this->findParamsDigest(this->obj->name);
+    int posParamsDigest = findParamsDigest(obj->name);
     if (posParamsDigest < 0) {
-      signedName = tlv::Value(this->obj->name.value(), this->obj->name.length());
-    } else if (static_cast<size_t>(posParamsDigest) == this->obj->name.size() - 1) {
-      auto prefix = this->obj->name.getPrefix(-1);
+      signedName = tlv::Value(obj->name.value(), obj->name.length());
+    } else if (static_cast<size_t>(posParamsDigest) == obj->name.size() - 1) {
+      auto prefix = obj->name.getPrefix(-1);
       signedName = tlv::Value(prefix.value(), prefix.length());
     } else {
       encoder.setError();
       return;
     }
 
-    m_key.updateSigInfo(m_sigInfo);
-    uint8_t* after = const_cast<uint8_t*>(encoder.begin());
-    uint8_t* sigBuf = encoder.prependRoom(m_key.getMaxSigLen());
-    encoder.prepend([this](Encoder& encoder) { this->encodeAppParameters(encoder); }, m_sigInfo);
+    const uint8_t* afterSig = encoder.begin();
+    size_t maxSigLen = m_key.getMaxSigLen();
+    uint8_t* sigBuf = encoder.prependRoom(maxSigLen);
+    encoder.prependTypeLength(TT::DSigValue, maxSigLen);
+    const uint8_t* afterSignedPortion = encoder.begin();
+    encoder.prepend([this](Encoder& encoder) { encodeAppParameters(encoder); }, m_sigInfo);
     if (!encoder) {
       return;
     }
-    const uint8_t* signedPortion = encoder.begin();
-    size_t sizeofSignedPortion = sigBuf - signedPortion;
 
-    ssize_t sigLen =
-      m_key.sign({ signedName, tlv::Value(signedPortion, sizeofSignedPortion) }, sigBuf);
+    tlv::Value signedPortion(encoder.begin(), afterSignedPortion);
+    ssize_t sigLen = m_key.sign({ signedName, signedPortion }, sigBuf);
     if (sigLen < 0) {
       encoder.setError();
       return;
     }
-    if (static_cast<size_t>(sigLen) != m_key.getMaxSigLen()) {
-      std::copy_backward(sigBuf, sigBuf + sigLen, after);
-    }
-    encoder.resetFront(after);
 
-    this->encodeImpl(encoder, [this, sigLen](Encoder& encoder) {
-      encoder.prepend([this](Encoder& encoder) { this->encodeAppParameters(encoder); }, m_sigInfo,
-                      [sigLen](Encoder& encoder) {
-                        encoder.prependRoom(sigLen); // room contains signature
-                        encoder.prependTypeLength(TT::ISigValue, sigLen);
-                      });
+    encoder.resetFront(const_cast<uint8_t*>(afterSig));
+    encodeImpl(encoder, [=](Encoder& encoder) {
+      encoder.prepend(
+        [=](Encoder& encoder) {
+          uint8_t* room = encoder.prependRoom(signedPortion.size());
+          assert(room != nullptr);
+          if (room != signedPortion.begin()) {
+            std::memmove(room, signedPortion.begin(), signedPortion.size());
+          }
+        },
+        [=](Encoder& encoder) {
+          uint8_t* room = encoder.prependRoom(sigLen);
+          assert(room != nullptr);
+          if (room != sigBuf) {
+            std::memmove(room, sigBuf, sigLen);
+          }
+          encoder.prependTypeLength(TT::ISigValue, sigLen);
+        });
     });
   }
 
 private:
   const PrivateKey& m_key;
-  mutable ISigInfo m_sigInfo;
+  ISigInfo m_sigInfo;
 };
 
 } // namespace detail
@@ -330,7 +339,7 @@ public:
 
     detail::SignedInterestRef sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const
     {
-      return detail::SignedInterestRef(obj, this->m_appParameters, key, std::move(sigInfo));
+      return detail::SignedInterestRef(obj, m_appParameters, key, std::move(sigInfo));
     }
   };
 
@@ -352,8 +361,8 @@ public:
   /**
    * @brief Sign the packet with a private key.
    * @pre If Name contains ParametersSha256DigestComponent, it is the last component.
-   * @return an Encodable object. This object is valid only if Interest and Key are kept alive.
-   *         It's recommended to pass it to Encoder immediately without saving as variable.
+   * @return an Encodable object. This object is valid only if Interest and PrivateKey are kept
+   *         alive. It's recommended to pass it to Encoder immediately without saving as variable.
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
    * @note This method does not set sigValue. Packet is not verifiable after this operation.
    *
@@ -380,7 +389,7 @@ public:
         if (obj->params == nullptr) {
           return false;
         }
-        obj->params->allParams = tlv::Value(d.tlv, input.tlv + input.size - d.tlv);
+        obj->params->allParams = tlv::Value(d.tlv, input.tlv + input.size);
         return obj->params->appParameters.decodeFrom(d);
       }),
       EvDecoder::def<TT::ISigInfo>([this](const Decoder::Tlv& d) {
@@ -390,8 +399,7 @@ public:
         if (obj->params == nullptr) {
           return false;
         }
-        obj->params->signedParams =
-          tlv::Value(obj->params->allParams.begin(), d.tlv - obj->params->allParams.begin());
+        obj->params->signedParams = tlv::Value(obj->params->allParams.begin(), d.tlv);
         return obj->params->sigValue.decodeFrom(d);
       }));
   }

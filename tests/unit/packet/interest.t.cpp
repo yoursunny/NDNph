@@ -160,7 +160,7 @@ TEST(Interest, EncodeSignedBadPlaceholder)
   Encoder encoder(region);
   {
     MockPrivateKey<32> key;
-    EXPECT_CALL(key, updateSigInfo).Times(0);
+    EXPECT_CALL(key, updateSigInfo).Times(1);
     EXPECT_CALL(key, doSign).Times(0);
     EXPECT_FALSE(encoder.prepend(interest.sign(key)));
   }

@@ -18,6 +18,11 @@ public:
     , m_size(size)
   {}
 
+  explicit Value(const uint8_t* first, const uint8_t* last)
+    : m_value(first)
+    , m_size(last - first)
+  {}
+
   const uint8_t* begin() const
   {
     return m_value;

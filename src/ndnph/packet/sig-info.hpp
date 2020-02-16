@@ -17,7 +17,7 @@ public:
       input, { TT::ISigInfo, TT::DSigInfo },
       [this, &input](const Decoder::Tlv& d, int& currentOrder) {
         if (currentOrder < 1000) {
-          extensions = tlv::Value(d.tlv, input.value + input.length - d.tlv);
+          extensions = tlv::Value(d.tlv, input.value + input.length);
           currentOrder = 1000;
         }
         return true;
