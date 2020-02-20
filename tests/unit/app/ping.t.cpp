@@ -1,7 +1,7 @@
 #include "ndnph/app/ping-client.hpp"
 #include "ndnph/app/ping-server.hpp"
-#include "ndnph/face/bridge-transport.hpp"
 
+#include "mock/bridge-fixture.hpp"
 #include "mock/mock-key.hpp"
 #include "mock/mock-transport.hpp"
 #include "test-common.hpp"
@@ -47,7 +47,7 @@ TEST(Ping, Client)
 
   for (int i = 0; i < 120; ++i) {
     face.loop();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    port::Clock::sleep(1);
   }
   auto cnt = client.readCounters();
   EXPECT_EQ(cnt.nTxInterests, nInterests);
@@ -88,36 +88,16 @@ TEST(Ping, Server)
   EXPECT_THAT(dataNames, g::ElementsAreArray(interestNames));
 }
 
-TEST(Ping, EndToEnd)
+using PingEndToEndFixture = BridgeFixture;
+
+TEST_F(PingEndToEndFixture, EndToEnd)
 {
-  BridgeTransport transportA;
-  BridgeTransport transportB;
-  transportA.begin(transportB);
-  Face faceA(transportA);
-  Face faceB(transportB);
-
   StaticRegion<1024> region;
-  PingServer serverA(Name::parse(region, "/ping"), faceB);
-  PingClient clientB(Name::parse(region, "/ping"), faceA, 10);
-  std::atomic_bool stopServer(false);
+  PingServer serverA(Name::parse(region, "/ping"), faceA);
+  PingClient clientB(Name::parse(region, "/ping"), faceB, 10);
 
-  std::thread threadA([&] {
-    while (!stopServer) {
-      faceA.loop();
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-  });
-
-  std::thread threadB([&] {
-    for (int i = 0; i < 120; ++i) {
-      faceB.loop();
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-  });
-
-  threadB.join();
-  stopServer = true;
-  threadA.join();
+  int i = 120;
+  runInThreads([] {}, [&] { return --i >= 0; });
 
   auto cnt = clientB.readCounters();
   EXPECT_GE(cnt.nTxInterests, 5);

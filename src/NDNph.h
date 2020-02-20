@@ -7,6 +7,8 @@
 #include "ndnph/an.hpp"
 #include "ndnph/app/ping-client.hpp"
 #include "ndnph/app/ping-server.hpp"
+#include "ndnph/app/segment-consumer.hpp"
+#include "ndnph/app/segment-producer.hpp"
 #include "ndnph/core/common.hpp"
 #include "ndnph/core/in-region.hpp"
 #include "ndnph/core/input-iterator-pointer-proxy.hpp"
