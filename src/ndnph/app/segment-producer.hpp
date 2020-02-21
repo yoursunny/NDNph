@@ -1,5 +1,5 @@
-#ifndef NDNPH_SEGMENT_PRODUCER_HPP
-#define NDNPH_SEGMENT_PRODUCER_HPP
+#ifndef NDNPH_APP_SEGMENT_PRODUCER_HPP
+#define NDNPH_APP_SEGMENT_PRODUCER_HPP
 
 #include "../face/packet-handler.hpp"
 #include "../keychain/digest-key.hpp"
@@ -129,4 +129,4 @@ using SegmentProducer = BasicSegmentProducer<>;
 
 } // namespace ndnph
 
-#endif // NDNPH_SEGMENT_PRODUCER_HPP
+#endif // NDNPH_APP_SEGMENT_PRODUCER_HPP

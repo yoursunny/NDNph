@@ -1,5 +1,5 @@
-#ifndef NDNPH_SEGMENT_CONSUMER_HPP
-#define NDNPH_SEGMENT_CONSUMER_HPP
+#ifndef NDNPH_APP_SEGMENT_CONSUMER_HPP
+#define NDNPH_APP_SEGMENT_CONSUMER_HPP
 
 #include "../face/packet-handler.hpp"
 #include "../keychain/digest-key.hpp"
@@ -222,4 +222,4 @@ using SegmentConsumer = BasicSegmentConsumer<>;
 
 } // namespace ndnph
 
-#endif // NDNPH_SEGMENT_CONSUMER_HPP
+#endif // NDNPH_APP_SEGMENT_CONSUMER_HPP
