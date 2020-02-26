@@ -6,6 +6,7 @@
 #elif defined(NDNPH_PORT_QUEUE_SIMPLE)
 #include "simple.hpp"
 #elif defined(NDNPH_PORT_QUEUE_BOOSTLF)
+// using Boost Lockfree library, requires libboost-dev package
 #include "boostlf.hpp"
 #else
 #define NDNPH_PORT_QUEUE_NULL
