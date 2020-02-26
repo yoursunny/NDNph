@@ -39,9 +39,9 @@ public:
     : obj(obj)
   {}
 
-  bool operator!() const
+  explicit operator bool() const
   {
-    return obj == nullptr;
+    return obj != nullptr;
   }
 
 protected:

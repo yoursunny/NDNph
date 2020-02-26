@@ -132,10 +132,10 @@ public:
     return Component(buf, bufLen, type, length, valueBuf, writeFromBack);
   }
 
-  /** @brief Return true if Component is invalid. */
-  bool operator!() const
+  /** @brief Return true if Component is valid. */
+  explicit operator bool() const
   {
-    return m_type == 0;
+    return m_type != 0;
   }
 
   uint16_t type() const

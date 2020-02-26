@@ -28,10 +28,10 @@ public:
     init(region.alloc(capacity), capacity);
   }
 
-  /** @brief Whether an error has occurred, such as running out of space. */
-  bool operator!() const
+  /** @brief Return true if no errors were encountered, such as running out of space. */
+  explicit operator bool() const
   {
-    return m_pos == nullptr;
+    return m_pos != nullptr;
   }
 
   /** @brief Get output begin. */

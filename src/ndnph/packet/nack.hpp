@@ -108,7 +108,7 @@ public:
   {
     Region& region = regionOf(interest);
     Nack nack = region.create<Nack>();
-    if (!!nack) {
+    if (nack) {
       nack.getHeader().setReason(reason);
       auto ni = nack.getInterest();
       ni.setName(interest.getName());
