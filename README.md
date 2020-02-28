@@ -52,6 +52,16 @@ For Arduino, see [esp8266ndn](https://github.com/yoursunny/esp8266ndn) instructi
 
 For Linux,
 
-1. Copy `src/*` into `/usr/local/include`.
-2. Have a look at `ndnph/port/*/port.hpp`, select an implementation of each feature, and put the appropriate `#define` lines in `NDNph-defines.hpp` file of your project.
-3. Add `#include "NDNph-defines.hpp"` and `#include <NDNph.h>` in your project.
+1. Install dependencies
+   * C++ compiler such as GCC, install Ubuntu package `build-essential`
+   * [Meson](https://mesonbuild.com/), install pip package `meson`
+   * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
+   * [Mbed Crypto](https://github.com/ARMmbed/mbed-crypto), install from source
+   * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
+   * [Google Test](https://github.com/google/googletest), install from source (only needed by unit tests)
+   * Note: all dependencies are optional, but extra porting work will be necessary
+2. Create build directory: `meson build`
+3. Enter build directory and execute build: `cd build && ninja`
+4. Run unit test (optional): `ninja test`
+5. Install headers to system: `sudo ninja install`
+6. Add `#include <NDNph-config.h>` and `#include <NDNph.h>` in your project, and start coding.

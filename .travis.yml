@@ -42,10 +42,10 @@ install:
   - |
     : install Mbed Crypto
     cd $HOME
-    curl -L https://github.com/ARMmbed/mbed-crypto/archive/mbedcrypto-2.0.0.tar.gz | tar -xz
+    curl -L https://github.com/ARMmbed/mbed-crypto/archive/mbedcrypto-3.1.0.tar.gz | tar -xz
     mkdir mbedcrypto
     cd mbedcrypto
-    cmake -G Ninja ../mbed-crypto-mbedcrypto-2.0.0 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
+    cmake -G Ninja ../mbed-crypto-mbedcrypto-3.1.0 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
     ninja
     sudo ninja install
   - |
@@ -57,14 +57,12 @@ install:
 
 script:
   - cd $TRAVIS_BUILD_DIR && mk/update-list.sh
-  - meson build.coverage -Db_coverage=true -Dwerror=true
-  - meson build.sanitize -Db_sanitize=address,undefined
-  - meson build.optimized --buildtype debugoptimized
-  - LDFLAGS='-fuse-ld=lld -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.txt
+  - meson build.coverage -Db_coverage=true -Dwerror=true -Dunittest=enabled
+  - meson build.sanitize -Db_sanitize=address,undefined -Dunittest=enabled
+  - LDFLAGS='-fuse-ld=lld -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.txt --buildtype debugoptimized -Dunittest=enabled
   - meson build.thumb --cross-file mk/cross-thumb.txt
   - cd $TRAVIS_BUILD_DIR/build.coverage && ninja test
   - cd $TRAVIS_BUILD_DIR/build.sanitize && ninja test
-  - cd $TRAVIS_BUILD_DIR/build.optimized && ninja test
   - cd $TRAVIS_BUILD_DIR/build.llvm && ninja test
   - cd $TRAVIS_BUILD_DIR/build.thumb && ninja
   - cd $TRAVIS_BUILD_DIR
