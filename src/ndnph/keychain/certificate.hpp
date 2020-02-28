@@ -81,16 +81,16 @@ public:
   /** @brief Determine if the Data packet is a certificate. */
   static bool isCertificate(const Data& data)
   {
-    return !!data && data.getContentType() == ContentType::Key && isCertName(data.getName());
+    return data && data.getContentType() == ContentType::Key && isCertName(data.getName());
   }
 
   template<typename Signer>
   class Builder
   {
   public:
-    bool operator!() const
+    explicit operator bool() const
     {
-      return !m_data;
+      return !!m_data;
     }
 
     void encodeTo(Encoder& encoder) const

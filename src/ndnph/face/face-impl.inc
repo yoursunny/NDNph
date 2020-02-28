@@ -64,21 +64,21 @@ Face::transportRx(void* self0, Region& region, const uint8_t* pkt, size_t pktLen
   switch (classify.getType()) {
     case lp::PacketClassify::Interest: {
       Interest interest = region.create<Interest>();
-      if (!!interest && classify.decodeInterest(interest)) {
+      if (interest && classify.decodeInterest(interest)) {
         self.process(&PacketHandler::processInterest, interest);
       }
       break;
     }
     case lp::PacketClassify::Data: {
       Data data = region.create<Data>();
-      if (!!data && classify.decodeData(data)) {
+      if (data && classify.decodeData(data)) {
         self.process(&PacketHandler::processData, data);
       }
       break;
     }
     case lp::PacketClassify::Nack: {
       Nack nack = region.create<Nack>();
-      if (!!nack && classify.decodeNack(nack)) {
+      if (nack && classify.decodeNack(nack)) {
         self.process(&PacketHandler::processNack, nack);
       }
       break;

@@ -29,7 +29,7 @@ public:
                          }
                        },
                        [this](Encoder& encoder) {
-                         if (!!nack) {
+                         if (nack) {
                            encoder.prepend(nack);
                          }
                        },

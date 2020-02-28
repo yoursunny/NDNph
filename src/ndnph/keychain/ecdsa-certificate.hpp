@@ -53,9 +53,10 @@ public:
    * @param raw raw ECDSA public key.
    * @param validity certificate validity period.
    * @param signer certificate issuer.
-   * @return result object with `bool operator!() const` and `void encodeTo(Encoder&) const`
-   *         methods. `!result` indicates operation has failed. Encodable object is valid only
-   *         if arguments to this function are kept alive.
+   * @return result object supporting explicit conversion to bool and equipped with a
+   *         `void encodeTo(Encoder&) const` method. `!result` indicates the operation
+   *         has failed. Encodable object is valid only if arguments to this function
+   *         are kept alive.
    */
   template<typename Signer>
   static Builder<Signer> build(Region& region, const Name& name,

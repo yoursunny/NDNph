@@ -14,10 +14,10 @@ public:
   class Tlv
   {
   public:
-    /** @brief Whether this TLV is invalid (e.g. dereference from past-end Iterator). */
-    bool operator!() const
+    /** @brief Whether this TLV is valid (e.g. not dereferenced from past-end Iterator). */
+    explicit operator bool() const
     {
-      return size == 0;
+      return size != 0;
     }
 
     /**
@@ -30,7 +30,7 @@ public:
     template<typename T>
     bool decode(T& target) const
     {
-      return !!*this && target.decodeFrom(*this);
+      return *this && target.decodeFrom(*this);
     }
 
     /** @brief Create Decoder over TLV-VALUE. */

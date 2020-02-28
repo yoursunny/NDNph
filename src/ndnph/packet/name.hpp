@@ -75,10 +75,10 @@ public:
     return Name(value, length, nComps);
   }
 
-  /** @brief Return true if Name is invalid. */
-  bool operator!() const
+  /** @brief Return true if Name is valid. */
+  explicit operator bool() const
   {
-    return m_value == nullptr;
+    return m_value != nullptr;
   }
 
   size_t length() const
