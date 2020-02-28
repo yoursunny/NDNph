@@ -22,7 +22,7 @@ public:
   /**
    * @brief Perform signing.
    * @param chunks signed portion.
-   * @param[out] signature buffer, with getMaxSigLen() room.
+   * @param[out] sig signature buffer, with getMaxSigLen() room.
    * @return signature length, or -1 upon failure.
    */
   virtual ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const = 0;
