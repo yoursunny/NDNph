@@ -8,22 +8,6 @@
 
 namespace ndnph {
 
-class NullPrivateKey : public PrivateKey
-{
-public:
-  size_t getMaxSigLen() const final
-  {
-    return 0;
-  }
-
-  void updateSigInfo(SigInfo&) const final {}
-
-  ssize_t sign(std::initializer_list<tlv::Value>, uint8_t*) const final
-  {
-    return 0;
-  }
-};
-
 class MockKeyBase
 {
 protected:

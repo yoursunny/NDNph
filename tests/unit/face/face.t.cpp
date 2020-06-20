@@ -1,4 +1,5 @@
 #include "ndnph/face/face.hpp"
+#include "ndnph/keychain/null-key.hpp"
 
 #include "mock/mock-key.hpp"
 #include "mock/mock-packet-handler.hpp"
@@ -40,7 +41,7 @@ TEST(Face, Receive)
     EXPECT_CALL(hA, processData(matchDataName)).WillOnce(g::Return(true));
     EXPECT_CALL(hB, processData).Times(0);
   }
-  ASSERT_TRUE(transport.receive(data.sign(NullPrivateKey())));
+  ASSERT_TRUE(transport.receive(data.sign(NullKey::get())));
 
   Nack nack = Nack::create(interest, NackReason::Congestion);
   ASSERT_FALSE(!nack);
@@ -70,7 +71,7 @@ public:
   {
     EXPECT_CALL(*this, processInterest(g::Property(&Interest::getName, g::Eq(request.getName()))))
       .WillOnce([this](Interest) {
-        send(data.sign(NullPrivateKey()));
+        send(data.sign(NullKey::get()));
         reply(nack);
         send(interest, WithEndpointId(2035), WithPitToken(0xA31A71CE4C365FF4));
         return true;
@@ -100,7 +101,7 @@ TEST(Face, Send)
   ASSERT_FALSE(!hA.data);
   hA.data.setName(Name::parse(region, "/A/1"));
   Encoder encoderD(region);
-  encoderD.prepend(hA.data.sign(NullPrivateKey()));
+  encoderD.prepend(hA.data.sign(NullKey::get()));
   encoderD.trim();
 
   hA.nack = Nack::create(hA.request, NackReason::NoRoute);

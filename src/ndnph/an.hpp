@@ -74,6 +74,7 @@ enum
   Sha256WithRsa = 0x01,
   Sha256WithEcdsa = 0x03,
   HmacWithSha256 = 0x04,
+  Null = 0xC8,
 };
 } // namespace SigType
 

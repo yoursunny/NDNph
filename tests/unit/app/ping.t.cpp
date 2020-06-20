@@ -1,5 +1,6 @@
 #include "ndnph/app/ping-client.hpp"
 #include "ndnph/app/ping-server.hpp"
+#include "ndnph/keychain/null-key.hpp"
 
 #include "mock/bridge-fixture.hpp"
 #include "mock/mock-key.hpp"
@@ -33,14 +34,14 @@ TEST(Ping, Client)
         Data data = region.create<Data>();
         data.setName(interest.getName().getPrefix(-1));
         data.setFreshnessPeriod(1);
-        transport.receive(data.sign(NullPrivateKey()));
+        transport.receive(data.sign(NullKey::get()));
       } else if (nInterests == 4) {
         // no response
       } else {
         Data data = region.create<Data>();
         data.setName(interest.getName());
         data.setFreshnessPeriod(1);
-        transport.receive(data.sign(NullPrivateKey()));
+        transport.receive(data.sign(NullKey::get()));
       }
       return true;
     });

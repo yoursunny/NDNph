@@ -2,7 +2,7 @@
 #define NDNPH_APP_SEGMENT_CONSUMER_HPP
 
 #include "../face/packet-handler.hpp"
-#include "../keychain/digest-key.hpp"
+#include "../keychain/null-key.hpp"
 #include "../port/clock/port.hpp"
 
 namespace ndnph {
@@ -12,7 +12,7 @@ class SegmentConsumerBase : public PacketHandler
 public:
   struct Options
   {
-    const PublicKey& verifier = DigestKey::get();
+    const PublicKey& verifier = NullKey::get();
 
     /** @brief Maximum retransmission of an Interest, not counting initial Interest. */
     int retxLimit = 5;

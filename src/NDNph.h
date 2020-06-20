@@ -29,6 +29,7 @@
 #include "ndnph/keychain/ecdsa-private-key.hpp"
 #include "ndnph/keychain/ecdsa-public-key.hpp"
 #include "ndnph/keychain/helper.hpp"
+#include "ndnph/keychain/null-key.hpp"
 #include "ndnph/keychain/private-key.hpp"
 #include "ndnph/keychain/public-key.hpp"
 #include "ndnph/keychain/validity-period.hpp"

@@ -1,4 +1,5 @@
 #include "ndnph/packet/data.hpp"
+#include "ndnph/keychain/null-key.hpp"
 #include "ndnph/packet/lp.hpp"
 
 #include "mock/mock-key.hpp"
@@ -21,13 +22,13 @@ TEST(Data, EncodeMinimal)
   std::vector<uint8_t> wire({
     0x06, 0x0C,                   // Data
     0x07, 0x03, 0x08, 0x01, 0x41, // Name
-    0x16, 0x03, 0x1B, 0x01, 0x00, // DSigInfo
+    0x16, 0x03, 0x1B, 0x01, 0xC8, // DSigInfo
     0x17, 0x00,                   // DSigValue
   });
   data.setName(Name(&wire[4], 3));
 
   Encoder encoder(region);
-  ASSERT_TRUE(encoder.prepend(data.sign(NullPrivateKey())));
+  ASSERT_TRUE(encoder.prepend(data.sign(NullKey::get())));
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
 
