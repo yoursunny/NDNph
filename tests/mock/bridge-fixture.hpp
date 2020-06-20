@@ -19,7 +19,8 @@ public:
   }
 
   template<typename InitB, typename CondB, typename FinalB = void (*)()>
-  void runInThreads(const InitB& initB, const CondB& condB, const FinalB& finalB = [] {})
+  void runInThreads(
+    const InitB& initB, const CondB& condB, const FinalB& finalB = [] {})
   {
     std::atomic_bool stopA(false);
     std::thread threadA([&] {

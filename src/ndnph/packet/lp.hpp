@@ -22,18 +22,19 @@ public:
       encoder.prepend(l3);
       return;
     }
-    encoder.prependTlv(TT::LpPacket,
-                       [this](Encoder& encoder) {
-                         if (pitToken != 0) {
-                           encoder.prependTlv(TT::PitToken, tlv::NNI8(pitToken));
-                         }
-                       },
-                       [this](Encoder& encoder) {
-                         if (nack) {
-                           encoder.prepend(nack);
-                         }
-                       },
-                       [this](Encoder& encoder) { encoder.prependTlv(TT::LpPayload, l3); });
+    encoder.prependTlv(
+      TT::LpPacket,
+      [this](Encoder& encoder) {
+        if (pitToken != 0) {
+          encoder.prependTlv(TT::PitToken, tlv::NNI8(pitToken));
+        }
+      },
+      [this](Encoder& encoder) {
+        if (nack) {
+          encoder.prepend(nack);
+        }
+      },
+      [this](Encoder& encoder) { encoder.prependTlv(TT::LpPayload, l3); });
   }
 
 public:

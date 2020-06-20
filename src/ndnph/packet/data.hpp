@@ -72,53 +72,54 @@ public:
     }
 
     encoder.resetFront(const_cast<uint8_t*>(afterSig));
-    encoder.prependTlv(TT::Data,
-                       [=](Encoder& encoder) {
-                         uint8_t* room = encoder.prependRoom(signedPortion.size());
-                         assert(room != nullptr);
-                         if (room != signedPortion.begin()) {
-                           std::memmove(room, signedPortion.begin(), signedPortion.size());
-                         }
-                       },
-                       [=](Encoder& encoder) {
-                         uint8_t* room = encoder.prependRoom(sigLen);
-                         assert(room != nullptr);
-                         if (room != sigBuf) {
-                           std::memmove(room, sigBuf, sigLen);
-                         }
-                         encoder.prependTypeLength(TT::DSigValue, sigLen);
-                       });
+    encoder.prependTlv(
+      TT::Data,
+      [=](Encoder& encoder) {
+        uint8_t* room = encoder.prependRoom(signedPortion.size());
+        assert(room != nullptr);
+        if (room != signedPortion.begin()) {
+          std::memmove(room, signedPortion.begin(), signedPortion.size());
+        }
+      },
+      [=](Encoder& encoder) {
+        uint8_t* room = encoder.prependRoom(sigLen);
+        assert(room != nullptr);
+        if (room != sigBuf) {
+          std::memmove(room, sigBuf, sigLen);
+        }
+        encoder.prependTypeLength(TT::DSigValue, sigLen);
+      });
   }
 
 private:
   void encodeSignedPortion(Encoder& encoder) const
   {
-    encoder.prepend(obj->name,
-                    [this](Encoder& encoder) {
-                      encoder.prependTlv(
-                        TT::MetaInfo, Encoder::OmitEmpty,
-                        [this](Encoder& encoder) {
-                          if (obj->contentType != detail::DataObj::DefaultContentType) {
-                            encoder.prependTlv(TT::ContentType, tlv::NNI(obj->contentType));
-                          }
-                        },
-                        [this](Encoder& encoder) {
-                          if (obj->freshnessPeriod != detail::DataObj::DefaultFreshnessPeriod) {
-                            encoder.prependTlv(TT::FreshnessPeriod, tlv::NNI(obj->freshnessPeriod));
-                          }
-                        },
-                        [this](Encoder& encoder) {
-                          if (obj->isFinalBlock) {
-                            auto comp = obj->name[-1];
-                            encoder.prependTlv(TT::FinalBlockId,
-                                               tlv::Value(comp.tlv(), comp.size()));
-                          }
-                        });
-                    },
-                    [this](Encoder& encoder) {
-                      encoder.prependTlv(TT::Content, Encoder::OmitEmpty, obj->content);
-                    },
-                    m_sigInfo);
+    encoder.prepend(
+      obj->name,
+      [this](Encoder& encoder) {
+        encoder.prependTlv(
+          TT::MetaInfo, Encoder::OmitEmpty,
+          [this](Encoder& encoder) {
+            if (obj->contentType != detail::DataObj::DefaultContentType) {
+              encoder.prependTlv(TT::ContentType, tlv::NNI(obj->contentType));
+            }
+          },
+          [this](Encoder& encoder) {
+            if (obj->freshnessPeriod != detail::DataObj::DefaultFreshnessPeriod) {
+              encoder.prependTlv(TT::FreshnessPeriod, tlv::NNI(obj->freshnessPeriod));
+            }
+          },
+          [this](Encoder& encoder) {
+            if (obj->isFinalBlock) {
+              auto comp = obj->name[-1];
+              encoder.prependTlv(TT::FinalBlockId, tlv::Value(comp.tlv(), comp.size()));
+            }
+          });
+      },
+      [this](Encoder& encoder) {
+        encoder.prependTlv(TT::Content, Encoder::OmitEmpty, obj->content);
+      },
+      m_sigInfo);
   }
 
 private:

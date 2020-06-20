@@ -42,9 +42,9 @@ class Target2 : public Target0
 public:
   bool decodeFrom(const Decoder::Tlv& input)
   {
-    return EvDecoder::decodeEx(input, {}, EvDecoder::DefaultUnknownCb(),
-                               [](uint32_t type) { return type == 0xA2; },
-                               EvDecoder::def<0xA1>([this](const Decoder::Tlv&) { ++a1; }));
+    return EvDecoder::decodeEx(
+      input, {}, EvDecoder::DefaultUnknownCb(), [](uint32_t type) { return type == 0xA2; },
+      EvDecoder::def<0xA1>([this](const Decoder::Tlv&) { ++a1; }));
   }
 };
 

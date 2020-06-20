@@ -149,17 +149,17 @@ protected:
   void encodeImpl(Encoder& encoder, const Fn& encodeParams) const
   {
     tlv::Value params;
-    encoder.prependTlv(TT::Interest,
-                       [this, &params](Encoder& encoder) { encodeName(encoder, params); },
-                       [this](Encoder& encoder) { encodeMiddle(encoder); },
-                       [&](Encoder& encoder) {
-                         const uint8_t* afterParams = encoder.begin();
-                         encodeParams(encoder);
-                         if (!encoder) {
-                           return;
-                         }
-                         params = tlv::Value(encoder.begin(), afterParams);
-                       });
+    encoder.prependTlv(
+      TT::Interest, [this, &params](Encoder& encoder) { encodeName(encoder, params); },
+      [this](Encoder& encoder) { encodeMiddle(encoder); },
+      [&](Encoder& encoder) {
+        const uint8_t* afterParams = encoder.begin();
+        encodeParams(encoder);
+        if (!encoder) {
+          return;
+        }
+        params = tlv::Value(encoder.begin(), afterParams);
+      });
   }
 
 protected:

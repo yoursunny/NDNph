@@ -137,8 +137,8 @@ TEST(Encoder, Prepend)
   std::vector<uint8_t> valueE({ 0xE0, 0xE1 });
   std::vector<uint8_t> valueF({ 0xF0, 0xF1 });
 
-  bool ok = encoder.prepend(MyEncodable<0xA0>(), [](Encoder& encoder) { encoder.prependTlv(0xA1); },
-                            MyEncodable<0xA2>());
+  bool ok = encoder.prepend(
+    MyEncodable<0xA0>(), [](Encoder& encoder) { encoder.prependTlv(0xA1); }, MyEncodable<0xA2>());
   ok = ok && encoder.prependTlv(0xC0, Encoder::OmitEmpty, tlv::Value(value0.data(), value0.size()),
                                 tlv::Value(value0.data(), value0.size()));
   ok = ok && encoder.prependTlv(0xC1, tlv::Value(value0.data(), value0.size()),

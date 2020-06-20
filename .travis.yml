@@ -14,38 +14,32 @@ addons:
   apt:
     packages:
       - build-essential
-      - clang-6.0
-      - clang-format-6.0
-      - cmake
-      - gcc-arm-none-eabi
+      - clang-8
+      - clang-format-8
       - lcov
-      - lld-6.0
-      - llvm-6.0
+      - lld-8
+      - llvm-8
       - libboost-dev
-      - libnewlib-arm-none-eabi
-      - libstdc++-arm-none-eabi-newlib
       - ninja-build
 
 before_install:
-  - pip install cpp-coveralls meson
+  - pip install cpp-coveralls cmake meson
 
 install:
   - |
     : install googletest
     cd $HOME
-    curl -L https://github.com/google/googletest/archive/release-1.10.0.tar.gz | tar -xz
-    mkdir gtest
-    cd gtest
+    curl -sL https://github.com/google/googletest/archive/release-1.10.0.tar.gz | tar -xz
+    mkdir gtest-build && cd gtest-build
     cmake -G Ninja ../googletest-release-1.10.0
     ninja
     sudo ninja install
   - |
-    : install Mbed Crypto
+    : install Mbed TLS
     cd $HOME
-    curl -L https://github.com/ARMmbed/mbed-crypto/archive/mbedcrypto-3.1.0.tar.gz | tar -xz
-    mkdir mbedcrypto
-    cd mbedcrypto
-    cmake -G Ninja ../mbed-crypto-mbedcrypto-3.1.0 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
+    curl -sL https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.16.6.tar.gz | tar -xz
+    mkdir mbedtls-build && cd mbedtls-build
+    cmake -G Ninja ../mbedtls-mbedtls-2.16.6 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
     ninja
     sudo ninja install
   - |
@@ -60,11 +54,9 @@ script:
   - meson build.coverage -Db_coverage=true -Dwerror=true -Dunittest=enabled
   - meson build.sanitize -Db_sanitize=address,undefined -Dunittest=enabled
   - LDFLAGS='-fuse-ld=lld -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.txt --buildtype debugoptimized -Dunittest=enabled
-  - meson build.thumb --cross-file mk/cross-thumb.txt
   - cd $TRAVIS_BUILD_DIR/build.coverage && ninja test
   - cd $TRAVIS_BUILD_DIR/build.sanitize && ninja test
   - cd $TRAVIS_BUILD_DIR/build.llvm && ninja test
-  - cd $TRAVIS_BUILD_DIR/build.thumb && ninja
   - cd $TRAVIS_BUILD_DIR
   - build_platform esp8266
   - build_platform esp32

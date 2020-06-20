@@ -109,7 +109,7 @@ public:
 
   ~DynamicSimpleQueue()
   {
-    delete[] this->template getArray();
+    delete[] this->getArray();
   }
 };
 

@@ -33,7 +33,7 @@ Transports
 
 KeyChain
 
-* Crypto: using [Mbed Crypto](https://github.com/ARMmbed/mbed-crypto) library
+* Crypto: using [Mbed TLS](https://github.com/ARMmbed/mbedtls) library
   * SHA256: yes
   * ECDSA: P-256 curve only
   * HMAC-SHA256: no
@@ -56,7 +56,7 @@ For Linux,
    * C++ compiler such as GCC, install Ubuntu package `build-essential`
    * [Meson](https://mesonbuild.com/), install pip package `meson`
    * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
-   * [Mbed Crypto](https://github.com/ARMmbed/mbed-crypto), install from source
+   * [Mbed TLS](https://github.com/ARMmbed/mbedtls), install from source
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
    * [Google Test](https://github.com/google/googletest), install from source (only needed by unit tests)
    * Note: all dependencies are optional, but extra porting work will be necessary
