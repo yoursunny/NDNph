@@ -22,7 +22,7 @@ public:
 
     /**
      * @brief Decode into target object.
-     * @tparam class with `bool decodeFrom(const Decoder::Tlv&)` method.
+     * @tparam T class with `bool decodeFrom(const Decoder::Tlv&)` method.
      * @return whether success.
      * @pre target is newly constructed.
      * @post target may contain reference to the decoder's underlying input buffer.

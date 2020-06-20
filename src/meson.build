@@ -1,16 +1,24 @@
 conf = configuration_data()
 
 boost = dependency('boost', required: false)
-conf.set('NDNPH_PORT_QUEUE_BOOSTLF', boost.found())
+if boost.found()
+  conf.set('NDNPH_PORT_QUEUE_BOOSTLF', '')
+endif
 
 mbedcrypto = meson.get_compiler('cpp').find_library('mbedcrypto', required: false)
-conf.set('NDNPH_PORT_CRYPTO_MBEDTLS', mbedcrypto.found())
+if mbedcrypto.found()
+  conf.set('NDNPH_PORT_CRYPTO_MBEDTLS', '')
+endif
 
 have_urandom = not meson.is_cross_build() and run_command('test', '-r', '/dev/urandom').returncode() == 0
-conf.set('NDNPH_PORT_RANDOM_URANDOM', have_urandom)
+if have_urandom
+  conf.set('NDNPH_PORT_RANDOM_URANDOM', '')
+endif
 
 have_socket_h = not meson.is_cross_build() and meson.get_compiler('cpp').has_header('sys/socket.h')
-conf.set('NDNPH_PORT_TRANSPORT_SOCKET', have_socket_h)
+if have_socket_h
+  conf.set('NDNPH_PORT_TRANSPORT_SOCKET', '')
+endif
 
 have_this_thread = meson.get_compiler('cpp').compiles('''
 #include <chrono>
@@ -20,7 +28,9 @@ int main()
   std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 ''')
-conf.set('NDNPH_PORT_CHRONO_BUSY_SLEEP', not have_this_thread)
+if not have_this_thread
+  conf.set('NDNPH_PORT_CHRONO_BUSY_SLEEP', '')
+endif
 
 config_h = configure_file(output: 'NDNph-config.h', configuration: conf)
 lib_dep = declare_dependency(
