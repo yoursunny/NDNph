@@ -81,6 +81,8 @@ public:
     using pointer = value_type*;
     using reference = value_type&;
 
+    Iterator() = default;
+
     explicit Iterator(const uint8_t* pos, const uint8_t* end)
       : m_pos(pos)
       , m_end(end)
@@ -146,8 +148,8 @@ public:
     }
 
   private:
-    const uint8_t* m_pos;
-    const uint8_t* m_end;
+    const uint8_t* m_pos = nullptr;
+    const uint8_t* m_end = nullptr;
     Tlv m_tlv;
   };
 

@@ -10,7 +10,6 @@ class InRegion
 {
 public:
   InRegion(InRegion&&) = default;
-  InRegion& operator=(InRegion&&) = default;
 
 protected:
   explicit InRegion(Region& region)
