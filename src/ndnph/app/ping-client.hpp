@@ -6,13 +6,19 @@
 
 namespace ndnph {
 
-/** @brief Periodically transmit Interests to test reachability. */
+/**
+ * @brief Periodically transmit Interests to test reachability.
+ *
+ * This is a simple ping client implementation that can only keep one pending Interest.
+ * After sending a probe Interest, responses to previous Interests are no longer accepted.
+ * Therefore, interval must be greater than RTT, otherwise this client cannot receive any Data.
+ */
 class PingClient : public PacketHandler
 {
 public:
   /**
    * @brief Constructor.
-   * @param prefix name prefix to request.
+   * @param prefix name prefix to request. It should have 'ping' suffix.
    * @param face face for communication.
    * @param interval Interest interval in milliseconds.
    */

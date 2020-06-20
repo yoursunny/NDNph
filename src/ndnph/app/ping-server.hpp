@@ -12,7 +12,7 @@ class PingServer : public PacketHandler
 public:
   /**
    * @brief Constructor.
-   * @param prefix name prefix to serve.
+   * @param prefix name prefix to serve. It should have 'ping' suffix.
    * @param face face for communication.
    */
   explicit PingServer(Name prefix, Face& face)

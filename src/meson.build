@@ -32,6 +32,8 @@ if not have_this_thread
   conf.set('NDNPH_PORT_CHRONO_BUSY_SLEEP', '')
 endif
 
+has_all_linux_deps = boost.found() and mbedcrypto.found() and have_urandom and have_socket_h
+
 config_h = configure_file(output: 'NDNph-config.h', configuration: conf)
 lib_dep = declare_dependency(
   include_directories: include_directories('.'),

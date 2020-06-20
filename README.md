@@ -4,7 +4,7 @@
 
 **NDNph** provides [Named Data Networking](https://named-data.net/) packet encoding and more in a header-only C++11 library. It is part of [esp8266ndn](https://github.com/yoursunny/esp8266ndn) that supports microcontroller programming in Arduino IDE. NDNph can also work independently on Linux and other platforms.
 
-* [Doxygen documentation](https://esp8266ndn.netlify.com/) together with esp8266ndn
+* [Doxygen documentation](https://esp8266ndn.ndn.today/) together with esp8266ndn
 * [#NDNph on Twitter](https://twitter.com/hashtag/NDNph) for announcements
 * [ndn-lib mailing list](https://www.lists.cs.ucla.edu/mailman/listinfo/ndn-lib) for best-effort support
 

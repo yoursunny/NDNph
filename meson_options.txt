@@ -1,1 +1,2 @@
 option('unittest', type: 'feature')
+option('programs', type: 'feature')
