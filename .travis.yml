@@ -52,12 +52,11 @@ install:
 script:
   - cd $TRAVIS_BUILD_DIR && mk/update-list.sh
   - meson build.coverage -Db_coverage=true -Dwerror=true -Dunittest=enabled
+  - ninja -C build.coverage test
   - meson build.sanitize -Db_sanitize=address,undefined -Dunittest=enabled
+  - ninja -C build.sanitize test
   - LDFLAGS='-fuse-ld=lld -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.txt --buildtype debugoptimized -Dunittest=enabled
-  - cd $TRAVIS_BUILD_DIR/build.coverage && ninja test
-  - cd $TRAVIS_BUILD_DIR/build.sanitize && ninja test
-  - cd $TRAVIS_BUILD_DIR/build.llvm && ninja test
-  - cd $TRAVIS_BUILD_DIR
+  - ninja -C build.llvm test
   - build_platform esp8266
   - build_platform esp32
   - build_platform nrf52840
