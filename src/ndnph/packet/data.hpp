@@ -112,7 +112,7 @@ private:
           [this](Encoder& encoder) {
             if (obj->isFinalBlock) {
               auto comp = obj->name[-1];
-              encoder.prependTlv(TT::FinalBlockId, tlv::Value(comp.tlv(), comp.size()));
+              encoder.prependTlv(TT::FinalBlock, tlv::Value(comp.tlv(), comp.size()));
             }
           });
       },
@@ -219,7 +219,7 @@ public:
         return EvDecoder::decode(
           d, {}, EvDecoder::defNni<TT::ContentType, tlv::NNI>(&obj->contentType),
           EvDecoder::defNni<TT::FreshnessPeriod, tlv::NNI>(&obj->freshnessPeriod),
-          EvDecoder::def<TT::FinalBlockId>([this](const Decoder::Tlv& d) {
+          EvDecoder::def<TT::FinalBlock>([this](const Decoder::Tlv& d) {
             auto comp = getName()[-1];
             setIsFinalBlock(d.length == comp.size() &&
                             std::equal(d.value, d.value + d.length, comp.tlv()));

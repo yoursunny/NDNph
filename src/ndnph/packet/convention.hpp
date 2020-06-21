@@ -127,7 +127,7 @@ using ParamsDigest = detail::TypedDigest<TT::ParametersSha256DigestComponent>;
  * It may return incorrect result if TLV-VALUE contains non-printable characters.
  * It's recommended to use `component.value()` but there's no NUL termination.
  */
-using Keyword = detail::TypedString<0x20>;
+using Keyword = detail::TypedString<TT::KeywordNameComponent>;
 
 /**
  * @brief SegmentNameComponent convention.
@@ -139,35 +139,35 @@ using Keyword = detail::TypedString<0x20>;
  * uint64_t segment = component.as<convention::Segment>();
  * @endcode
  */
-using Segment = detail::TypedNumber<0x21>;
+using Segment = detail::TypedNumber<TT::SegmentNameComponent>;
 
 /**
  * @brief ByteOffsetNameComponent convention.
  *
  * Supported operations are same as convention::Segment.
  */
-using ByteOffset = detail::TypedNumber<0x22>;
+using ByteOffset = detail::TypedNumber<TT::ByteOffsetNameComponent>;
 
 /**
  * @brief VersionNameComponent convention.
  *
  * Supported operations are same as convention::Segment.
  */
-using Version = detail::TypedNumber<0x23>;
+using Version = detail::TypedNumber<TT::VersionNameComponent>;
 
 /**
  * @brief TimestampNameComponent convention.
  *
  * Supported operations are same as convention::Segment.
  */
-using Timestamp = detail::TypedNumber<0x24>;
+using Timestamp = detail::TypedNumber<TT::TimestampNameComponent>;
 
 /**
  * @brief SequenceNumNameComponent convention.
  *
  * Supported operations are same as convention::Segment.
  */
-using SequenceNum = detail::TypedNumber<0x25>;
+using SequenceNum = detail::TypedNumber<TT::SequenceNumNameComponent>;
 
 } // namespace convention
 } // namespace ndnph
