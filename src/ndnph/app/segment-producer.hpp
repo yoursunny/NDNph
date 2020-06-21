@@ -2,7 +2,7 @@
 #define NDNPH_APP_SEGMENT_PRODUCER_HPP
 
 #include "../face/packet-handler.hpp"
-#include "../keychain/digest-key.hpp"
+#include "../keychain/digest.hpp"
 
 namespace ndnph {
 

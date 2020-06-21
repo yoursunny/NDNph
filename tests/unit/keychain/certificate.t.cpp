@@ -12,24 +12,24 @@ TEST(Certificate, Naming)
   Name keyName = Name::parse(region, "/s/KEY/k");
   Name certName = Name::parse(region, "/s/KEY/k/i/35=%00");
 
-  EXPECT_FALSE(Certificate::isKeyName(subjectName));
-  EXPECT_TRUE(Certificate::isKeyName(keyName));
-  EXPECT_FALSE(Certificate::isKeyName(certName));
-  EXPECT_FALSE(Certificate::isCertName(subjectName));
-  EXPECT_FALSE(Certificate::isCertName(keyName));
-  EXPECT_TRUE(Certificate::isCertName(certName));
+  EXPECT_FALSE(certificate::isKeyName(subjectName));
+  EXPECT_TRUE(certificate::isKeyName(keyName));
+  EXPECT_FALSE(certificate::isKeyName(certName));
+  EXPECT_FALSE(certificate::isCertName(subjectName));
+  EXPECT_FALSE(certificate::isCertName(keyName));
+  EXPECT_TRUE(certificate::isCertName(certName));
 
-  EXPECT_EQ(Certificate::toSubjectName(region, subjectName), subjectName);
-  EXPECT_EQ(Certificate::toSubjectName(region, keyName), subjectName);
-  EXPECT_EQ(Certificate::toSubjectName(region, certName), subjectName);
+  EXPECT_EQ(certificate::toSubjectName(region, subjectName), subjectName);
+  EXPECT_EQ(certificate::toSubjectName(region, keyName), subjectName);
+  EXPECT_EQ(certificate::toSubjectName(region, certName), subjectName);
 
-  EXPECT_TRUE(Certificate::isKeyName(Certificate::toKeyName(region, subjectName)));
-  EXPECT_EQ(Certificate::toKeyName(region, keyName), keyName);
-  EXPECT_EQ(Certificate::toKeyName(region, certName), keyName);
+  EXPECT_TRUE(certificate::isKeyName(certificate::toKeyName(region, subjectName)));
+  EXPECT_EQ(certificate::toKeyName(region, keyName), keyName);
+  EXPECT_EQ(certificate::toKeyName(region, certName), keyName);
 
-  EXPECT_TRUE(Certificate::isCertName(Certificate::toCertName(region, subjectName)));
-  EXPECT_TRUE(Certificate::isCertName(Certificate::toCertName(region, keyName)));
-  EXPECT_EQ(Certificate::toCertName(region, certName), certName);
+  EXPECT_TRUE(certificate::isCertName(certificate::toCertName(region, subjectName)));
+  EXPECT_TRUE(certificate::isCertName(certificate::toCertName(region, keyName)));
+  EXPECT_EQ(certificate::toCertName(region, certName), certName);
 }
 
 } // namespace

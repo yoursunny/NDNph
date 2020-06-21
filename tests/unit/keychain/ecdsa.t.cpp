@@ -1,6 +1,4 @@
-#include "ndnph/keychain/ecdsa-certificate.hpp"
-#include "ndnph/keychain/ecdsa-private-key.hpp"
-#include "ndnph/keychain/ecdsa-public-key.hpp"
+#include "ndnph/keychain/ecdsa.hpp"
 
 #include "key-common.hpp"
 #include "test-common.hpp"
@@ -21,7 +19,7 @@ TEST(EcdsaKey, SignVerify)
   ASSERT_TRUE(EcdsaPrivateKey::generateRaw(pvtRawB, pubRawB));
 
   Name subjectNameB(region, { 0x08, 0x02, 0x4B, 0x42 });
-  Name keyNameB = Certificate::toKeyName(region, subjectNameB);
+  Name keyNameB = certificate::toKeyName(region, subjectNameB);
   ASSERT_FALSE(!keyNameB);
 
   EcdsaPrivateKey pvtB;
@@ -29,7 +27,7 @@ TEST(EcdsaKey, SignVerify)
   EcdsaPublicKey pubB;
   {
     ValidityPeriod validityB;
-    auto certB = EcdsaCertificate::build(region, keyNameB, pubRawB, validityB, pvtB);
+    auto certB = EcdsaPublicKey::buildCertificate(region, keyNameB, pubRawB, validityB, pvtB);
     ASSERT_FALSE(!certB);
 
     Encoder encoder(region);
@@ -38,10 +36,9 @@ TEST(EcdsaKey, SignVerify)
 
     Data dataB = region.create<Data>();
     ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(dataB));
-    encoder.discard();
 
-    ASSERT_TRUE(EcdsaCertificate::isCertificate(dataB));
-    ASSERT_TRUE(EcdsaCertificate::loadKey(region, dataB, pubB));
+    ASSERT_TRUE(EcdsaPublicKey::isCertificate(dataB));
+    ASSERT_TRUE(EcdsaPublicKey::import(pubB, region, dataB));
   }
 
   testSignVerify<Interest>(pvtA, pubA, pvtB, pubB, true);

@@ -1,5 +1,5 @@
 #include "ndnph/packet/data.hpp"
-#include "ndnph/keychain/null-key.hpp"
+#include "ndnph/keychain/null.hpp"
 #include "ndnph/packet/lp.hpp"
 
 #include "mock/mock-key.hpp"

@@ -2,7 +2,7 @@
 #define NDNPH_APP_SEGMENT_CONSUMER_HPP
 
 #include "../face/packet-handler.hpp"
-#include "../keychain/null-key.hpp"
+#include "../keychain/null.hpp"
 #include "../port/clock/port.hpp"
 
 namespace ndnph {

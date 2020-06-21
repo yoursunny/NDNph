@@ -1,5 +1,5 @@
-#ifndef NDNPH_KEYCHAIN_NULL_KEY_HPP
-#define NDNPH_KEYCHAIN_NULL_KEY_HPP
+#ifndef NDNPH_KEYCHAIN_NULL_HPP
+#define NDNPH_KEYCHAIN_NULL_HPP
 
 #include "private-key.hpp"
 #include "public-key.hpp"
@@ -55,4 +55,4 @@ public:
 
 } // namespace ndnph
 
-#endif // NDNPH_KEYCHAIN_NULL_KEY_HPP
+#endif // NDNPH_KEYCHAIN_NULL_HPP

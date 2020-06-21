@@ -1,5 +1,5 @@
 #include "ndnph/face/face.hpp"
-#include "ndnph/keychain/null-key.hpp"
+#include "ndnph/keychain/null.hpp"
 
 #include "mock/mock-key.hpp"
 #include "mock/mock-packet-handler.hpp"

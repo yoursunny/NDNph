@@ -1,5 +1,5 @@
-#ifndef NDNPH_KEYCHAIN_DIGEST_KEY_HPP
-#define NDNPH_KEYCHAIN_DIGEST_KEY_HPP
+#ifndef NDNPH_KEYCHAIN_DIGEST_HPP
+#define NDNPH_KEYCHAIN_DIGEST_HPP
 
 #include "helper.hpp"
 #include "private-key.hpp"
@@ -52,4 +52,4 @@ public:
 
 } // namespace ndnph
 
-#endif // NDNPH_KEYCHAIN_DIGEST_KEY_HPP
+#endif // NDNPH_KEYCHAIN_DIGEST_HPP

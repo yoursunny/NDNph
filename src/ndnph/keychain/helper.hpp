@@ -1,7 +1,9 @@
 #ifndef NDNPH_KEYCHAIN_HELPER_HPP
 #define NDNPH_KEYCHAIN_HELPER_HPP
 
+#include "../packet/component.hpp"
 #include "../port/crypto/port.hpp"
+#include "../port/random/port.hpp"
 #include "../tlv/value.hpp"
 
 namespace ndnph {
@@ -15,6 +17,16 @@ computeDigest(std::initializer_list<tlv::Value> chunks, uint8_t digest[NDNPH_SHA
     hash.update(chunk.begin(), chunk.size());
   }
   return hash.final(digest);
+}
+
+inline Component
+makeRandomComponent(Region& region, uint16_t type = TT::GenericNameComponent)
+{
+  uint8_t value[8];
+  if (!port::RandomSource::generate(value, sizeof(value))) {
+    return Component();
+  }
+  return Component(region, type, sizeof(value), value);
 }
 
 } // namespace detail

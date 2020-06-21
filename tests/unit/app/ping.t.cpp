@@ -1,6 +1,6 @@
 #include "ndnph/app/ping-client.hpp"
 #include "ndnph/app/ping-server.hpp"
-#include "ndnph/keychain/null-key.hpp"
+#include "ndnph/keychain/null.hpp"
 
 #include "mock/bridge-fixture.hpp"
 #include "mock/mock-key.hpp"

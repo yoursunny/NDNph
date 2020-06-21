@@ -65,6 +65,18 @@ public:
     m_value = valueBuf;
   }
 
+  /** @brief Construct from const TLV buffer. */
+  static Component constant(const uint8_t* tlv, size_t size)
+  {
+    Component comp;
+    Decoder(tlv, size).decode(comp);
+    return comp;
+  }
+
+  /**
+   * @brief Construct from TLV-TYPE, and several arguments to be encoded to TLV-VALUE.
+   * @tparam Arg any Encodable type.
+   */
   template<typename... Arg>
   static Component from(Region& region, uint16_t type, const Arg&... arg)
   {

@@ -1,4 +1,4 @@
-#include "ndnph/keychain/digest-key.hpp"
+#include "ndnph/keychain/digest.hpp"
 
 #include "key-common.hpp"
 #include "test-common.hpp"

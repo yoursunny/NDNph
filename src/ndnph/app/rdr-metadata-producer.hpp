@@ -2,7 +2,7 @@
 #define NDNPH_APP_RDR_METADATA_PRODUCER_HPP
 
 #include "../face/packet-handler.hpp"
-#include "../keychain/digest-key.hpp"
+#include "../keychain/digest.hpp"
 
 namespace ndnph {
 
@@ -17,11 +17,11 @@ namespace ndnph {
 class RdrMetadataProducer : public PacketHandler
 {
 public:
+  /** @brief Return '32=metadata' keyword component. */
   static Component getMetadataKeywordComponent()
   {
-    static uint8_t buf[11];
-    static Component comp = Component::parse(buf, sizeof(buf), "32=metadata");
-    assert(!!comp);
+    static const uint8_t tlv[]{ 0x20, 0x08, 0x6D, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61 };
+    static Component comp = Component::constant(tlv, sizeof(tlv));
     return comp;
   }
 
