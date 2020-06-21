@@ -75,102 +75,22 @@ public:
 
 TEST(EvDecoder, All)
 {
-  std::vector<uint8_t> wire({
+  auto wire = test::fromHex(
     // ---- Target1
-    // packet 0
-    0xA0,
-    0x0B, // A0
-    0xA1, 0x01,
-    0x10, // A1
-    0xA4,
-    0x00, // A4
-    0xA6,
-    0x00, // A6
-    0xA6,
-    0x00, // A6 repeatable
-    0xA9,
-    0x00, // A9
-
-    // packet 1
-    0xA0,
-    0x02, // A0
-    0xA2,
-    0x00, // A2 non-critical
-
-    // packet 2
-    0xA0,
-    0x02, // A0
-    0xA3,
-    0x00, // A3 critical
-
-    // packet 3
-    0xA0,
-    0x02, // A0
-    0x10,
-    0x00, // 10 critical
-
-    // packet 4
-    0xA0,
-    0x05, // A0
-    0xA1, 0x01,
-    0x10, // A1
-    0xA1,
-    0x00, // A1 cannot repeat
-
-    // packet 5
-    0xA0,
-    0x04, // A0
-    0xA4,
-    0x00, // A4
-    0xA1,
-    0x00, // A1 out of order
-
-    // packet 6
-    0xA0,
-    0x06, // A0
-    0xA6,
-    0x00, // A6
-    0xA9,
-    0x00, // A9
-    0xA6,
-    0x00, // A6 out of order
-
-    // packet 7
-    0xB0,
-    0x00, // B0 incorrect
-
+    "A00B A10110 A400 A600 A600 A900" // packet 0
+    "A002 A200"                       // packet 1
+    "A002 A300"                       // packet 2
+    "A002 1000"                       // packet 3
+    "A005 A10110 A100"                // packet 4
+    "A004 A400 A100"                  // packet 5
+    "A006 A600 A900 A600"             // packet 6
+    "B000"                            // packet 7
     // ---- Target2 tests isCritical and ignores top TLV-TYPE
-    // packet 8
-    0xB0,
-    0x04, // B0
-    0xA1,
-    0x00, // A1 recognized
-    0xA3,
-    0x00, // A3 non-critical
-
-    // packet 9
-    0xB1,
-    0x04, // B1
-    0xA1,
-    0x00, // A1 recognized
-    0xA2,
-    0x00, // A2 critical
-
-    // ---- Target3 tests unknownCb and accepts 0xA0,0xAA as top TLV-TYPE
-    // packet 10
-    0xAA,
-    0x0A, // AA
-    0xA2,
-    0x00, // A2 ignored
-    0xA1,
-    0x00, // A1 handled by unknownCb
-    0xA4,
-    0x00, // A4 handled by rule
-    0xA1,
-    0x00, // A1 handled by unknownCb
-    0xA6,
-    0x00, // A6 ignored
-  });
+    "B004 A100 A300" // packet 8
+    "B104 A100 A200" // packet 9
+    // ---- Target3 tests unknownCb and accepts A0,AA as top TLV-TYPE
+    "AA0A A200 A100 A400 A100 A600" // packet 10
+  );
   Decoder decoder(wire.data(), wire.size());
   auto it = decoder.begin(), end = decoder.end();
 

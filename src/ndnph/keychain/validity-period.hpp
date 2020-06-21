@@ -1,30 +1,161 @@
 #ifndef NDNPH_KEYCHAIN_VALIDITY_PERIOD_HPP
 #define NDNPH_KEYCHAIN_VALIDITY_PERIOD_HPP
 
-#include "../tlv/encoder.hpp"
+#include "../an.hpp"
+#include "../tlv/ev-decoder.hpp"
+#include "../tlv/value.hpp"
+#include <time.h>
 
 namespace ndnph {
+namespace detail {
 
-/** @brief ValidityPeriod stub. */
+class UtcTimezone
+{
+public:
+  UtcTimezone()
+  {
+    const char* tz = getenv("TZ");
+    if (tz == nullptr) {
+      m_tz[0] = '\0';
+    } else {
+      strncpy(m_tz, tz, sizeof(m_tz));
+    }
+    setenv("TZ", "UTC", 1);
+  }
+
+  ~UtcTimezone()
+  {
+    if (m_tz[0] != '\0') {
+      setenv("TZ", m_tz, 1);
+    }
+  }
+
+private:
+  char m_tz[64];
+};
+
+} // namespace ndnph
+
+/** @brief ValidityPeriod of a certificate. */
 class ValidityPeriod
 {
 public:
+  /** @brief Get a very long ValidityPeriod. */
+  static ValidityPeriod getMax()
+  {
+    return ValidityPeriod(540109800, 253402300799);
+  }
+
+  ValidityPeriod() = default;
+
+  ValidityPeriod(time_t notBefore, time_t notAfter)
+    : notBefore(notBefore)
+    , notAfter(notAfter)
+  {}
+
+  /** @brief Determine whether the specified timestamp is within validity period. */
+  bool includes(time_t t)
+  {
+    return notBefore <= t && t <= notAfter;
+  }
+
   void encodeTo(Encoder& encoder) const
   {
-    const char* stubNotBefore = "20200212T000000";
-    const char* stubNotAfter = "20201030T235959";
     encoder.prependTlv(
       TT::ValidityPeriod,
-      [=](Encoder& encoder) {
+      [this](Encoder& encoder) {
+        char buf[TIMESTAMP_BUFLEN];
+        printTimestamp(buf, notBefore);
         encoder.prependTlv(TT::NotBefore,
-                           tlv::Value(reinterpret_cast<const uint8_t*>(stubNotBefore), 15));
+                           tlv::Value(reinterpret_cast<const uint8_t*>(buf), TIMESTAMP_LEN));
       },
-      [=](Encoder& encoder) {
+      [this](Encoder& encoder) {
+        char buf[TIMESTAMP_BUFLEN];
+        printTimestamp(buf, notAfter);
         encoder.prependTlv(TT::NotAfter,
-                           tlv::Value(reinterpret_cast<const uint8_t*>(stubNotAfter), 15));
+                           tlv::Value(reinterpret_cast<const uint8_t*>(buf), TIMESTAMP_LEN));
       });
   }
+
+  bool decodeFrom(const Decoder::Tlv& input)
+  {
+    return EvDecoder::decode(input, { TT::ValidityPeriod },
+                             EvDecoder::def<TT::NotBefore>([this](const Decoder::Tlv& d) {
+                               return decodeTimestamp(d, &notBefore);
+                             }),
+                             EvDecoder::def<TT::NotAfter>([this](const Decoder::Tlv& d) {
+                               return decodeTimestamp(d, &notAfter);
+                             }));
+  }
+
+private:
+  static constexpr size_t TIMESTAMP_LEN = 15;
+  static constexpr size_t TIMESTAMP_BUFLEN = TIMESTAMP_LEN + 1;
+
+  static const char* getTimestampFormat()
+  {
+    return "%04d%02d%02dT%02d%02d%02d";
+  }
+
+  static void printTimestamp(char buf[TIMESTAMP_BUFLEN], time_t t)
+  {
+    struct tm* m = gmtime(&t);
+    if (m == nullptr) {
+      memset(buf, 0, TIMESTAMP_BUFLEN);
+      return;
+    }
+    snprintf(buf, TIMESTAMP_BUFLEN, getTimestampFormat(), 1900 + m->tm_year, 1 + m->tm_mon,
+             m->tm_mday, m->tm_hour, m->tm_min, m->tm_sec);
+  }
+
+  static bool decodeTimestamp(const Decoder::Tlv& d, time_t* v)
+  {
+    if (d.length != TIMESTAMP_LEN) {
+      return false;
+    }
+
+    char buf[TIMESTAMP_BUFLEN];
+    std::copy_n(d.value, TIMESTAMP_LEN, buf);
+    buf[TIMESTAMP_LEN] = '\0';
+
+    struct tm m = {};
+    if (sscanf(buf, getTimestampFormat(), &m.tm_year, &m.tm_mon, &m.tm_mday, &m.tm_hour, &m.tm_min,
+               &m.tm_sec) != 6) {
+      return false;
+    }
+    m.tm_year -= 1900;
+    m.tm_mon -= 1;
+
+    detail::UtcTimezone useUtc;
+    *v = mktime(&m);
+    return *v >= 0;
+  }
+
+public:
+  /** @brief NotBefore field in seconds since Unix epoch. */
+  time_t notBefore = 0;
+
+  /** @brief NotAfter field in seconds since Unix epoch. */
+  time_t notAfter = 0;
 };
+
+inline bool
+operator==(const ValidityPeriod& lhs, const ValidityPeriod& rhs)
+{
+  return lhs.notBefore == rhs.notBefore && lhs.notAfter == rhs.notAfter;
+}
+
+NDNPH_DECLARE_NE(ValidityPeriod, inline)
+
+/** @brief Compute the intersection of two ValidityPeriods. */
+inline ValidityPeriod
+operator&&(const ValidityPeriod& lhs, const ValidityPeriod& rhs)
+{
+  ValidityPeriod intersection;
+  intersection.notBefore = std::max(lhs.notBefore, rhs.notBefore);
+  intersection.notAfter = std::min(lhs.notAfter, rhs.notAfter);
+  return intersection;
+}
 
 } // namespace ndnph
 

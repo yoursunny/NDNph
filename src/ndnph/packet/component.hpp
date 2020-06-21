@@ -267,7 +267,7 @@ operator==(const Component& lhs, const Component& rhs)
   return lhs.size() == rhs.size() && std::equal(lhs.tlv(), lhs.tlv() + lhs.size(), rhs.tlv());
 }
 
-NDNPH_DECLARE_NE(Component, inline);
+NDNPH_DECLARE_NE(Component, inline)
 
 } // namespace ndnph
 

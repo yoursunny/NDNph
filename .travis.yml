@@ -23,7 +23,7 @@ addons:
       - ninja-build
 
 before_install:
-  - pip install cpp-coveralls cmake meson
+  - pip install cmake cpp-coveralls meson
 
 install:
   - |

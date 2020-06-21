@@ -152,15 +152,12 @@ TEST(Encoder, Prepend)
   EXPECT_TRUE(ok);
   EXPECT_FALSE(!encoder);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
-              g::ElementsAre(0xC2, 0x0A, 0xE0, 0xE1, 0xF0, 0xF1, 0xC3, 0x04, 0xE0, 0xE1, 0xF0,
-                             0xF1, // C2 nested C3
-                             0xC1,
-                             0x00, // C1 not omitted, C0 omitted
-                             0xA0, // MyEncodable<A0>
-                             0xA1,
-                             0x00, // prependTlv(A1)
-                             0xA2  // MyEncodable<A0>
-                             ));
+              g::ElementsAreArray(test::fromHex("C20AE0E1F0F1 C304E0E1F0F1" // C2 nested C3
+                                                "C100" // C1 not omitted, C0 omitted
+                                                "A0"   // MyEncodable<A0>
+                                                "A100" // prependTlv(A1)
+                                                "A2"   // MyEncodable<A2>
+                                                )));
 }
 
 } // namespace

@@ -19,12 +19,7 @@ TEST(Data, EncodeMinimal)
   EXPECT_EQ(data.getIsFinalBlock(), false);
   EXPECT_THAT(data.getContent(), g::SizeIs(0));
 
-  std::vector<uint8_t> wire({
-    0x06, 0x0C,                   // Data
-    0x07, 0x03, 0x08, 0x01, 0x41, // Name
-    0x16, 0x03, 0x1B, 0x01, 0xC8, // DSigInfo
-    0x17, 0x00,                   // DSigValue
-  });
+  auto wire = test::fromHex("060C name=0703080141 siginfo=16031B01C8 sigvalue=1700");
   data.setName(Name(&wire[4], 3));
 
   Encoder encoder(region);
@@ -48,22 +43,12 @@ TEST(Data, EncodeFull)
   Data data = region.create<Data>();
   ASSERT_FALSE(!data);
 
-  std::vector<uint8_t> wire({
-    0x64, 0x3A,                                                 // LpPacket
-    0x62, 0x08, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, // PitToken
-    0x50, 0x2E,                                                 // LpPayload
-    0x06, 0x2C,                                                 // Data
-    0x07, 0x06, 0x08, 0x01, 0x41, 0x08, 0x01, 0x42,             // Name
-    0x14, 0x0C,                                                 // MetaInfo
-    0x18, 0x01, 0x01,                                           // MetaInfo.ContentType
-    0x19, 0x02, 0x01, 0xF4,                                     // MetaInfo.FreshnessPeriod
-    0x1A, 0x03, 0x08, 0x01, 0x42,                               // MetaInfo.FinalBlockId
-    0x15, 0x02, 0xC0, 0xC1,                                     // Content
-    0x16, 0x0A,                                                 // DSigInfo
-    0x1B, 0x01, 0x10,                                           // DSigInfo.SigType
-    0x1C, 0x05, 0x07, 0x03, 0x08, 0x01, 0x4B,                   // DSigInfo.KeyLocator
-    0x17, 0x04, 0xF0, 0xF1, 0xF2, 0xF3                          // DSigValue
-  });
+  auto wire =
+    test::fromHex("lppacket=643A pittoken=6208B0B1B2B3B4B5B6B7 lppayload=502E data=062C"
+                  "name=0706080141080142 metainfo=140C contenttype=180101 freshness=190201F4 "
+                  "finalblock=1A03080142"
+                  "content=1502C0C1"
+                  "siginfo=160A sigtype=1B0110 keylocator=1C05070308014B sigvalue=1704F0F1F2F3");
   data.setName(Name::parse(region, "/A/B"));
   data.setContentType(0x01);
   data.setFreshnessPeriod(500);

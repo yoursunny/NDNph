@@ -7,18 +7,7 @@ namespace {
 
 TEST(Decoder, DecodeGood)
 {
-  std::vector<uint8_t> wire({
-    0x01,
-    0x00, // 0100
-    0x02, 0x01,
-    0xA1, // 0201 A1
-    0xFD, 0x00, 0xFD, 0x03, 0xA3, 0xA3,
-    0xA3, // FD03 A3A3A3
-    0xFD, 0x01, 0x00, 0x02, 0xA2,
-    0xA2, // 010002 A2A2
-    0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
-    0xA1, // FFFFFFFF A1
-  });
+  auto wire = test::fromHex("t01l00 t02l01vA1 tFD00FDl03vA3A3A3 tFD0100l02vA2A2 tFEFFFFFFFFl01vA1");
   Decoder decoder(wire.data(), wire.size());
 
   auto it = decoder.begin(), end = decoder.end();
