@@ -4,7 +4,7 @@
 #include "../core/in-region.hpp"
 #include "../keychain/private-key.hpp"
 #include "../keychain/public-key.hpp"
-#include "../port/crypto/port.hpp"
+#include "../port/sha256/port.hpp"
 
 namespace ndnph {
 namespace detail {

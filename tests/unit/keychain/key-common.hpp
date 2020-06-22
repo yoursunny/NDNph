@@ -10,7 +10,7 @@ namespace ndnph {
 namespace {
 
 template<typename Pkt>
-Pkt
+static Pkt
 makePacket(Region& region, const Name& name);
 
 template<>
@@ -33,7 +33,7 @@ makePacket<Data>(Region& region, const Name& name)
 }
 
 template<typename Pkt>
-void
+static void
 testSignVerify(const PrivateKey& pvtA, const PublicKey& pubA, const PrivateKey& pvtB,
                const PublicKey& pubB, bool deterministic = false, bool sameAB = false)
 {

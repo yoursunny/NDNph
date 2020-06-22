@@ -1,9 +1,11 @@
 #ifndef NDNPH_H
 #define NDNPH_H
 #include "ndnph/port/clock/port.hpp"
-#include "ndnph/port/crypto/port.hpp"
-#include "ndnph/port/random/port.hpp"
+#include "ndnph/port/ec/port.hpp"
 #include "ndnph/port/queue/port.hpp"
+#include "ndnph/port/random/port.hpp"
+#include "ndnph/port/sha256/port.hpp"
+#include "ndnph/port/timingsafe/port.hpp"
 #include "ndnph/an.hpp"
 #include "ndnph/app/ping-client.hpp"
 #include "ndnph/app/ping-server.hpp"

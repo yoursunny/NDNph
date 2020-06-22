@@ -32,7 +32,7 @@ private:
     assert(!!data);
     data.setName(interest.getName());
     data.setFreshnessPeriod(1);
-    reply(data.sign(DigestKey()));
+    reply(data.sign(DigestKey::get()));
     return true;
   }
 

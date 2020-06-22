@@ -7,7 +7,8 @@ endif
 
 mbedcrypto = meson.get_compiler('cpp').find_library('mbedcrypto', required: false)
 if mbedcrypto.found()
-  conf.set('NDNPH_PORT_CRYPTO_MBEDTLS', '')
+  conf.set('NDNPH_PORT_EC_MBED', '')
+  conf.set('NDNPH_PORT_SHA256_MBED', '')
 endif
 
 have_urandom = not meson.is_cross_build() and run_command('test', '-r', '/dev/urandom').returncode() == 0
@@ -15,7 +16,7 @@ if have_urandom
   conf.set('NDNPH_PORT_RANDOM_URANDOM', '')
 endif
 
-have_socket_h = not meson.is_cross_build() and meson.get_compiler('cpp').has_header('sys/socket.h')
+have_socket_h = meson.get_compiler('cpp').has_header('sys/socket.h')
 if have_socket_h
   conf.set('NDNPH_PORT_TRANSPORT_SOCKET', '')
 endif

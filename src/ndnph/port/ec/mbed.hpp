@@ -1,12 +1,16 @@
-#ifndef NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
-#define NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
+#ifndef NDNPH_PORT_EC_MBED_HPP
+#define NDNPH_PORT_EC_MBED_HPP
 
-#include "../../random/port.hpp"
+#include "../random/port.hpp"
 
 #include <mbedtls/ecdsa.h>
 
+#ifndef MBEDTLS_ECDSA_DETERMINISTIC
+#error MBEDTLS_ECDSA_DETERMINISTIC must be declared
+#endif
+
 namespace ndnph {
-namespace port_crypto_mbed {
+namespace port_ec_mbed {
 
 namespace detail {
 
@@ -91,10 +95,6 @@ public:
              ? sigLen
              : -1;
   }
-
-#ifndef MBEDTLS_ECDSA_DETERMINISTIC
-#error MBEDTLS_ECDSA_DETERMINISTIC must be declared
-#endif
 };
 
 template<typename Curve>
@@ -165,7 +165,14 @@ public:
   }
 };
 
-} // namespace port_crypto_mbed
+} // namespace port_ec_mbed
+
+#ifdef NDNPH_PORT_EC_MBED
+namespace port {
+using Ecdsa = port_ec_mbed::Ecdsa<port_ec_mbed::ec_curve::P256>;
+} // namespace port
+#endif
+
 } // namespace ndnph
 
-#endif // NDNPH_PORT_CRYPTO_MBED_ECDSA_HPP
+#endif // NDNPH_PORT_EC_MBED_HPP

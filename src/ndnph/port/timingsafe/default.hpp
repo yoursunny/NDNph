@@ -1,10 +1,10 @@
-#ifndef NDNPH_PORT_CRYPTO_TIMING_SAFE_EQUAL_HPP
-#define NDNPH_PORT_CRYPTO_TIMING_SAFE_EQUAL_HPP
+#ifndef NDNPH_PORT_TIMINGSAFE_DEFAULT_HPP
+#define NDNPH_PORT_TIMINGSAFE_DEFAULT_HPP
 
 #include "../../core/common.hpp"
 
 namespace ndnph {
-namespace port_crypto_defaultequal {
+namespace port_timingsafe_default {
 
 /**
  * @brief Timing safe equality comparison.
@@ -26,14 +26,14 @@ public:
   }
 };
 
-} // namespace port_crypto_defaultequal
+} // namespace port_timingsafe_default
 
-#ifdef NDNPH_PORT_CRYPTOEQUAL_DEFAULT
+#ifdef NDNPH_PORT_TIMINGSAFE_DEFAULT
 namespace port {
-using TimingSafeEqual = port_crypto_defaultequal::TimingSafeEqual;
+using TimingSafeEqual = port_timingsafe_default::TimingSafeEqual;
 } // namespace port
 #endif
 
 } // namespace ndnph
 
-#endif // NDNPH_PORT_CRYPTO_TIMING_SAFE_EQUAL_HPP
+#endif // NDNPH_PORT_TIMINGSAFE_DEFAULT_HPP

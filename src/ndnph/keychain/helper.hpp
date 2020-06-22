@@ -2,8 +2,8 @@
 #define NDNPH_KEYCHAIN_HELPER_HPP
 
 #include "../packet/component.hpp"
-#include "../port/crypto/port.hpp"
 #include "../port/random/port.hpp"
+#include "../port/sha256/port.hpp"
 #include "../tlv/value.hpp"
 
 namespace ndnph {

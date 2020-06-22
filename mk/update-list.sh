@@ -7,10 +7,9 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"/..
   cd src/ndnph
   echo '#ifndef NDNPH_H'
   echo '#define NDNPH_H'
-  echo '#include "ndnph/port/clock/port.hpp"'
-  echo '#include "ndnph/port/crypto/port.hpp"'
-  echo '#include "ndnph/port/random/port.hpp"'
-  echo '#include "ndnph/port/queue/port.hpp"'
+  for P in clock ec queue random sha256 timingsafe; do
+    echo '#include "ndnph/port/'$P'/port.hpp"'
+  done
   find . -path ./port -prune -o -name '*.hpp' -printf '%P\n' | sort | sed 's|.*|#include "ndnph/\0"|'
   echo '#include "ndnph/port/transport/port.hpp"'
   echo '#endif // NDNPH_H'

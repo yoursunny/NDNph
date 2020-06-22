@@ -4,8 +4,9 @@
 #include "../core/in-region.hpp"
 #include "../keychain/private-key.hpp"
 #include "../keychain/public-key.hpp"
-#include "../port/crypto/port.hpp"
 #include "../port/random/port.hpp"
+#include "../port/sha256/port.hpp"
+#include "../port/timingsafe/port.hpp"
 #include "convention.hpp"
 
 namespace ndnph {

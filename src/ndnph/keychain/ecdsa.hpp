@@ -1,6 +1,7 @@
 #ifndef NDNPH_KEYCHAIN_ECDSA_HPP
 #define NDNPH_KEYCHAIN_ECDSA_HPP
 
+#include "../port/ec/port.hpp"
 #include "certificate.hpp"
 #include "private-key.hpp"
 #include "public-key.hpp"

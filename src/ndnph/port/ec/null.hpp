@@ -1,10 +1,10 @@
-#ifndef NDNPH_PORT_CRYPTO_NULL_ECDSA_HPP
-#define NDNPH_PORT_CRYPTO_NULL_ECDSA_HPP
+#ifndef NDNPH_PORT_EC_NULL_HPP
+#define NDNPH_PORT_EC_NULL_HPP
 
-#include "../../../core/common.hpp"
+#include "../../core/common.hpp"
 
 namespace ndnph {
-namespace port_crypto_null {
+namespace port_ec_null {
 
 /** @brief Stub ECDSA algorithm implementation. */
 class Ecdsa
@@ -88,7 +88,14 @@ public:
   }
 };
 
-} // namespace port_mbedtls
+} // namespace port_ec_null
+
+#ifdef NDNPH_PORT_EC_NULL
+namespace port {
+using Ecdsa = port_ec_null::Ecdsa;
+} // namespace port
+#endif
+
 } // namespace ndnph
 
-#endif // NDNPH_PORT_CRYPTO_NULL_ECDSA_HPP
+#endif // NDNPH_PORT_EC_NULL_HPP

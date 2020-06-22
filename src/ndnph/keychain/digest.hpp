@@ -1,6 +1,7 @@
 #ifndef NDNPH_KEYCHAIN_DIGEST_HPP
 #define NDNPH_KEYCHAIN_DIGEST_HPP
 
+#include "../port/timingsafe/port.hpp"
 #include "helper.hpp"
 #include "private-key.hpp"
 #include "public-key.hpp"
