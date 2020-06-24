@@ -5,6 +5,8 @@ if boost.found()
   conf.set('NDNPH_PORT_QUEUE_BOOSTLF', '')
 endif
 
+conf.set('NDNPH_PORT_FS_LINUX', '')
+
 mbedcrypto = meson.get_compiler('cpp').find_library('mbedcrypto', required: false)
 if mbedcrypto.found()
   conf.set('NDNPH_PORT_EC_MBED', '')

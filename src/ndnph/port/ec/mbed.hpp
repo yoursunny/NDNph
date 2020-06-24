@@ -151,7 +151,7 @@ using P256 = detail::EcCurve<MBEDTLS_ECP_DP_SECP256R1, 32>;
 } // namespace ec_curve
 
 template<typename CurveT>
-class Ecdsa
+class Ec
 {
 public:
   using Curve = CurveT;
@@ -169,7 +169,7 @@ public:
 
 #ifdef NDNPH_PORT_EC_MBED
 namespace port {
-using Ecdsa = port_ec_mbed::Ecdsa<port_ec_mbed::ec_curve::P256>;
+using Ec = port_ec_mbed::Ec<port_ec_mbed::ec_curve::P256>;
 } // namespace port
 #endif
 

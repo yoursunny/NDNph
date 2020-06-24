@@ -7,7 +7,7 @@ namespace ndnph {
 namespace port_ec_null {
 
 /** @brief Stub ECDSA algorithm implementation. */
-class Ecdsa
+class Ec
 {
 public:
   /** @brief Give information about the curve. */
@@ -92,7 +92,7 @@ public:
 
 #ifdef NDNPH_PORT_EC_NULL
 namespace port {
-using Ecdsa = port_ec_null::Ecdsa;
+using Ec = port_ec_null::Ec;
 } // namespace port
 #endif
 

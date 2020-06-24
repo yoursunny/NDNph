@@ -195,14 +195,16 @@ public:
   }
 
   /**
-   * @brief Sign the packet with a private key.
-   * @return an Encodable object. This object is valid only if Data and PrivateKey are kept alive.
-   *         It's recommended to pass it to Encoder immediately without saving as variable.
-   * @note Unrecognized fields found during decoding are not preserved in encoding output.
+   * @brief Prepend the original packet to Encoder.
+   * @pre only available on decoded packet.
    */
-  detail::SignedDataRef sign(const PrivateKey& key, DSigInfo sigInfo = DSigInfo()) const
+  void encodeTo(Encoder& encoder) const
   {
-    return detail::SignedDataRef(obj, key, std::move(sigInfo));
+    if (obj->sig == nullptr) {
+      encoder.setError();
+      return;
+    }
+    obj->sig->wholePacket.encodeTo(encoder);
   }
 
   /** @brief Decode packet. */
@@ -230,6 +232,17 @@ public:
         obj->sig->signedPortion = tlv::Value(input.value, d.tlv);
         return obj->sig->sigValue.decodeFrom(d);
       }));
+  }
+
+  /**
+   * @brief Sign the packet with a private key.
+   * @return an Encodable object. This object is valid only if Data and PrivateKey are kept alive.
+   *         It's recommended to pass it to Encoder immediately without saving as variable.
+   * @note Unrecognized fields found during decoding are not preserved in encoding output.
+   */
+  detail::SignedDataRef sign(const PrivateKey& key, DSigInfo sigInfo = DSigInfo()) const
+  {
+    return detail::SignedDataRef(obj, key, std::move(sigInfo));
   }
 
   /**
