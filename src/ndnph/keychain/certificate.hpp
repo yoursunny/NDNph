@@ -49,69 +49,93 @@ isCertName(const Name& name)
   return name[-4] == getKeyComponent();
 }
 
-/** @brief Get subject name from subject name, key name, or certificate name. */
+/**
+ * @brief Convert to subject name.
+ * @param region where to allocate memory if needed.
+ * @param input subject name, key name, or certificate name.
+ * @param mustCopy if true, the returned name is always copied and does not reference input;
+ *                 otherwise, the returned name may reference input name.
+ * @return subject name, or an empty name upon failure.
+ */
 inline Name
-toSubjectName(Region&, const Name& input)
+toSubjectName(Region& region, const Name& input, bool mustCopy = false)
 {
+  Name result;
   if (isKeyName(input)) {
-    return input.getPrefix(-2);
+    result = input.getPrefix(-2);
+  } else if (isCertName(input)) {
+    result = input.getPrefix(-4);
+  } else {
+    result = input;
   }
-  if (isCertName(input)) {
-    return input.getPrefix(-4);
+
+  if (mustCopy) {
+    return result.clone(region);
   }
-  return input;
+  return result;
 }
 
 /**
- * @brief Get key name from subject name, key name, or certificate name.
- *
- * If the input is a subject name, the keyId component is randomly generated,
- * and the key name is allocated in the region.
+ * @brief Convert to key name.
+ * @param region where to allocate memory if needed.
+ * @param input subject name, key name, or certificate name.
+ * @param mustCopy if true, the returned name is always copied and does not reference input;
+ *                 otherwise, the returned name may reference input name.
+ * @return key name, or an empty name upon failure.
+ *         If @p input does not contain keyId component, it is randomly generated.
  */
 inline Name
-toKeyName(Region& region, const Name& input)
+toKeyName(Region& region, const Name& input, bool mustCopy = false)
 {
+  Name result;
   if (isKeyName(input)) {
-    return input;
-  }
-
-  if (isCertName(input)) {
-    return input.getPrefix(-2);
-  }
-
-  auto keyId = detail::makeRandomComponent(region);
-  if (!keyId) {
-    return Name();
-  }
-  return input.append(region, { getKeyComponent(), keyId });
-}
-
-/**
- * @brief Get key name from subject name, key name, or certificate name.
- *
- * If the input is a subject name, the keyId component is randomly generated.
- * If the input is a key name, the issuerId is set to 'NDNph', and the version component
- * is randomly generated.
- * In both cases, the cert name is allocated in the region.
- */
-inline Name
-toCertName(Region& region, const Name& input)
-{
-  if (isCertName(input)) {
-    return input;
-  }
-
-  if (isKeyName(input)) {
-    auto version = detail::makeRandomComponent(region, TT::VersionNameComponent);
-    if (!version) {
+    result = input;
+  } else if (isCertName(input)) {
+    result = input.getPrefix(-2);
+  } else {
+    auto keyId = detail::makeRandomComponent(region);
+    if (!keyId) {
       return Name();
     }
+    return input.append(region, { getKeyComponent(), keyId });
+  }
+
+  if (mustCopy) {
+    return result.clone(region);
+  }
+  return result;
+}
+
+/**
+ * @brief Convert to certificate name.
+ * @param region where to allocate memory if needed.
+ * @param input subject name, key name, or certificate name.
+ * @param mustCopy if true, the returned name is always copied and does not reference input;
+ *                 otherwise, the returned name may reference input name.
+ * @return certificate name, or an empty name upon failure.
+ *         If @p input does not contain keyId or version components, they are randomly generated.
+ *         If @p input does not contain issuerId component, it is set to 'NDNph'.
+ */
+inline Name
+toCertName(Region& region, const Name& input, bool mustCopy = false)
+{
+  if (isCertName(input)) {
+    if (mustCopy) {
+      return input.clone(region);
+    }
+    return input;
+  }
+
+  auto version = detail::makeRandomComponent(region, TT::VersionNameComponent);
+  if (!version) {
+    return Name();
+  }
+  if (isKeyName(input)) {
     return input.append(region, { getIssuerDefault(), version });
   }
 
   auto keyId = detail::makeRandomComponent(region);
-  auto version = detail::makeRandomComponent(region, TT::VersionNameComponent);
-  if (!keyId || !version) {
+  if (!keyId) {
     return Name();
   }
   return input.append(region, { getKeyComponent(), keyId, getIssuerDefault(), version });

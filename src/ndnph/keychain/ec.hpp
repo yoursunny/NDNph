@@ -64,13 +64,6 @@ findPublicKeyInCertificate(const Data& data)
   return content.end() - PubLen::value;
 }
 
-/** @brief Key pair stored in KeyChain. */
-struct StoredKeyPair
-{
-  uint8_t pvt[PvtLen::value];
-  uint8_t pub[PubLen::value];
-};
-
 } // namespace detail
 
 /** @brief EC public key. */
@@ -278,29 +271,27 @@ generateRaw(uint8_t pvt[EcPrivateKey::KeyLen::value], uint8_t pub[EcPublicKey::K
   return port::Ec::generateKey(pvt, pub);
 }
 
-/**
- * @brief Generate key pair.
- * @param region where to allocate key name.
- * @param name subject name or key name; may be referenced.
- * @param[out] pvt the private key.
- * @param[out] pub the public key.
- * @param keyChain for internal use.
- * @param id for internal use.
- * @return whether success.
- */
-inline bool
-generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub,
-         KeyChain* keyChain = nullptr, const char* id = nullptr)
+namespace detail {
+
+/** @brief Key pair stored in KeyChain. */
+struct StoredKeyPair
 {
-  Name keyName = certificate::toKeyName(region, name);
+  uint8_t pvt[PvtLen::value];
+  uint8_t pub[PubLen::value];
+};
+
+inline bool
+generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, KeyChain* keyChain,
+         const char* id)
+{
+  Name keyName = certificate::toKeyName(region, name, true);
   if (!keyName) {
     return false;
   }
 
   Encoder encoder(region);
   encoder.prepend(keyName);
-  auto stored =
-    reinterpret_cast<detail::StoredKeyPair*>(encoder.prependRoom(sizeof(detail::StoredKeyPair)));
+  auto stored = reinterpret_cast<StoredKeyPair*>(encoder.prependRoom(sizeof(StoredKeyPair)));
   bool ok = stored != nullptr && generateRaw(stored->pvt, stored->pub) &&
             pvt.import(keyName, stored->pvt) && pub.import(keyName, stored->pub);
 
@@ -311,10 +302,26 @@ generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub,
   return ok;
 }
 
+} // namespace detail
+
+/**
+ * @brief Generate key pair.
+ * @param region where to allocate key name.
+ * @param name subject name or key name; can be released afterwards.
+ * @param[out] pvt the private key.
+ * @param[out] pub the public key.
+ * @return whether success.
+ */
+inline bool
+generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub)
+{
+  return detail::generate(region, name, pvt, pub, nullptr, nullptr);
+}
+
 /**
  * @brief Generate key pair and save in KeyChain.
  * @param region where to allocate key name.
- * @param name subject name or key name; may be referenced.
+ * @param name subject name or key name; can be released afterwards.
  * @param[out] pvt the private key.
  * @param[out] pub the public key.
  * @param keyChain where to save the key pair.
@@ -325,7 +332,7 @@ inline bool
 generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, KeyChain& keyChain,
          const char* id)
 {
-  return generate(region, name, pvt, pub, &keyChain, id);
+  return detail::generate(region, name, pvt, pub, &keyChain, id);
 }
 
 /**
