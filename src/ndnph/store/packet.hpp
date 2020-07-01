@@ -29,7 +29,7 @@ public:
     }
 
     T packet = region.create<T>();
-    if (!packet || !Decoder(wire.begin(), wire.size()).decode(packet)) {
+    if (!packet || !wire.makeDecoder().decode(packet)) {
       return T();
     }
     return packet;

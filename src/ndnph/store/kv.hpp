@@ -34,7 +34,7 @@ public:
 
   /**
    * @brief Retrieve a value.
-   * @param key non-empty key, can only contain digits and lower-case letters.
+   * @param key non-empty key, can only contain digits, lower-case letters, and '_'.
    * @param region where to allocate memory.
    * @return the value. Empty value upon error.
    */
@@ -62,7 +62,7 @@ public:
 
   /**
    * @brief Store a value.
-   * @param key non-empty key, can only contain digits and lower-case letters.
+   * @param key non-empty key, can only contain digits, lower-case letters, and '_'.
    * @param value the value.
    * @return whether success.
    *
@@ -80,7 +80,7 @@ public:
 
   /**
    * @brief Delete a key.
-   * @param key non-empty key, can only contain digits and lower-case letters.
+   * @param key non-empty key, can only contain digits, lower-case letters, and '_'.
    * @return whether success; deleting a non-existent key is considered successful.
    */
   bool del(const char* key)
@@ -100,7 +100,7 @@ private:
     }
     for (size_t i = 0; i < keyLen; ++i) {
       char ch = key[i];
-      if (!isdigit(ch) && !islower(ch)) {
+      if (!isdigit(ch) && !islower(ch) && ch != '_') {
         return false;
       }
     }

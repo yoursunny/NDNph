@@ -141,11 +141,87 @@ toCertName(Region& region, const Name& input, bool mustCopy = false)
   return input.append(region, { getKeyComponent(), keyId, getIssuerDefault(), version });
 }
 
+/**
+ * @brief Construct key name with specified keyId.
+ * @param region where to allocate memory.
+ * @param input subject name, key name, or certificate name; only subject name is taken.
+ * @param keyId specified keyId.
+ * @return key name, or an empty name upon failure.
+ */
+inline Name
+makeKeyName(Region& region, const Name& input, const Component& keyId)
+{
+  return toSubjectName(region, input).append(region, { getKeyComponent(), keyId });
+}
+
+/**
+ * @brief Construct certificate name with specified issuerId and version.
+ * @param region where to allocate memory.
+ * @param input subject name, key name, or certificate name; only key name is taken.
+ * @param issuerId specified issuerId.
+ * @param version specified version.
+ * @return certificate name, or an empty name upon failure.
+ */
+inline Name
+makeCertName(Region& region, const Name& input, const Component& issuerId, const Component& version)
+{
+  return toKeyName(region, input).append(region, { issuerId, version });
+}
+
+/**
+ * @brief Construct certificate name with specified issuerId and version.
+ * @param region where to allocate memory.
+ * @param input subject name, key name, or certificate name; only key name is taken.
+ * @param issuerId specified issuerId.
+ * @param version version from timestamp; if unspecified, time() will be used if it has
+ *                a reasonable value, otherwise it's randomly generated.
+ * @return certificate name, or an empty name upon failure.
+ */
+inline Name
+makeCertName(Region& region, const Name& input, const Component& issuerId, time_t version = 0)
+{
+  return toKeyName(region, input)
+    .append(region, {
+                      issuerId,
+                      detail::makeTimeComponent(region, TT::VersionNameComponent, 1000000, version),
+                    });
+}
+
 /** @brief Determine if the Data packet is a certificate. */
 inline bool
 isCertificate(const Data& data)
 {
   return data && data.getContentType() == ContentType::Key && isCertName(data.getName());
+}
+
+inline Name
+getIssuer(const Data& data)
+{
+  const DSigInfo* sigInfo = data.getSigInfo();
+  if (sigInfo != nullptr) {
+    return sigInfo->name;
+  }
+  return Name();
+}
+
+inline ValidityPeriod
+getValidity(const Data& data)
+{
+  ValidityPeriod vp;
+
+  const DSigInfo* sigInfo = data.getSigInfo();
+  if (sigInfo == nullptr) {
+    return vp;
+  }
+
+  auto decoder = sigInfo->extensions.makeDecoder();
+  for (auto tlv : decoder) {
+    if (vp.decodeFrom(tlv)) {
+      return vp;
+    }
+  }
+
+  return ValidityPeriod();
 }
 
 } // namespace certificate

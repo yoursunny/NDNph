@@ -22,8 +22,7 @@ TEST_F(EcKeyFixture, SignVerify)
   DynamicRegion regionA1(4096);
   EcPublicKey pubA1;
   {
-    ValidityPeriod validityA;
-    auto certA = pubA0.buildCertificate(regionA1, pubA0.getName(), validityA, pvtA);
+    auto certA = pubA0.selfSign(regionA1, ValidityPeriod::getMax(), pvtA);
     ASSERT_FALSE(!certA);
 
     Encoder encoder(regionA1);

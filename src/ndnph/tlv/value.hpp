@@ -53,6 +53,12 @@ public:
     return true;
   }
 
+  /** @brief Create a Decoder over this value buffer. */
+  Decoder makeDecoder() const
+  {
+    return Decoder(m_value, m_size);
+  }
+
 private:
   const uint8_t* m_value = nullptr;
   size_t m_size = 0;

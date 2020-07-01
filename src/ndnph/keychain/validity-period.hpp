@@ -4,7 +4,6 @@
 #include "../an.hpp"
 #include "../tlv/ev-decoder.hpp"
 #include "../tlv/value.hpp"
-#include <time.h>
 
 namespace ndnph {
 namespace detail {

@@ -163,6 +163,24 @@ public:
       });
   }
 
+  /**
+   * @brief Generate self-signed certificate of this public key.
+   * @param name key name or certificate name.
+   * @param validity certificate validity period.
+   * @param signer corresponding private key.
+   * @return result object supporting explicit conversion to bool and equipped with a
+   *         `void encodeTo(Encoder&) const` method. `!result` indicates the operation
+   *         has failed. Encodable object is valid only if arguments to this function
+   *         are kept alive.
+   */
+  template<typename Signer>
+  detail::CertificateBuilder<Signer> selfSign(Region& region, const ValidityPeriod& validity,
+                                              const Signer& signer)
+  {
+    Name certName = certificate::makeCertName(region, getName(), certificate::getIssuerSelf());
+    return buildCertificate(region, certName, validity, signer);
+  }
+
   /** @brief Determine whether packet was signed by corresponding private key. */
   bool matchSigInfo(const SigInfo& sigInfo) const final
   {

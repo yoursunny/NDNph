@@ -39,7 +39,7 @@ TEST(Rdr, Producer)
         EXPECT_EQ(name[-1].as<convention::Segment>(), 0);
         auto content = data.getContent();
         Name datasetPrefix;
-        EXPECT_TRUE(Decoder(content.begin(), content.size()).decode(datasetPrefix));
+        EXPECT_TRUE(content.makeDecoder().decode(datasetPrefix));
         EXPECT_EQ(datasetPrefix, Name::parse(region, respondDatasetPrefix));
         return true;
       });

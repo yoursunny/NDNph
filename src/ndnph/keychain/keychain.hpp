@@ -28,7 +28,7 @@ public:
   Data get(const char* id, Region& region)
   {
     Data data = PacketStore::get(id, region);
-    if (data && certificate::isCertificate(data)) {
+    if (!data || !certificate::isCertificate(data)) {
       return Data();
     }
     return data;

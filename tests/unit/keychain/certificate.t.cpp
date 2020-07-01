@@ -11,6 +11,9 @@ TEST(Certificate, Naming)
   Name subjectName = Name::parse(region, "/s");
   Name keyName = Name::parse(region, "/s/KEY/k");
   Name certName = Name::parse(region, "/s/KEY/k/i/35=%00");
+  Component keyId = keyName[-1];
+  Component issuerId = certName[-2];
+  Component version = certName[-1];
 
   EXPECT_FALSE(certificate::isKeyName(subjectName));
   EXPECT_TRUE(certificate::isKeyName(keyName));
@@ -30,6 +33,10 @@ TEST(Certificate, Naming)
   EXPECT_TRUE(certificate::isCertName(certificate::toCertName(region, subjectName)));
   EXPECT_TRUE(certificate::isCertName(certificate::toCertName(region, keyName)));
   EXPECT_EQ(certificate::toCertName(region, certName), certName);
+
+  EXPECT_EQ(certificate::makeKeyName(region, subjectName, keyId), keyName);
+  EXPECT_EQ(certificate::makeCertName(region, keyName, issuerId, version), certName);
+  EXPECT_TRUE(certificate::isCertName(certificate::makeCertName(region, keyName, issuerId)));
 }
 
 } // namespace
