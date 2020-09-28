@@ -37,9 +37,9 @@ install:
   - |
     : install Mbed TLS
     cd $HOME
-    curl -sL https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.16.6.tar.gz | tar -xz
+    curl -sL https://github.com/ARMmbed/mbedtls/archive/v2.24.0.tar.gz | tar -xz
     mkdir mbedtls-build && cd mbedtls-build
-    cmake -G Ninja ../mbedtls-mbedtls-2.16.6 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
+    cmake -G Ninja ../mbedtls-2.24.0 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
     ninja
     sudo ninja install
   - |

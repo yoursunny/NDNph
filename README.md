@@ -20,7 +20,7 @@ Packet encoding and decoding
   * forwarding hint: no
 * [NDNLPv2](https://redmine.named-data.net/projects/nfd/wiki/NDNLPv2)
   * fragmentation and reassembly: no
-  * Nack: yes
+  * Nack: partial
   * PIT token: yes
   * congestion mark: no
   * link layer reliability: no

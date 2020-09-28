@@ -101,8 +101,9 @@ public:
   /**
    * @brief Create a Nack packet in reply to an Interest.
    *
-   * The enclosed Interest has Name, CanBePrefix, MustBeFresh, ForwardingHint, and Nonce
-   * only. See https://redmine.named-data.net/issues/4535#note-1 for explanation.
+   * @bug Nack should encode the entire original Interest, but this function
+   *      only includes Name, CanBePrefix, MustBeFresh, and Nonce in the encoding.
+   *      https://redmine.named-data.net/issues/4535#note-16
    */
   static Nack create(Interest interest, NackReason reason)
   {
