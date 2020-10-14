@@ -25,12 +25,8 @@ TEST_F(EcKeyFixture, SignVerify)
     auto certA = pubA0.selfSign(regionA1, ValidityPeriod::getMax(), pvtA);
     ASSERT_FALSE(!certA);
 
-    Encoder encoder(regionA1);
-    encoder.prepend(certA);
-    encoder.trim();
-
     Data dataA = regionA1.create<Data>();
-    ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(dataA));
+    ASSERT_TRUE(dataA.decodeFrom(certA));
 
     EXPECT_TRUE(ec::isCertificate(dataA));
     ASSERT_TRUE(pubA1.import(regionA1, dataA));

@@ -145,7 +145,7 @@ public:
   template<typename Signer>
   detail::CertificateBuilder<Signer> buildCertificate(Region& region, const Name& name,
                                                       const ValidityPeriod& validity,
-                                                      const Signer& signer)
+                                                      const Signer& signer) const
   {
     return detail::CertificateBuilder<Signer>::create(
       region, name, validity, signer, [&](Data& data) {
@@ -175,7 +175,7 @@ public:
    */
   template<typename Signer>
   detail::CertificateBuilder<Signer> selfSign(Region& region, const ValidityPeriod& validity,
-                                              const Signer& signer)
+                                              const Signer& signer) const
   {
     Name certName = certificate::makeCertName(region, getName(), certificate::getIssuerSelf());
     return buildCertificate(region, certName, validity, signer);
@@ -314,7 +314,7 @@ generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, 
             pvt.import(keyName, stored->pvt) && pub.import(keyName, stored->pub);
 
   if (keyChain != nullptr) {
-    ok = ok && keyChain->keys.set(id, tlv::Value(encoder.begin(), encoder.end()));
+    ok = ok && keyChain->keys.set(id, tlv::Value(encoder));
   }
   encoder.discard();
   return ok;

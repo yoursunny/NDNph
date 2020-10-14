@@ -3,7 +3,8 @@
 
 #if defined(NDNPH_PORT_SHA256_CUSTOM)
 // using custom sha256 port
-#elif defined(NDNPH_PORT_SHA256_MBED)
+#elif defined(NDNPH_HAVE_MBED)
+#define NDNPH_PORT_SHA256_MBED
 #include "mbed.hpp"
 #else
 #define NDNPH_PORT_SHA256_NULL

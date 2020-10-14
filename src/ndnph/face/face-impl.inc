@@ -42,7 +42,9 @@ inline void
 Face::loop()
 {
   m_transport.loop();
-  for (PacketHandler* h = m_handler; h != nullptr; h = h->m_next) {
+  PacketHandler* next = nullptr;
+  for (PacketHandler* h = m_handler; h != nullptr; h = next) {
+    next = h->m_next;
     h->loop();
   }
 }
@@ -91,7 +93,9 @@ bool
 Face::process(H processPacket, Packet packet)
 {
   bool isAccepted = false;
-  for (PacketHandler* h = m_handler; h != nullptr && !isAccepted; h = h->m_next) {
+  PacketHandler* next = nullptr;
+  for (PacketHandler* h = m_handler; h != nullptr && !isAccepted; h = next) {
+    next = h->m_next;
     isAccepted = (h->*processPacket)(packet);
   }
   return isAccepted;

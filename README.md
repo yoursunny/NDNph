@@ -46,6 +46,7 @@ Application layer services
 * [ndnping](https://github.com/named-data/ndn-tools/tree/master/tools/ping) server and client
 * segmented object producer and consumer
 * [Realtime Data Retrieval (RDR)](https://redmine.named-data.net/projects/ndn-tlv/wiki/RDR) metadata producer
+* [NDNCERT](https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3) (work in progress)
 
 ## Installation
 

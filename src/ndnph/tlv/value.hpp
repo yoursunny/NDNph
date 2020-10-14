@@ -11,17 +11,35 @@ namespace tlv {
 class Value
 {
 public:
+  static Value fromString(const char* str)
+  {
+    return Value(reinterpret_cast<const uint8_t*>(str), std::strlen(str));
+  }
+
   explicit Value() = default;
 
+  /** @brief Reference a byte range. */
   explicit Value(const uint8_t* value, size_t size)
     : m_value(value)
     , m_size(size)
   {}
 
+  /** @brief Reference a byte range. */
   explicit Value(const uint8_t* first, const uint8_t* last)
     : m_value(first)
     , m_size(last - first)
   {}
+
+  /** @brief Reference encoder output. */
+  explicit Value(const Encoder& encoder)
+    : Value(encoder.begin(), encoder.size())
+  {}
+
+  /** @brief Return true if value is non-empty. */
+  explicit operator bool() const
+  {
+    return size() > 0;
+  }
 
   const uint8_t* begin() const
   {
@@ -63,6 +81,14 @@ private:
   const uint8_t* m_value = nullptr;
   size_t m_size = 0;
 };
+
+inline bool
+operator==(const Value& lhs, const Value& rhs)
+{
+  return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+NDNPH_DECLARE_NE(Value, inline)
 
 } // namespace tlv
 } // namespace ndnph

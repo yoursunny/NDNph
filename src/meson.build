@@ -9,8 +9,7 @@ conf.set('NDNPH_PORT_FS_LINUX', '')
 
 mbedcrypto = meson.get_compiler('cpp').find_library('mbedcrypto', required: false)
 if mbedcrypto.found()
-  conf.set('NDNPH_PORT_EC_MBED', '')
-  conf.set('NDNPH_PORT_SHA256_MBED', '')
+  conf.set('NDNPH_HAVE_MBED', '')
 endif
 
 have_urandom = not meson.is_cross_build() and run_command('test', '-r', '/dev/urandom').returncode() == 0

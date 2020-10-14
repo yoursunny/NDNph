@@ -105,13 +105,8 @@ TEST(Interest, EncodeParameterizedReplace)
   interest.setName(Name::parse(region, "/101=A/2=N/103=C"));
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
-  Encoder encoder(region);
-  ASSERT_TRUE(encoder.prepend(interest.parameterize(appParams)));
-  encoder.trim();
-
   Interest decoded = region.create<Interest>();
-  ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
+  ASSERT_TRUE(decoded.decodeFrom(interest.parameterize(appParams)));
 
   auto name = decoded.getName();
   EXPECT_THAT(name, g::SizeIs(3));
@@ -132,13 +127,8 @@ TEST(Interest, EncodeParameterizedAppend)
   interest.setName(Name::parse(region, "/101=A/102=B"));
   tlv::Value appParams(appParamsV.data(), appParamsV.size());
 
-  Encoder encoder(region);
-  ASSERT_TRUE(encoder.prepend(lp::encode(interest.parameterize(appParams))));
-  encoder.trim();
-
   Interest decoded = region.create<Interest>();
-  ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
+  ASSERT_TRUE(decoded.decodeFrom(lp::encode(interest.parameterize(appParams))));
 
   auto name = decoded.getName();
   EXPECT_THAT(name, g::SizeIs(3));
@@ -173,23 +163,19 @@ TEST(Interest, EncodeSignedReplace)
   ASSERT_FALSE(!interest);
   interest.setName(Name::parse(region, "/101=A/102=B/2=N"));
 
+  Interest decoded = region.create<Interest>();
   std::vector<uint8_t> signedPortion(
     { 0x65, 0x01, 0x41, 0x66, 0x01, 0x42, 0x24, 0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10 });
   std::vector<uint8_t> sig({ 0xF0, 0xF1, 0xF2, 0xF3 });
-  Encoder encoder(region);
   {
     g::InSequence seq;
     MockPrivateKey<32> key;
     EXPECT_CALL(key, updateSigInfo).WillOnce([](SigInfo& sigInfo) { sigInfo.sigType = 0x10; });
     EXPECT_CALL(key, doSign(g::ElementsAreArray(signedPortion), g::_))
       .WillOnce(g::DoAll(g::SetArrayArgument<1>(sig.begin(), sig.end()), g::Return(4)));
-    EXPECT_TRUE(encoder.prepend(lp::encode(interest.sign(key))));
-  }
-  encoder.trim();
 
-  Interest decoded = region.create<Interest>();
-  ASSERT_FALSE(!decoded);
-  ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(decoded));
+    ASSERT_TRUE(decoded.decodeFrom(lp::encode(interest.sign(key))));
+  }
 
   auto name = decoded.getName();
   EXPECT_THAT(name, g::SizeIs(3));
@@ -252,14 +238,10 @@ TEST(Interest, MatchImplicitDigest)
   ASSERT_FALSE(!data);
   data.setName(Name::parse(region, "/A"));
   {
-    Encoder encoder(region);
     g::NiceMock<MockPrivateKey<0>> key;
-    ASSERT_TRUE(encoder.prepend(data.sign(key)));
-    encoder.trim();
-
-    data = region.create<Data>();
-    ASSERT_FALSE(!data);
-    ASSERT_TRUE(Decoder(encoder.begin(), encoder.size()).decode(data));
+    auto data2 = region.create<Data>();
+    ASSERT_TRUE(data2.decodeFrom(data.sign(key)));
+    data = data2;
   }
 
   uint8_t digest[NDNPH_SHA256_LEN] = { 0 };

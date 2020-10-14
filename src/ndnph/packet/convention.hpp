@@ -1,11 +1,38 @@
 #ifndef NDNPH_PACKET_CONVENTION_HPP
 #define NDNPH_PACKET_CONVENTION_HPP
 
+#include "../port/random/port.hpp"
 #include "../tlv/nni.hpp"
 #include "component.hpp"
 
 namespace ndnph {
 namespace convention {
+
+/** @brief Indicate that TLV-VALUE should be a random number. */
+class RandomValue
+{};
+
+/** @brief Indicate that TLV-VALUE should be a timestamp. */
+class TimeValue
+{
+public:
+  explicit TimeValue(time_t t = 0, uint64_t multiplier = Microseconds)
+    : t(t)
+    , multiplier(multiplier)
+  {}
+
+  enum Multiplier
+  {
+    Seconds = 1,
+    Milliseconds = 1000,
+    Microseconds = 1000000,
+  };
+
+public:
+  time_t t;
+  uint64_t multiplier;
+};
+
 namespace detail {
 
 template<uint16_t tlvType>
@@ -63,9 +90,52 @@ template<uint16_t tlvType>
 class TypedNumber
 {
 public:
+  /** @brief Create with specified value. */
   static Component create(Region& region, uint64_t value)
   {
     return Component::from(region, tlvType, tlv::NNI(value));
+  }
+
+  /**
+   * @brief Create with random value.
+   * @warning In case the random number generator fails, returns an empty component.
+   *          This would usually lead to encoding an invalid packet.
+   *          However, it rarely occurs on a correctly integrated system.
+   */
+  static Component create(Region& region, const RandomValue&)
+  {
+    uint8_t value[8];
+    if (!port::RandomSource::generate(value, sizeof(value))) {
+      return Component();
+    }
+    size_t length = 8;
+    if ((value[0] | value[1] | value[2] | value[3]) == 0x00) {
+      length = 4;
+      if ((value[4] | value[5]) == 0x00) {
+        length = 2;
+        if (value[6] == 0x00) {
+          length = 1;
+        }
+      }
+    }
+    return Component(region, tlvType, length, &value[sizeof(value) - length]);
+  }
+
+  /**
+   * @brief Create with timestamp.
+   * @param timeVal a specified timestamp, or zero to use current time.
+   *                In case the clock is unavailable, a random number is used instead.
+   */
+  static Component create(Region& region, const TimeValue& timeVal)
+  {
+    time_t t = timeVal.t;
+    if (t == 0) {
+      time(&t);
+      if (t < 540109800) {
+        return create(region, RandomValue());
+      }
+    }
+    return create(region, t * timeVal.multiplier);
   }
 
   static bool match(const Component& comp)
@@ -130,6 +200,13 @@ using ParamsDigest = detail::TypedDigest<TT::ParametersSha256DigestComponent>;
 using Keyword = detail::TypedString<TT::KeywordNameComponent>;
 
 /**
+ * @brief GenericNameComponent that contains NNI.
+ *
+ * Supported operations are same as convention::Timestamp.
+ */
+using GenericNumber = detail::TypedNumber<TT::GenericNameComponent>;
+
+/**
  * @brief SegmentNameComponent convention.
  *
  * Supported operations:
@@ -151,14 +228,18 @@ using ByteOffset = detail::TypedNumber<TT::ByteOffsetNameComponent>;
 /**
  * @brief VersionNameComponent convention.
  *
- * Supported operations are same as convention::Segment.
+ * Supported operations are same as convention::Timestamp.
  */
 using Version = detail::TypedNumber<TT::VersionNameComponent>;
 
 /**
  * @brief TimestampNameComponent convention.
  *
- * Supported operations are same as convention::Segment.
+ * Supported operations include those in convention::Segment, and:
+ * @code
+ * name.append<convention::Timestamp>(region, convention::RandomValue());
+ * name.append<convention::Timestamp>(region, convention::TimeValue(now));
+ * @endcode
  */
 using Timestamp = detail::TypedNumber<TT::TimestampNameComponent>;
 

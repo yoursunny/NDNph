@@ -5,6 +5,7 @@
 #include "../keychain/private-key.hpp"
 #include "../keychain/public-key.hpp"
 #include "../port/sha256/port.hpp"
+#include "convention.hpp"
 
 namespace ndnph {
 namespace detail {
@@ -19,7 +20,7 @@ struct DataSigned
 };
 
 /** @brief Fields in Data. */
-class DataObj : public detail::InRegion
+class DataObj : public InRegion
 {
 public:
   explicit DataObj(Region& region)
@@ -44,9 +45,11 @@ public:
 class SignedDataRef : public RefRegion<DataObj>
 {
 public:
+  explicit SignedDataRef() = default;
+
   explicit SignedDataRef(DataObj* data, const PrivateKey& key, DSigInfo sigInfo)
     : RefRegion(data)
-    , m_key(key)
+    , m_key(&key)
   {
     key.updateSigInfo(sigInfo);
     m_sigInfo = std::move(sigInfo);
@@ -54,8 +57,13 @@ public:
 
   void encodeTo(Encoder& encoder) const
   {
+    if (m_key == nullptr) {
+      encoder.setError();
+      return;
+    }
+
     const uint8_t* afterSig = encoder.begin();
-    size_t maxSigLen = m_key.getMaxSigLen();
+    size_t maxSigLen = m_key->getMaxSigLen();
     uint8_t* sigBuf = encoder.prependRoom(maxSigLen);
     encoder.prependTypeLength(TT::DSigValue, maxSigLen);
     const uint8_t* afterSignedPortion = encoder.begin();
@@ -65,7 +73,7 @@ public:
     }
 
     tlv::Value signedPortion(encoder.begin(), afterSignedPortion);
-    ssize_t sigLen = m_key.sign({ signedPortion }, sigBuf);
+    ssize_t sigLen = m_key->sign({ signedPortion }, sigBuf);
     if (sigLen < 0) {
       encoder.setError();
       return;
@@ -100,12 +108,12 @@ private:
         encoder.prependTlv(
           TT::MetaInfo, Encoder::OmitEmpty,
           [this](Encoder& encoder) {
-            if (obj->contentType != detail::DataObj::DefaultContentType) {
+            if (obj->contentType != DataObj::DefaultContentType) {
               encoder.prependTlv(TT::ContentType, tlv::NNI(obj->contentType));
             }
           },
           [this](Encoder& encoder) {
-            if (obj->freshnessPeriod != detail::DataObj::DefaultFreshnessPeriod) {
+            if (obj->freshnessPeriod != DataObj::DefaultFreshnessPeriod) {
               encoder.prependTlv(TT::FreshnessPeriod, tlv::NNI(obj->freshnessPeriod));
             }
           },
@@ -123,7 +131,7 @@ private:
   }
 
 private:
-  const PrivateKey& m_key;
+  const PrivateKey* m_key = nullptr;
   DSigInfo m_sigInfo;
 };
 
@@ -235,6 +243,26 @@ public:
   }
 
   /**
+   * @brief Encode then decode as Data packet.
+   *
+   * This is useful for obtaining a Data packet in decoded state from the result of signing.
+   */
+  template<typename Encodable>
+  bool decodeFrom(Encodable&& encodable)
+  {
+    if (obj == nullptr) {
+      return false;
+    }
+    Encoder encoder(regionOf(obj));
+    if (!encoder.prepend(std::forward<Encodable>(encodable))) {
+      encoder.discard();
+      return false;
+    }
+    encoder.trim();
+    return Decoder(encoder.begin(), encoder.size()).decode(*this);
+  }
+
+  /**
    * @brief Sign the packet with a private key.
    * @return an Encodable object. This object is valid only if Data and PrivateKey are kept alive.
    *         It's recommended to pass it to Encoder immediately without saving as variable.
@@ -269,6 +297,20 @@ public:
     port::Sha256 hash;
     hash.update(obj->sig->wholePacket.begin(), obj->sig->wholePacket.size());
     return hash.final(digest);
+  }
+
+  /**
+   * @brief Obtain full name with implicit digest.
+   * @sa @c computeImplicitDigest() .
+   * @return full name, or a falsy value upon failure.
+   */
+  Name getFullName(Region& region) const
+  {
+    uint8_t digest[NDNPH_SHA256_LEN];
+    if (!computeImplicitDigest(digest)) {
+      return Name();
+    }
+    return getName().append<convention::ImplicitDigest>(region, digest);
   }
 };
 

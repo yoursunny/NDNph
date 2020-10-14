@@ -102,6 +102,8 @@ protected:
 class ParameterizedInterestRef : public InterestRefBase
 {
 public:
+  explicit ParameterizedInterestRef() = default;
+
   explicit ParameterizedInterestRef(InterestObj* interest, tlv::Value appParameters)
     : InterestRefBase(interest)
     , m_appParameters(std::move(appParameters))
@@ -109,6 +111,11 @@ public:
 
   void encodeTo(Encoder& encoder) const
   {
+    if (obj == nullptr) {
+      encoder.setError();
+      return;
+    }
+
     encodeImpl(encoder, [this](Encoder& encoder) { encodeAppParameters(encoder); });
   }
 
@@ -170,10 +177,12 @@ protected:
 class SignedInterestRef : public ParameterizedInterestRef
 {
 public:
+  explicit SignedInterestRef() = default;
+
   explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters, const PrivateKey& key,
                              ISigInfo sigInfo)
     : ParameterizedInterestRef(interest, std::move(appParameters))
-    , m_key(key)
+    , m_key(&key)
   {
     key.updateSigInfo(sigInfo);
     m_sigInfo = std::move(sigInfo);
@@ -181,6 +190,11 @@ public:
 
   void encodeTo(Encoder& encoder) const
   {
+    if (m_key == nullptr) {
+      encoder.setError();
+      return;
+    }
+
     tlv::Value signedName;
     int posParamsDigest = findParamsDigest(obj->name);
     if (posParamsDigest < 0) {
@@ -194,7 +208,7 @@ public:
     }
 
     const uint8_t* afterSig = encoder.begin();
-    size_t maxSigLen = m_key.getMaxSigLen();
+    size_t maxSigLen = m_key->getMaxSigLen();
     uint8_t* sigBuf = encoder.prependRoom(maxSigLen);
     encoder.prependTypeLength(TT::DSigValue, maxSigLen);
     const uint8_t* afterSignedPortion = encoder.begin();
@@ -204,7 +218,7 @@ public:
     }
 
     tlv::Value signedPortion(encoder.begin(), afterSignedPortion);
-    ssize_t sigLen = m_key.sign({ signedName, signedPortion }, sigBuf);
+    ssize_t sigLen = m_key->sign({ signedName, signedPortion }, sigBuf);
     if (sigLen < 0) {
       encoder.setError();
       return;
@@ -232,7 +246,7 @@ public:
   }
 
 private:
-  const PrivateKey& m_key;
+  const PrivateKey* m_key = nullptr;
   ISigInfo m_sigInfo;
 };
 
@@ -406,6 +420,26 @@ public:
   }
 
   /**
+   * @brief Encode then decode as Interest packet.
+   *
+   * This is useful for obtaining an Interest packet in decoded state from the result of signing.
+   */
+  template<typename Encodable>
+  bool decodeFrom(Encodable&& encodable)
+  {
+    if (obj == nullptr) {
+      return false;
+    }
+    Encoder encoder(regionOf(obj));
+    if (!encoder.prepend(std::forward<Encodable>(encodable))) {
+      encoder.discard();
+      return false;
+    }
+    encoder.trim();
+    return Decoder(encoder.begin(), encoder.size()).decode(*this);
+  }
+
+  /**
    * @brief Check ParametersSha256DigestComponent.
    * @return whether the digest is correct.
    *
@@ -438,7 +472,7 @@ public:
    * This method only works on decoded packet. It does not work on packet that
    * has been modified or (re-)signed.
    */
-  bool verify(const PublicKey& key)
+  bool verify(const PublicKey& key) const
   {
     if (!checkDigest()) {
       return false;

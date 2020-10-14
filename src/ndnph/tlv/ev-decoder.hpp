@@ -77,6 +77,15 @@ private:
   Decodable* m_obj;
 };
 
+template<int type, bool repeatable, int order>
+struct EvdElementDefIgnore : public EvdElementDefBase<type, repeatable, order>
+{
+  bool operator()(const Decoder::Tlv&) const
+  {
+    return true;
+  }
+};
+
 template<int type, int order, typename NniClass, typename ValueType>
 class EvdElementDefNni : public EvdElementDefBase<type, false, order>
 {
@@ -119,7 +128,7 @@ public:
   };
 
   /**
-   * @brief Decode input with a sequence of element definitions.
+   * @brief Decode input TLV with a sequence of element definitions.
    *
    * Compare to decodeEx(), decode() does not allow customizing unknownCb and isCritical.
    */
@@ -131,7 +140,18 @@ public:
   }
 
   /**
-   * @brief Decode input with a sequence of element definitions.
+   * @brief Decode input TLV with a sequence of element definitions.
+   *
+   * Compare to decodeValueEx(), decodeValue() does not allow customizing unknownCb and isCritical.
+   */
+  template<typename... E>
+  static bool decodeValue(const Decoder& input, const E&... defs)
+  {
+    return decodeValueEx(input, DefaultUnknownCb(), DefaultIsCritical(), defs...);
+  }
+
+  /**
+   * @brief Decode input TLV with a sequence of element definitions.
    * @tparam UnknownCallback `bool (*)(const Decoder::Tlv& d, int& currentOrder)`,
    *                         return true to indicate TLV has been accepted.
    * @tparam IsCritical `bool (*)(uint32_t type)`
@@ -163,8 +183,16 @@ public:
       }
     }
 
+    return decodeValueEx(input.vd(), unknownCb, isCritical, defs...);
+  }
+
+  /** @brief Decode input TLV-VALUE with a sequence of element definitions. */
+  template<typename UnknownCallback, typename IsCritical, typename... E>
+  static bool decodeValueEx(const Decoder& input, const UnknownCallback& unknownCb,
+                            const IsCritical& isCritical, const E&... defs)
+  {
     int currentOrder = 0;
-    for (const auto& d : input.vd()) {
+    for (const auto& d : input) {
       bool ok = decodeElement<AUTO_ORDER_SKIP>(d, currentOrder, unknownCb, isCritical, defs...);
       if (!ok) {
         return false;
@@ -200,6 +228,14 @@ public:
   static R def(Decodable* decodable, decltype(&Decodable::decodeFrom) = nullptr)
   {
     return R(decodable);
+  }
+
+  /** @brief Create an element definition to ignore a field. */
+  template<int type, bool repeatable = false, int order = 0,
+           typename R = detail::EvdElementDefIgnore<type, repeatable, order>>
+  static R defIgnore()
+  {
+    return R();
   }
 
   /**

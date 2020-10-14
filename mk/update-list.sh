@@ -2,6 +2,7 @@
 set -e
 set -o pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"/..
+export LC_ALL=C
 
 (
   cd src/ndnph

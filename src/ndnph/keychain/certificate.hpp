@@ -93,11 +93,10 @@ toKeyName(Region& region, const Name& input, bool mustCopy = false)
   } else if (isCertName(input)) {
     result = input.getPrefix(-2);
   } else {
-    auto keyId = detail::makeRandomComponent(region);
-    if (!keyId) {
-      return Name();
-    }
-    return input.append(region, { getKeyComponent(), keyId });
+    return input.append(
+      region,
+      { getKeyComponent(), convention::GenericNumber::create(region, convention::RandomValue()) },
+      true);
   }
 
   if (mustCopy) {
@@ -113,8 +112,9 @@ toKeyName(Region& region, const Name& input, bool mustCopy = false)
  * @param mustCopy if true, the returned name is always copied and does not reference input;
  *                 otherwise, the returned name may reference input name.
  * @return certificate name, or an empty name upon failure.
- *         If @p input does not contain keyId or version components, they are randomly generated.
+ *         If @p input does not contain keyId component, it is randomly generated.
  *         If @p input does not contain issuerId component, it is set to 'NDNph'.
+ *         If @p input does not contain version component, it is set to current timestamp.
  */
 inline Name
 toCertName(Region& region, const Name& input, bool mustCopy = false)
@@ -126,19 +126,17 @@ toCertName(Region& region, const Name& input, bool mustCopy = false)
     return input;
   }
 
-  auto version = detail::makeRandomComponent(region, TT::VersionNameComponent);
-  if (!version) {
-    return Name();
-  }
   if (isKeyName(input)) {
-    return input.append(region, { getIssuerDefault(), version });
+    return input.append(
+      region, { getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) },
+      true);
   }
 
-  auto keyId = detail::makeRandomComponent(region);
-  if (!keyId) {
-    return Name();
-  }
-  return input.append(region, { getKeyComponent(), keyId, getIssuerDefault(), version });
+  return input.append(
+    region,
+    { getKeyComponent(), convention::GenericNumber::create(region, convention::RandomValue()),
+      getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) },
+    true);
 }
 
 /**
@@ -181,10 +179,8 @@ inline Name
 makeCertName(Region& region, const Name& input, const Component& issuerId, time_t version = 0)
 {
   return toKeyName(region, input)
-    .append(region, {
-                      issuerId,
-                      detail::makeTimeComponent(region, TT::VersionNameComponent, 1000000, version),
-                    });
+    .append(region,
+            { issuerId, convention::Version::create(region, convention::TimeValue(version)) });
 }
 
 /** @brief Determine if the Data packet is a certificate. */
@@ -254,7 +250,7 @@ public:
     {
       Encoder encoder(region);
       encoder.prepend(validity);
-      si.extensions = tlv::Value(encoder.begin(), encoder.size());
+      si.extensions = tlv::Value(encoder);
       encoder.trim();
     }
     return builder;

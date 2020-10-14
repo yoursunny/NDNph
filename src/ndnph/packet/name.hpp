@@ -187,15 +187,22 @@ public:
 
   /**
    * @brief Append a sequence of components.
+   * @param errorOnEmptyComponent if true, appending an empty component results in an error, such
+   *                              that `!name` becomes true. This is useful in detecting a failed
+   *                              `convention::Version::create(region, convention::RandomValue())`.
    * @return new Name that copies TLV-VALUE of this name and all components.
    *
    * If you need to append multiple components, it's recommended to append them all at once,
-   * so that memory is allocated and copied only once.
+   * so that memory allocation and copying occur only once.
    */
-  Name append(Region& region, std::initializer_list<Component> comps) const
+  Name append(Region& region, std::initializer_list<Component> comps,
+              bool errorOnEmptyComponent = false) const
   {
     size_t nComps = m_nComps, length = m_length;
     for (const auto& comp : comps) {
+      if (errorOnEmptyComponent && !comp) {
+        return Name();
+      }
       ++nComps;
       length += comp.size();
     }
@@ -214,13 +221,14 @@ public:
    * @brief Append a component.
    * @return new Name that copies TLV-VALUE of this name and the new component.
    */
-  Name append(Region& region, const Component& comp) const
+  Name append(Region& region, const Component& comp, bool errorOnEmptyComponent = false) const
   {
-    return append(region, { comp });
+    return append(region, { comp }, errorOnEmptyComponent);
   }
 
   /**
    * @brief Append a component from naming convention.
+   * @tparam Convention the naming convention; it should not create an empty component.
    * @return new Name that copies TLV-VALUE of this name and the new component.
    */
   template<typename Convention, typename... Arg>
@@ -228,7 +236,7 @@ public:
   {
     // XXX comp is allocated in Region, then copied again
     Component comp = Convention::create(region, std::forward<Arg>(arg)...);
-    return append(region, comp);
+    return append(region, { comp }, true);
   }
 
   /**
