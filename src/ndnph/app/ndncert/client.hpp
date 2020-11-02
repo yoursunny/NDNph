@@ -317,7 +317,7 @@ public:
     }
     if (m_challengeRequest.challenge == nullptr ||
         !m_sessionKey.makeKey(m_ecdhPvt, m_newResponse.ecdhPub, m_newResponse.salt,
-                              m_newResponse.requestId, detail::SessionKey::Role::REQUESTER)) {
+                              m_newResponse.requestId)) {
       return setFailure(false);
     }
     prepareChallengeRequest();

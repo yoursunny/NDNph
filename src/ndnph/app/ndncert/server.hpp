@@ -325,7 +325,7 @@ public:
         !port::RandomSource::generate(m_newResponse.salt, sizeof(m_newResponse.salt)) ||
         !port::RandomSource::generate(m_newResponse.requestId, sizeof(m_newResponse.requestId)) ||
         !m_sessionKey.makeKey(ecdhPvt, m_newRequest.ecdhPub, m_newResponse.salt,
-                              m_newResponse.requestId, detail::SessionKey::Role::ISSUER)) {
+                              m_newResponse.requestId)) {
       return detail::SignedDataRef();
     }
     return m_newResponse.toData(packetRegion, interest, m_challenges, m_signer);

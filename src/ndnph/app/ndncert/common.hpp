@@ -39,31 +39,15 @@ public:
   SessionKey(const SessionKey&) = delete;
   SessionKey& operator=(const SessionKey&) = delete;
 
-  enum Role
-  {
-    REQUESTER = 0,
-    ISSUER = 1,
-  };
-
   /** @brief Derive the key. */
   bool makeKey(const mbedtls::Mpi& ecdhPvt, const mbedtls::EcPoint& ecdhPub, const uint8_t* salt,
-               const uint8_t* requestId, Role role)
+               const uint8_t* requestId)
   {
-    bool ok = port::RandomSource::generate(m_ivHead, sizeof(m_ivHead));
-    if (!ok) {
-      return false;
-    }
-    m_ivHead[0] &= 0x7F;
-    m_ivHead[0] |= role << 7;
-
-    int res = mbedtls_mpi_lset(&m_ivTail, 0);
-    if (res != 0) {
-      return false;
-    }
+    m_ok = false;
 
     mbedtls::Mpi shared;
-    res = mbedtls_ecdh_compute_shared(mbedtls::P256::group(), &shared, &ecdhPub, &ecdhPvt,
-                                      mbedtls::rng, nullptr);
+    int res = mbedtls_ecdh_compute_shared(mbedtls::P256::group(), &shared, &ecdhPub, &ecdhPvt,
+                                          mbedtls::rng, nullptr);
     if (res != 0) {
       return false;
     }
@@ -86,7 +70,9 @@ public:
       return false;
     }
 
-    return true;
+    m_ok =
+      port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_ivRandom), sizeof(m_ivRandom));
+    return m_ok;
   }
 
   /** @brief Encrypt to EncryptedPayload. */
@@ -97,15 +83,12 @@ public:
     encoder.prependTypeLength(TT::EncryptedPayload, plaintext.size());
     uint8_t* tag = encoder.prependRoom(AuthenticationTagLen::value);
     encoder.prependTypeLength(TT::AuthenticationTag, AuthenticationTagLen::value);
-    uint8_t* iv = encoder.prependRoom(12);
+    encoder.prepend(tlv::NNI8(m_ivRandom), tlv::NNI4(m_ivCounter));
+    const uint8_t* iv = encoder.begin();
     encoder.prependTypeLength(TT::InitializationVector, 12);
     encoder.trim();
-    if (!encoder) {
-      return tlv::Value();
-    }
 
-    std::copy_n(m_ivHead, 8, iv);
-    return mbedtls_mpi_write_binary(&m_ivTail, &iv[8], 4) == 0 &&
+    return !!encoder &&
                mbedtls_gcm_crypt_and_tag(&m_ctx, MBEDTLS_GCM_ENCRYPT, plaintext.size(), iv, 12,
                                          requestId, RequestIdLen::value, plaintext.begin(),
                                          ciphertext, AuthenticationTagLen::value, tag) == 0 &&
@@ -122,8 +105,7 @@ public:
       EvDecoder::decodeValue(encrypted.makeDecoder(), EvDecoder::def<TT::InitializationVector>(&iv),
                              EvDecoder::def<TT::AuthenticationTag>(&tag),
                              EvDecoder::def<TT::EncryptedPayload>(&ciphertext));
-    ok = ok && iv.size() == 12 && tag.size() == AuthenticationTagLen::value;
-    if (!ok) {
+    if (!(m_ok && ok && iv.size() == 12 && tag.size() == AuthenticationTagLen::value)) {
       return tlv::Value();
     }
 
@@ -141,17 +123,21 @@ public:
 private:
   bool advanceIv(size_t size)
   {
-    size_t nBlocks = (size / 8) + static_cast<int>(size % 8 != 0);
-    mbedtls_mpi_uint r = 0;
-    return mbedtls_mpi_add_int(&m_ivTail, &m_ivTail, nBlocks) == 0 &&
-           mbedtls_mpi_mod_int(&r, &m_ivTail, 0xFFFFFFFF) == 0 &&
-           mbedtls_mpi_lset(&m_ivTail, r) == 0;
+    static constexpr size_t blockSize = 16;
+    uint64_t nBlocks = (size / blockSize) + static_cast<int>(size % blockSize != 0);
+    uint64_t counter = static_cast<uint64_t>(m_ivCounter) + nBlocks;
+    if (counter > std::numeric_limits<uint32_t>::max()) {
+      m_ok = false;
+    }
+    m_ivCounter = static_cast<uint32_t>(counter);
+    return m_ok;
   }
 
 private:
   mbedtls_gcm_context m_ctx;
-  uint8_t m_ivHead[8];
-  mbedtls::Mpi m_ivTail;
+  uint64_t m_ivRandom = 0;
+  uint32_t m_ivCounter = 0;
+  bool m_ok = false;
 };
 
 } // namespace detail
