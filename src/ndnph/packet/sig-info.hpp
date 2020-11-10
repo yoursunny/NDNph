@@ -4,7 +4,6 @@
 #include "../port/clock/port.hpp"
 #include "../port/random/port.hpp"
 #include "../tlv/ev-decoder.hpp"
-#include "../tlv/nni.hpp"
 #include "name.hpp"
 
 namespace ndnph {
@@ -36,7 +35,7 @@ protected:
   void encodeImpl(uint32_t type, Encoder& encoder) const
   {
     encoder.prependTlv(
-      type, tlv::NNIElement<>(TT::SigType, sigType),
+      type, tlv::NniElement<>(TT::SigType, sigType),
       [this](Encoder& encoder) {
         if (name.size() > 0) {
           encoder.prependTlv(TT::KeyLocator, name);
@@ -80,8 +79,8 @@ public:
   bool decode(const ISigInfo& si)
   {
     return EvDecoder::decodeValue(si.extensions.makeDecoder(), EvDecoder::def<TT::SigNonce>(&nonce),
-                                  EvDecoder::defNni<TT::SigTime, tlv::NNI>(&timestamp),
-                                  EvDecoder::defNni<TT::SigSeqNum, tlv::NNI>(&seqNum));
+                                  EvDecoder::defNni<TT::SigTime>(&timestamp),
+                                  EvDecoder::defNni<TT::SigSeqNum>(&seqNum));
   }
 
 public:
@@ -229,11 +228,11 @@ public:
     , m_initial(now)
   {}
 
-  tlv::NNIElement<> create()
+  tlv::NniElement<> create()
   {
     uint64_t timestamp = std::max(now(), m_last + 1);
     m_last = timestamp;
-    return tlv::NNIElement<>(TT::SigTime, timestamp);
+    return tlv::NniElement<>(TT::SigTime, timestamp);
   }
 
   bool check(const Fields& f) const
@@ -270,9 +269,9 @@ public:
     : m_next(next)
   {}
 
-  tlv::NNIElement<> create()
+  tlv::NniElement<> create()
   {
-    return tlv::NNIElement<>(TT::SigSeqNum, m_next++);
+    return tlv::NniElement<>(TT::SigSeqNum, m_next++);
   }
 
   bool check(const Fields& f) const

@@ -188,11 +188,11 @@ private:
 };
 
 template<typename N = NNI>
-class NNIElement
+class NniElement
 {
 public:
   template<typename I>
-  explicit NNIElement(uint32_t type, I value)
+  explicit NniElement(uint32_t type, I value)
     : m_type(type)
     , m_nni(value)
   {}

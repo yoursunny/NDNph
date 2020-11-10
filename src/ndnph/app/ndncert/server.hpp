@@ -84,7 +84,8 @@ public:
    * @param interest input Interest packet; it can be freed after this operation.
    * @return whether success.
    */
-  bool fromInterest(Region& region, const Interest& interest, const CaProfile& profile)
+  bool fromInterest(Region& region, const Interest& interest, const CaProfile& profile,
+                    detail::ISigPolicy& signingPolicy)
   {
     return isName(profile, interest.getName()) &&
            EvDecoder::decodeValue(interest.getAppParameters().makeDecoder(),
@@ -94,8 +95,7 @@ public:
                                     return !!certRequest && d.vd().decode(certRequest) &&
                                            pub.import(region, certRequest);
                                   })) &&
-           interest.verify(pub);
-    // TODO validate SigNonce and SigTime
+           interest.verify(pub) && signingPolicy.check(*interest.getSigInfo());
   }
 
 public:
@@ -174,15 +174,15 @@ public:
    */
   bool fromInterest(Region& region, const Interest& interest, const CaProfile& profile,
                     const uint8_t* requestId, detail::SessionKey& sessionKey,
-                    const EcPublicKey& verifier, const ChallengeList& challenges)
+                    const EcPublicKey& verifier, const ChallengeList& challenges,
+                    detail::ISigPolicy& signingPolicy)
   {
     const uint8_t* actualRequestId = parseName(profile, interest.getName());
     if (actualRequestId == nullptr ||
         !std::equal(requestId, requestId + detail::RequestIdLen::value, actualRequestId) ||
-        !interest.verify(verifier)) {
+        !interest.verify(verifier) || !signingPolicy.check(*interest.getSigInfo())) {
       return false;
     }
-    // TODO validate SigNonce and SigTime
 
     auto decrypted = sessionKey.decrypt(region, interest.getAppParameters(), requestId);
     size_t paramIndex = 0;
@@ -247,20 +247,21 @@ public:
                                const EcPrivateKey& signer) const
   {
     Encoder encoder(region);
-    encoder.prepend(
-      tlv::NNIElement<>(TT::Status, status),
-      [this](Encoder& encoder) { encoder.prependTlv(TT::ChallengeStatus, challengeStatus); },
-      tlv::NNIElement<>(TT::RemainingTries, remainingTries),
-      [this](Encoder& encoder) {
-        uint64_t remainingTime =
-          std::max(0, port::Clock::sub(expireTime, port::Clock::now())) / 1000;
-        encoder.prependTlv(TT::RemainingTime, tlv::NNI(remainingTime));
-      },
-      [&](Encoder& encoder) {
-        if (!!issuedCertName) {
-          encoder.prependTlv(TT::IssuedCertName, issuedCertName);
-        }
+    if (status == Status::SUCCESS) {
+      encoder.prepend(tlv::NniElement<>(TT::Status, status), [&](Encoder& encoder) {
+        encoder.prependTlv(TT::IssuedCertName, issuedCertName);
       });
+    } else {
+      encoder.prepend(
+        tlv::NniElement<>(TT::Status, status),
+        [this](Encoder& encoder) { encoder.prependTlv(TT::ChallengeStatus, challengeStatus); },
+        tlv::NniElement<>(TT::RemainingTries, remainingTries),
+        [this](Encoder& encoder) {
+          uint64_t remainingTime =
+            std::max(0, port::Clock::sub(expireTime, port::Clock::now())) / 1000;
+          encoder.prependTlv(TT::RemainingTime, tlv::NNI(remainingTime));
+        });
+    }
     encoder.trim();
     if (!encoder) {
       return detail::SignedDataRef();
@@ -282,9 +283,8 @@ inline detail::SignedDataRef
 makeError(Region& region, const Interest& interest, uint8_t errorCode, const EcPrivateKey& signer)
 {
   Encoder encoder(region);
-  encoder.prepend(
-    [errorCode](Encoder& encoder) { encoder.prependTlv(TT::ErrorCode, tlv::NNI(errorCode)); },
-    [](Encoder& encoder) { encoder.prependTlv(TT::ErrorInfo, tlv::Value()); });
+  encoder.prepend(tlv::NniElement<>(TT::ErrorCode, errorCode),
+                  [](Encoder& encoder) { encoder.prependTlv(TT::ErrorInfo); });
   encoder.trim();
 
   Data data = region.create<Data>();
@@ -307,13 +307,14 @@ public:
     , m_profile(profile)
     , m_signer(signer)
     , m_challenges(challenges)
+    , m_signingPolicy(detail::makeISigPolicy())
   {
     assert(m_challengeRegion != nullptr);
   }
 
   detail::SignedDataRef handleNewRequest(Region& packetRegion, const Interest& interest)
   {
-    if (!m_newRequest.fromInterest(m_region, interest, m_profile)) {
+    if (!m_newRequest.fromInterest(m_region, interest, m_profile, m_signingPolicy)) {
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
     }
 
@@ -335,7 +336,7 @@ public:
     Challenge* prevChallenge = m_challengeRequest.challenge;
     if (!m_challengeRequest.fromInterest(*m_challengeRegion, interest, m_profile,
                                          m_newResponse.requestId, m_sessionKey, m_newRequest.pub,
-                                         m_challenges)) {
+                                         m_challenges, m_signingPolicy)) {
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
     }
     // TODO check policy on whether the requested name is allowed
@@ -393,6 +394,7 @@ private:
   const CaProfile& m_profile;
   const EcPrivateKey& m_signer;
   ChallengeList m_challenges;
+  detail::ISigPolicy m_signingPolicy;
   NewRequest m_newRequest;
   NewResponse m_newResponse;
   detail::SessionKey m_sessionKey;

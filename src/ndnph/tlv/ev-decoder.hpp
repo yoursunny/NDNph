@@ -1,7 +1,7 @@
 #ifndef NDNPH_TLV_EV_DECODER_HPP
 #define NDNPH_TLV_EV_DECODER_HPP
 
-#include "decoder.hpp"
+#include "nni.hpp"
 
 namespace ndnph {
 namespace detail {
@@ -242,7 +242,7 @@ public:
    * @brief Create an element definition for Non-Negative Integer field.
    * @tparam NniClass either tlv::NNI or a fixed-length variant.
    */
-  template<int type, typename NniClass, int order = 0, typename ValueType = void,
+  template<int type, typename NniClass = tlv::NNI, int order = 0, typename ValueType = void,
            typename R = detail::EvdElementDefNni<type, order, NniClass, ValueType>>
   static R defNni(ValueType* value)
   {

@@ -140,6 +140,14 @@ private:
   bool m_ok = false;
 };
 
+using ISigPolicy = isig::Policy<isig::Nonce<>, isig::Time<>>;
+
+inline ISigPolicy
+makeISigPolicy()
+{
+  return isig::makePolicy(isig::Nonce<>(), isig::Time<>());
+}
+
 } // namespace detail
 namespace packet_struct {
 
@@ -198,7 +206,7 @@ struct ChallengeResponse
   uint16_t remainingTries = 0;
 
   /** @brief Session expiration time. Calculates remaining time. */
-  port::Clock::Time expireTime;
+  port::Clock::Time expireTime = {};
 
   /** @brief Issued certificate full name. */
   Name issuedCertName;

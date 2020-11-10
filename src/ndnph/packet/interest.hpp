@@ -73,7 +73,7 @@ protected:
           encoder.prependTlv(TT::MustBeFresh);
         }
       },
-      tlv::NNIElement<tlv::NNI4>(TT::Nonce, obj->nonce),
+      tlv::NniElement<tlv::NNI4>(TT::Nonce, obj->nonce),
       [this](Encoder& encoder) {
         if (obj->lifetime != InterestObj::DefaultLifetime) {
           encoder.prependTlv(TT::InterestLifetime, tlv::NNI(obj->lifetime));
@@ -408,7 +408,7 @@ public:
       EvDecoder::def<TT::CanBePrefix>([this](const Decoder::Tlv&) { setCanBePrefix(true); }),
       EvDecoder::def<TT::MustBeFresh>([this](const Decoder::Tlv&) { setMustBeFresh(true); }),
       EvDecoder::defNni<TT::Nonce, tlv::NNI4>(&obj->nonce),
-      EvDecoder::defNni<TT::InterestLifetime, tlv::NNI>(&obj->lifetime),
+      EvDecoder::defNni<TT::InterestLifetime>(&obj->lifetime),
       EvDecoder::defNni<TT::HopLimit, tlv::NNI1>(&obj->hopLimit),
       EvDecoder::def<TT::AppParameters>([this, &input](const Decoder::Tlv& d) {
         obj->params = regionOf(obj).template make<detail::InterestParams>();

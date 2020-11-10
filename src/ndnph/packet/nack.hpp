@@ -48,8 +48,8 @@ public:
   bool decodeFrom(const Decoder::Tlv& input)
   {
     uint64_t nackReasonV = 0;
-    bool ok = EvDecoder::decode(input, { TT::Nack },
-                                EvDecoder::defNni<TT::NackReason, tlv::NNI>(&nackReasonV));
+    bool ok =
+      EvDecoder::decode(input, { TT::Nack }, EvDecoder::defNni<TT::NackReason>(&nackReasonV));
     if (ok) {
       obj->nackReason = static_cast<uint8_t>(decodeNackReason(nackReasonV));
     }

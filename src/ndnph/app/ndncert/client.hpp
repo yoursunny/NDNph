@@ -56,7 +56,7 @@ public:
                return !!prefix;
              }),
              EvDecoder::defIgnore<TT::CaInfo>(), EvDecoder::defIgnore<TT::ParameterKey, true>(),
-             EvDecoder::defNni<TT::MaxValidityPeriod, tlv::NNI>(&maxValidityPeriod),
+             EvDecoder::defNni<TT::MaxValidityPeriod>(&maxValidityPeriod),
              EvDecoder::def<TT::CaCertificate>([&](const Decoder::Tlv& d) {
                cert = region.create<Data>();
                return !!cert && d.vd().decode(cert) && pub.import(region, cert);
@@ -79,6 +79,7 @@ public:
    * @return an Encodable object, or a falsy value upon failure.
    */
   detail::SignedInterestRef toInterest(Region& region, const CaProfile& profile,
+                                       detail::ISigPolicy& signingPolicy,
                                        const EcPrivateKey& signer) const
   {
     Encoder encoder(region);
@@ -93,8 +94,7 @@ public:
     }
     interest.setName(name);
     interest.setMustBeFresh(true);
-    return interest.parameterize(tlv::Value(encoder)).sign(signer);
-    // TODO add SigNonce and SigTime
+    return interest.parameterize(tlv::Value(encoder)).sign(signer, region, signingPolicy);
   }
 };
 
@@ -181,6 +181,7 @@ public:
    */
   detail::SignedInterestRef toInterest(Region& region, const CaProfile& profile,
                                        const uint8_t* requestId, detail::SessionKey& sessionKey,
+                                       detail::ISigPolicy& signingPolicy,
                                        const EcPrivateKey& signer) const
   {
     assert(challenge != nullptr);
@@ -209,8 +210,7 @@ public:
     }
     interest.setName(name);
     interest.setMustBeFresh(true);
-    return interest.parameterize(encrypted).sign(signer);
-    // TODO add SigNonce and SigTime
+    return interest.parameterize(encrypted).sign(signer, region, signingPolicy);
   }
 };
 
@@ -232,14 +232,14 @@ public:
 
     auto decrypted = sessionKey.decrypt(region, data.getContent(), requestId);
     uint32_t remainingTime = 0;
-    bool ok =
-      !!decrypted && EvDecoder::decodeValue(
-                       decrypted.makeDecoder(), EvDecoder::defNni<TT::Status, tlv::NNI>(&status),
-                       EvDecoder::def<TT::ChallengeStatus>(&challengeStatus),
-                       EvDecoder::defNni<TT::RemainingTries, tlv::NNI>(&remainingTries),
-                       EvDecoder::defNni<TT::RemainingTime, tlv::NNI>(&remainingTime),
-                       EvDecoder::def<TT::IssuedCertName>(
-                         [this](const Decoder::Tlv& d) { return d.vd().decode(issuedCertName); }));
+    bool ok = !!decrypted && EvDecoder::decodeValue(
+                               decrypted.makeDecoder(), EvDecoder::defNni<TT::Status>(&status),
+                               EvDecoder::def<TT::ChallengeStatus>(&challengeStatus),
+                               EvDecoder::defNni<TT::RemainingTries>(&remainingTries),
+                               EvDecoder::defNni<TT::RemainingTime>(&remainingTime),
+                               EvDecoder::def<TT::IssuedCertName>([this](const Decoder::Tlv& d) {
+                                 return d.vd().decode(issuedCertName);
+                               }));
     if (!ok) {
       return false;
     }
@@ -256,6 +256,7 @@ public:
     : m_challengeRegion(makeSubRegion(m_region, 512))
     , m_profile(profile)
     , m_challenges(challenges)
+    , m_signingPolicy(detail::makeISigPolicy())
   {
     assert(m_challengeRegion != nullptr);
   }
@@ -300,7 +301,7 @@ public:
     }
 
     m_state = State::NEW_RES;
-    return setFailure(m_newRequest.toInterest(packetRegion, m_profile, pvt));
+    return setFailure(m_newRequest.toInterest(packetRegion, m_profile, m_signingPolicy, pvt));
   }
 
   bool handleNewResponse(const Data& data)
@@ -335,8 +336,8 @@ public:
       return setFailure();
     }
     m_state = State::CHALLENGE_RES;
-    return setFailure(m_challengeRequest.toInterest(packetRegion, m_profile,
-                                                    m_newResponse.requestId, m_sessionKey, *m_pvt));
+    return setFailure(m_challengeRequest.toInterest(
+      packetRegion, m_profile, m_newResponse.requestId, m_sessionKey, m_signingPolicy, *m_pvt));
   }
 
   bool handleChallengeResponse(const Data& data)
@@ -399,6 +400,7 @@ private:
   Region* m_challengeRegion = nullptr;
   const CaProfile& m_profile;
   ChallengeList m_challenges;
+  detail::ISigPolicy m_signingPolicy;
   const EcPrivateKey* m_pvt = nullptr;
   mbedtls::Mpi m_ecdhPvt;
   NewRequest m_newRequest;

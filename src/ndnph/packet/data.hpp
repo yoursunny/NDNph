@@ -226,14 +226,14 @@ public:
     return EvDecoder::decode(
       input, { TT::Data }, EvDecoder::def<TT::Name>(&obj->name),
       EvDecoder::def<TT::MetaInfo>([this](const Decoder::Tlv& d) {
-        return EvDecoder::decode(
-          d, {}, EvDecoder::defNni<TT::ContentType, tlv::NNI>(&obj->contentType),
-          EvDecoder::defNni<TT::FreshnessPeriod, tlv::NNI>(&obj->freshnessPeriod),
-          EvDecoder::def<TT::FinalBlock>([this](const Decoder::Tlv& d) {
-            auto comp = getName()[-1];
-            setIsFinalBlock(d.length == comp.size() &&
-                            std::equal(d.value, d.value + d.length, comp.tlv()));
-          }));
+        return EvDecoder::decode(d, {}, EvDecoder::defNni<TT::ContentType>(&obj->contentType),
+                                 EvDecoder::defNni<TT::FreshnessPeriod>(&obj->freshnessPeriod),
+                                 EvDecoder::def<TT::FinalBlock>([this](const Decoder::Tlv& d) {
+                                   auto comp = getName()[-1];
+                                   setIsFinalBlock(
+                                     d.length == comp.size() &&
+                                     std::equal(d.value, d.value + d.length, comp.tlv()));
+                                 }));
       }),
       EvDecoder::def<TT::Content>(&obj->content), EvDecoder::def<TT::DSigInfo>(&obj->sig->sigInfo),
       EvDecoder::def<TT::DSigValue>([this, &input](const Decoder::Tlv& d) {
