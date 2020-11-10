@@ -42,7 +42,7 @@ public:
   /** @brief Get a very long ValidityPeriod. */
   static ValidityPeriod getMax()
   {
-    return ValidityPeriod(540109800, 253402300799);
+    return ValidityPeriod(540109800, 0xFFFFFFFF);
   }
 
   ValidityPeriod() = default;

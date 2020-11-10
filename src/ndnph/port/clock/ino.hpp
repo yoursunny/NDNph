@@ -2,8 +2,7 @@
 #define NDNPH_PORT_CLOCK_INO_HPP
 
 #include "../../core/common.hpp"
-
-#include <Arduino.h>
+#include "../arduino-include.hpp"
 
 namespace ndnph {
 namespace port_clock_ino {

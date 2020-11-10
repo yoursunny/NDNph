@@ -29,6 +29,9 @@ public:
    */
   int read(const char* filename, uint8_t* buffer, size_t count)
   {
+    (void)filename;
+    (void)buffer;
+    (void)count;
     return 0;
   }
 
@@ -41,6 +44,9 @@ public:
    */
   bool write(const char* filename, const uint8_t* buffer, size_t count)
   {
+    (void)filename;
+    (void)buffer;
+    (void)count;
     return false;
   }
 
@@ -51,6 +57,7 @@ public:
    */
   bool unlink(const char* filename)
   {
+    (void)filename;
     return true;
   }
 };

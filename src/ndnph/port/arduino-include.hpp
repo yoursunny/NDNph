@@ -1,0 +1,7 @@
+#ifndef NDNPH_PORT_ARDUINO_INCLUDE_HPP
+#define NDNPH_PORT_ARDUINO_INCLUDE_HPP
+
+#include <Arduino.h>
+#undef abs
+
+#endif // NDNPH_PORT_ARDUINO_INCLUDE_HPP
