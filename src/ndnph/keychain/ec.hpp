@@ -165,7 +165,6 @@ public:
 
   /**
    * @brief Generate self-signed certificate of this public key.
-   * @param name key name or certificate name.
    * @param validity certificate validity period.
    * @param signer corresponding private key.
    * @return result object supporting explicit conversion to bool and equipped with a

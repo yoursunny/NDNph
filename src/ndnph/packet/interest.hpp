@@ -73,7 +73,7 @@ protected:
           encoder.prependTlv(TT::MustBeFresh);
         }
       },
-      [this](Encoder& encoder) { encoder.prependTlv(TT::Nonce, tlv::NNI4(obj->nonce)); },
+      tlv::NNIElement<tlv::NNI4>(TT::Nonce, obj->nonce),
       [this](Encoder& encoder) {
         if (obj->lifetime != InterestObj::DefaultLifetime) {
           encoder.prependTlv(TT::InterestLifetime, tlv::NNI(obj->lifetime));
@@ -356,6 +356,16 @@ public:
     {
       return detail::SignedInterestRef(obj, m_appParameters, key, std::move(sigInfo));
     }
+
+    template<typename ISigPolicy>
+    detail::SignedInterestRef sign(const PrivateKey& key, Region& region, ISigPolicy& policy) const
+    {
+      ISigInfo si;
+      if (!policy.create(region, si)) {
+        return detail::SignedInterestRef();
+      }
+      return sign(key, si);
+    }
   };
 
   /**
@@ -384,9 +394,10 @@ public:
    * To create a signed Interest with AppParameters, call parameterize() first, then
    * call sign() on its return value.
    */
-  detail::SignedInterestRef sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const
+  template<typename... Arg>
+  detail::SignedInterestRef sign(Arg&&... arg) const
   {
-    return detail::SignedInterestRef(obj, tlv::Value(), key, std::move(sigInfo));
+    return parameterize(tlv::Value()).sign(std::forward<Arg>(arg)...);
   }
 
   /** @brief Decode packet. */

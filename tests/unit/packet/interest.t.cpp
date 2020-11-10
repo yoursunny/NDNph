@@ -257,5 +257,65 @@ TEST(Interest, MatchImplicitDigest)
   EXPECT_FALSE(interest.match(data));
 }
 
+template<typename MakePolicy>
+void
+testSigPolicy(MakePolicy makePolicy, bool canDetectReorder = true,
+              bool canDetectDuplicateLater = true)
+{
+  DynamicRegion region(4096);
+  auto policyS = makePolicy();
+  auto policyV = makePolicy();
+  Interest interest = region.create<Interest>();
+  ASSERT_FALSE(!interest);
+
+  Interest interest0 = region.create<Interest>();
+  Interest interest1 = region.create<Interest>();
+  Interest interest2 = region.create<Interest>();
+  {
+    g::NiceMock<MockPrivateKey<32>> key;
+    ASSERT_TRUE(interest0.decodeFrom(lp::encode(interest.sign(key, region, policyS))));
+    ASSERT_TRUE(interest1.decodeFrom(lp::encode(interest.sign(key, region, policyS))));
+    ASSERT_TRUE(interest2.decodeFrom(lp::encode(interest.sign(key, region, policyS))));
+  }
+
+  const ISigInfo* si0 = interest0.getSigInfo();
+  ASSERT_THAT(si0, g::NotNull());
+  const ISigInfo* si1 = interest1.getSigInfo();
+  ASSERT_THAT(si1, g::NotNull());
+  const ISigInfo* si2 = interest2.getSigInfo();
+  ASSERT_THAT(si2, g::NotNull());
+
+  EXPECT_TRUE(policyV.check(*si0));
+  EXPECT_FALSE(policyV.check(*si0));
+  EXPECT_TRUE(policyV.check(*si2));
+  EXPECT_EQ(policyV.check(*si1), !canDetectReorder);
+  EXPECT_EQ(policyV.check(*si0), !canDetectDuplicateLater);
+}
+
+TEST(InterestSigPolicy, Nonce)
+{
+  testSigPolicy([] { return isig::makePolicy(isig::Nonce<>()); }, false);
+}
+
+TEST(InterestSigPolicy, Nonce1)
+{
+  testSigPolicy([] { return isig::makePolicy(isig::Nonce<1, 1>()); }, false, false);
+}
+
+TEST(InterestSigPolicy, Time)
+{
+  testSigPolicy([] { return isig::makePolicy(isig::Time<>()); });
+}
+
+TEST(InterestSigPolicy, SeqNum)
+{
+  testSigPolicy([] { return isig::makePolicy(isig::SeqNum()); });
+}
+
+TEST(InterestSigPolicy, All)
+{
+  testSigPolicy([] { return isig::makePolicy(isig::Nonce<>(), isig::Time<>(), isig::SeqNum()); });
+}
+
 } // namespace
 } // namespace ndnph

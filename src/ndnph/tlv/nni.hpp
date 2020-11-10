@@ -187,6 +187,26 @@ private:
   uint64_t m_number = 0;
 };
 
+template<typename N = NNI>
+class NNIElement
+{
+public:
+  template<typename I>
+  explicit NNIElement(uint32_t type, I value)
+    : m_type(type)
+    , m_nni(value)
+  {}
+
+  void encodeTo(Encoder& encoder) const
+  {
+    encoder.prependTlv(m_type, m_nni);
+  }
+
+private:
+  uint32_t m_type;
+  N m_nni;
+};
+
 } // namespace tlv
 } // namespace ndnph
 

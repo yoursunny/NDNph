@@ -248,11 +248,9 @@ public:
   {
     Encoder encoder(region);
     encoder.prepend(
-      [this](Encoder& encoder) { encoder.prependTlv(TT::Status, tlv::NNI(status)); },
+      tlv::NNIElement<>(TT::Status, status),
       [this](Encoder& encoder) { encoder.prependTlv(TT::ChallengeStatus, challengeStatus); },
-      [this](Encoder& encoder) {
-        encoder.prependTlv(TT::RemainingTries, tlv::NNI(remainingTries));
-      },
+      tlv::NNIElement<>(TT::RemainingTries, remainingTries),
       [this](Encoder& encoder) {
         uint64_t remainingTime =
           std::max(0, port::Clock::sub(expireTime, port::Clock::now())) / 1000;
