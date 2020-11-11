@@ -292,7 +292,9 @@ public:
       return setFailure();
     }
 
-    auto validity = ValidityPeriod::getMax(); // TODO set proper ValidityPeriod
+    time_t now = time(nullptr);
+    ValidityPeriod validity(now, now + 3600);
+    // auto validity = ValidityPeriod::getMax(); // TODO set proper ValidityPeriod
     auto cert = pub.selfSign(m_region, validity, pvt);
 
     m_newRequest.certRequest = m_region.create<Data>();
@@ -457,7 +459,7 @@ private:
     , m_cb(opts.cb)
     , m_cbCtx(opts.ctx)
   {
-    StaticRegion<1024> packetRegion;
+    StaticRegion<2048> packetRegion;
     sendWithDeadline(m_session.makeNewRequest(packetRegion, opts.pub, opts.pvt));
   }
 

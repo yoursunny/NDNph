@@ -69,7 +69,7 @@ getProbeComponent()
 inline Component
 getNewComponent()
 {
-  static const uint8_t tlv[]{ 0x08, 0x03, 0x4E, 0x45, 0x47 };
+  static const uint8_t tlv[]{ 0x08, 0x03, 0x4E, 0x45, 0x57 };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }

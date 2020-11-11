@@ -2,7 +2,6 @@
 #include <NDNph.h>
 
 #include <cinttypes>
-#include <cstdio>
 #include <unistd.h>
 
 ndnph::UdpUnicastTransport transport;

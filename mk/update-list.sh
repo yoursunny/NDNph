@@ -22,3 +22,8 @@ export LC_ALL=C
   find -name '*.cpp' -printf '%P\n' | sort | sed "s|.*|'\0'|" | paste -sd,
   echo ')'
 ) > tests/unit/meson.build
+
+(
+  cd programs
+  find -name '*.cpp' -printf '%P\n' | sort | sed "s|\(.*\)\.cpp|executable('ndnph-\1', '\1.cpp', dependencies: [lib_dep])|"
+) > programs/meson.build

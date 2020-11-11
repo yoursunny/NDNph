@@ -2,7 +2,6 @@
 #include <NDNph.h>
 
 #include <cinttypes>
-#include <cstdio>
 #include <iomanip>
 #include <iostream>
 
