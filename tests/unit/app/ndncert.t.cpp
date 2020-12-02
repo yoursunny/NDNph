@@ -49,6 +49,32 @@ protected:
     }
   }
 
+  void executeWorkflow(server::ChallengeList sChallenges, client::ChallengeList cChallenges)
+  {
+    server::NopChallenge sNopChallenge;
+    Server server(Server::Options{
+      .face = faceA,
+      .profile = sProfile,
+      .challenges = sChallenges,
+      .signer = sPvt,
+    });
+
+    client::NopChallenge cNopChallenge;
+    runInThreads(
+      [&] {
+        Client::requestCertificate(Client::Options{
+          .face = faceB,
+          .profile = cProfile,
+          .challenges = cChallenges,
+          .pub = cPub,
+          .pvt = cPvt,
+          .cb = clientCallback,
+          .ctx = this,
+        });
+      },
+      [=] { return cIssuedCertName.empty(); });
+  }
+
 protected:
   DynamicRegion sRegion;
   DynamicRegion cRegion;
@@ -102,30 +128,33 @@ TEST_F(NdncertFixture, Packets)
   EXPECT_TRUE(!!cSession.getIssuedCertName());
 }
 
-TEST_F(NdncertFixture, Workflow)
+TEST_F(NdncertFixture, WorkflowNop)
 {
   server::NopChallenge sNopChallenge;
-  Server server(Server::Options{
-    .face = faceA,
-    .profile = sProfile,
-    .challenges = { &sNopChallenge },
-    .signer = sPvt,
-  });
-
   client::NopChallenge cNopChallenge;
-  runInThreads(
-    [&] {
-      Client::requestCertificate(Client::Options{
-        .face = faceB,
-        .profile = cProfile,
-        .challenges = { &cNopChallenge },
-        .pub = cPub,
-        .pvt = cPvt,
-        .cb = clientCallback,
-        .ctx = this,
-      });
-    },
-    [=] { return cIssuedCertName.empty(); });
+  executeWorkflow({ &sNopChallenge }, { &cNopChallenge });
+  EXPECT_THAT(cIssuedCertName, g::StartsWith(test::toString(cPub.getName())));
+}
+
+TEST_F(NdncertFixture, WorkflowPossession)
+{
+  DynamicRegion oRegion(4095);
+  EcPrivateKey oRootPvt;
+  EcPublicKey oRootPub;
+  ASSERT_TRUE(ec::generate(oRegion, Name::parse(oRegion, "/root"), oRootPvt, oRootPub));
+  auto oRootCert = oRegion.create<Data>();
+  ASSERT_TRUE(oRootCert.decodeFrom(oRootPub.selfSign(oRegion, ValidityPeriod::getMax(), oRootPvt)));
+  EcPrivateKey oUserPvt;
+  EcPublicKey oUserPub;
+  ASSERT_TRUE(ec::generate(oRegion, Name::parse(oRegion, "/requester"), oUserPvt, oUserPub));
+  auto oUserCert = oRegion.create<Data>();
+  time_t now = time(nullptr);
+  ASSERT_TRUE(oUserCert.decodeFrom(oUserPub.buildCertificate(
+    oRegion, oUserPvt.getName(), ValidityPeriod(now, now + 3600), oRootPvt)));
+
+  server::PossessionChallenge sPossessionChallenge;
+  client::PossessionChallenge cPossessionChallenge(oUserCert, oUserPvt);
+  executeWorkflow({ &sPossessionChallenge }, { &cPossessionChallenge });
   EXPECT_THAT(cIssuedCertName, g::StartsWith(test::toString(cPub.getName())));
 }
 

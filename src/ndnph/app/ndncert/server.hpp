@@ -18,15 +18,33 @@ struct ChallengeResult
   bool success = false;
   bool decrementRetry = false;
   const char* challengeStatus = "";
+  packet_struct::ParameterKV params;
 };
 
+/**
+ * @brief Server side of a challenge.
+ *
+ * Subclass instance may store internal state in member fields.
+ * An instance can only handle one challenge session at a time.
+ */
 class Challenge
 {
 public:
   virtual ~Challenge() = default;
+
   virtual tlv::Value getId() const = 0;
   virtual int getTimeLimit() const = 0;
   virtual int getRetryLimit() const = 0;
+
+  /** @brief Clear state and prepare the challenge for new session. */
+  virtual void clear() = 0;
+
+  /**
+   * @brief Process a CHALLENGE request packet.
+   * @param region memory region, valid during this invocation only.
+   * @param request decoded CHALLENGE request packet. @c request.params is valid during this
+   *                invocation only; any necessary information should be copied.
+   */
   virtual ChallengeResult process(Region& region, const ChallengeRequest& request) = 0;
 };
 
@@ -185,7 +203,7 @@ public:
     }
 
     auto decrypted = sessionKey.decrypt(region, interest.getAppParameters(), requestId);
-    size_t paramIndex = 0;
+    packet_struct::ParameterKV::Parser paramsParser(params);
     return !!decrypted &&
            EvDecoder::decodeValue(
              decrypted.makeDecoder(),
@@ -201,34 +219,11 @@ public:
                }
                return false;
              }),
-             EvDecoder::def<TT::ParameterKey, true, 2>([&](const Decoder::Tlv& d) {
-               if (paramIndex >= detail::MaxChallengeParams::value) {
-                 return false;
-               }
-               params[paramIndex] = std::make_pair(tlv::Value(d.value, d.length), tlv::Value());
-               return true;
-             }),
-             EvDecoder::def<TT::ParameterValue, true, 2>([&](const Decoder::Tlv& d) {
-               if (paramIndex >= detail::MaxChallengeParams::value) {
-                 return false;
-               }
-               auto key = params[paramIndex].first;
-               params[paramIndex] = std::make_pair(key, tlv::Value(d.value, d.length));
-               ++paramIndex;
-               return true;
-             })) &&
+             EvDecoder::def<TT::ParameterKey, true, 2>(
+               [&](const Decoder::Tlv& d) { return paramsParser.parseKey(d); }),
+             EvDecoder::def<TT::ParameterValue, true, 2>(
+               [&](const Decoder::Tlv& d) { return paramsParser.parseValue(d); })) &&
            challenge != nullptr;
-  }
-
-  /** @brief Retrieve parameter value by parameter key. */
-  tlv::Value get(tlv::Value key) const
-  {
-    for (const auto& kv : params) {
-      if (kv.first == key) {
-        return kv.second;
-      }
-    }
-    return tlv::Value();
   }
 };
 
@@ -247,21 +242,25 @@ public:
                                const EcPrivateKey& signer) const
   {
     Encoder encoder(region);
-    if (status == Status::SUCCESS) {
-      encoder.prepend(tlv::NniElement<>(TT::Status, status), [&](Encoder& encoder) {
+    switch (status) {
+      case Status::FAILURE:
+        break;
+      case Status::SUCCESS:
         encoder.prependTlv(TT::IssuedCertName, issuedCertName);
-      });
-    } else {
-      encoder.prepend(
-        tlv::NniElement<>(TT::Status, status),
-        [this](Encoder& encoder) { encoder.prependTlv(TT::ChallengeStatus, challengeStatus); },
-        tlv::NniElement<>(TT::RemainingTries, remainingTries),
-        [this](Encoder& encoder) {
-          uint64_t remainingTime =
-            std::max(0, port::Clock::sub(expireTime, port::Clock::now())) / 1000;
-          encoder.prependTlv(TT::RemainingTime, tlv::NNI(remainingTime));
-        });
+        break;
+      default:
+        encoder.prepend(
+          [this](Encoder& encoder) { encoder.prependTlv(TT::ChallengeStatus, challengeStatus); },
+          tlv::NniElement<>(TT::RemainingTries, remainingTries),
+          [this](Encoder& encoder) {
+            uint64_t remainingTime =
+              std::max<int>(0, port::Clock::sub(expireTime, port::Clock::now())) / 1000;
+            encoder.prependTlv(TT::RemainingTime, tlv::NNI(remainingTime));
+          },
+          params);
+        break;
     }
+    encoder.prepend(tlv::NniElement<>(TT::Status, status));
     encoder.trim();
     if (!encoder) {
       return detail::SignedDataRef();
@@ -310,6 +309,11 @@ public:
     , m_signingPolicy(detail::makeISigPolicy())
   {
     assert(m_challengeRegion != nullptr);
+    for (Challenge* ch : challenges) {
+      if (ch != nullptr) {
+        ch->clear();
+      }
+    }
   }
 
   detail::SignedDataRef handleNewRequest(Region& packetRegion, const Interest& interest)
@@ -339,7 +343,6 @@ public:
                                          m_challenges, m_signingPolicy)) {
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
     }
-    // TODO check policy on whether the requested name is allowed
 
     auto now = port::Clock::now();
     if (prevChallenge == nullptr) {
@@ -361,6 +364,7 @@ public:
     ChallengeResult result =
       m_challengeRequest.challenge->process(*m_challengeRegion, m_challengeRequest);
     m_challengeResponse.challengeStatus = tlv::Value::fromString(result.challengeStatus);
+    m_challengeResponse.params = result.params;
     if (result.success) {
       m_issuedCert = m_region.create<Data>();
       auto validity = ValidityPeriod::getMax(); // TODO set proper ValidityPeriod
@@ -461,13 +465,12 @@ class NopChallenge : public Challenge
 public:
   tlv::Value getId() const override
   {
-    static auto id = tlv::Value::fromString("nop");
-    return id;
+    return challenge_consts::nop();
   }
 
   int getTimeLimit() const override
   {
-    return 1000;
+    return 60000;
   }
 
   int getRetryLimit() const override
@@ -475,13 +478,95 @@ public:
     return 1;
   }
 
+  void clear() override {}
+
   ChallengeResult process(Region&, const ChallengeRequest&) override
   {
     ChallengeResult result;
     result.success = true;
-    result.challengeStatus = "success";
     return result;
   }
+};
+
+/** @brief The "possession" challenge where client must present an existing certificate. */
+class PossessionChallenge : public Challenge
+{
+public:
+  tlv::Value getId() const override
+  {
+    return challenge_consts::possession();
+  }
+
+  int getTimeLimit() const override
+  {
+    return 60000;
+  }
+
+  int getRetryLimit() const override
+  {
+    return 1;
+  }
+
+  void clear() override
+  {
+    m_cert = tlv::Value();
+  }
+
+  ChallengeResult process(Region&, const ChallengeRequest& request) override
+  {
+    tlv::Value proof = request.params.get(challenge_consts::proof());
+    if (!proof) {
+      return process0(request);
+    }
+
+    ChallengeResult result;
+    result.success = process1(proof);
+    result.decrementRetry = !result.success;
+    return result;
+  }
+
+private:
+  ChallengeResult process0(const ChallengeRequest& request)
+  {
+    m_cert = request.params.get(challenge_consts::issuedcert());
+
+    StaticRegion<2048> temp;
+    ndnph::Data data = temp.create<ndnph::Data>();
+    assert(!!data);
+    time_t now = time(nullptr);
+
+    m_region.reset();
+    if (!(m_cert.makeDecoder().decode(data) && m_pub.import(temp, data) &&
+          certificate::getValidity(data).includes(now))) {
+      // don't reveal the error until proof is submitted
+      m_pub = EcPublicKey();
+    }
+    // TODO check certificate revocation
+    // TODO check name assignment policy
+
+    ChallengeResult result;
+    if (!port::RandomSource::generate(m_nonce, sizeof(m_nonce))) {
+      // server error, decrement retry to fail the challenge
+      result.decrementRetry = true;
+      result.challengeStatus = "server-error";
+      return result;
+    }
+
+    result.challengeStatus = "need-proof";
+    result.params.set(challenge_consts::nonce(), tlv::Value(m_nonce, sizeof(m_nonce)));
+    return result;
+  }
+
+  bool process1(tlv::Value proof)
+  {
+    return m_pub.verify({ tlv::Value(m_nonce, sizeof(m_nonce)) }, proof.begin(), proof.size());
+  }
+
+private:
+  StaticRegion<256> m_region;
+  EcPublicKey m_pub;
+  tlv::Value m_cert;
+  uint8_t m_nonce[16];
 };
 
 } // namespace server

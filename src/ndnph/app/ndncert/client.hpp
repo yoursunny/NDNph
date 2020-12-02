@@ -13,13 +13,35 @@ namespace client {
 class ChallengeRequest;
 class ChallengeResponse;
 
+/**
+ * @brief Client side of a challenge.
+ *
+ * Subclass instance may store internal state in member fields.
+ * An instance can only handle one challenge session at a time.
+ */
 class Challenge
 {
 public:
   virtual ~Challenge() = default;
+
+  /** @brief Return challenge identifier. */
   virtual tlv::Value getId() const = 0;
+
+  /**
+   * @brief Create a message to select and start the challenge.
+   *
+   * This function should clear any existing state, populate the @c request , and invoke
+   * `cb(arg,true)`; in case of error, invoke `cb(arg,false)`.
+   */
   virtual void start(Region& region, ChallengeRequest& request, void (*cb)(void*, bool),
                      void* arg) = 0;
+
+  /**
+   * @brief Create a message to continue the challenge.
+   *
+   * This function should clear any existing state, populate the @c request , and invoke
+   * `cb(arg,true)`; in case of error, invoke `cb(arg,false)`.
+   */
   virtual void next(Region& region, const ChallengeResponse& response, ChallengeRequest& request,
                     void (*cb)(void*, bool), void* arg) = 0;
 };
@@ -152,27 +174,6 @@ public:
 class ChallengeRequest : public packet_struct::ChallengeRequest<Challenge>
 {
 public:
-  /** @brief Set a parameter. */
-  bool set(tlv::Value key, tlv::Value value)
-  {
-    assert(!!key);
-    for (auto& kv : params) {
-      if (!kv.first) {
-        kv = std::make_pair(key, value);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /** @brief Clear parameters. */
-  void clear()
-  {
-    for (auto& kv : params) {
-      kv = std::make_pair(tlv::Value(), tlv::Value());
-    }
-  }
-
   /**
    * @brief Build CHALLENGE request packet.
    * @pre @c challenge and parameters are set.
@@ -186,15 +187,9 @@ public:
   {
     assert(challenge != nullptr);
     Encoder encoder(region);
-    for (auto it = params.rbegin(); it != params.rend(); ++it) {
-      if (!it->first) {
-        continue;
-      }
-      encoder.prepend(
-        [=](Encoder& encoder) { encoder.prependTlv(TT::ParameterKey, it->first); },
-        [=](Encoder& encoder) { encoder.prependTlv(TT::ParameterValue, it->second); });
-    }
-    encoder.prependTlv(TT::SelectedChallenge, challenge->getId());
+    encoder.prepend(
+      [=](Encoder& encoder) { encoder.prependTlv(TT::SelectedChallenge, challenge->getId()); },
+      params);
     encoder.trim();
     if (!encoder) {
       return detail::SignedInterestRef();
@@ -232,14 +227,19 @@ public:
 
     auto decrypted = sessionKey.decrypt(region, data.getContent(), requestId);
     uint32_t remainingTime = 0;
-    bool ok = !!decrypted && EvDecoder::decodeValue(
-                               decrypted.makeDecoder(), EvDecoder::defNni<TT::Status>(&status),
-                               EvDecoder::def<TT::ChallengeStatus>(&challengeStatus),
-                               EvDecoder::defNni<TT::RemainingTries>(&remainingTries),
-                               EvDecoder::defNni<TT::RemainingTime>(&remainingTime),
-                               EvDecoder::def<TT::IssuedCertName>([this](const Decoder::Tlv& d) {
-                                 return d.vd().decode(issuedCertName);
-                               }));
+    packet_struct::ParameterKV::Parser paramsParser(params);
+    bool ok =
+      !!decrypted && EvDecoder::decodeValue(
+                       decrypted.makeDecoder(), EvDecoder::defNni<TT::Status, tlv::NNI, 1>(&status),
+                       EvDecoder::def<TT::ChallengeStatus, false, 2>(&challengeStatus),
+                       EvDecoder::defNni<TT::RemainingTries, tlv::NNI, 3>(&remainingTries),
+                       EvDecoder::defNni<TT::RemainingTime, tlv::NNI, 4>(&remainingTime),
+                       EvDecoder::def<TT::ParameterKey, true, 5>(
+                         [&](const Decoder::Tlv& d) { return paramsParser.parseKey(d); }),
+                       EvDecoder::def<TT::ParameterValue, true, 5>(
+                         [&](const Decoder::Tlv& d) { return paramsParser.parseValue(d); }),
+                       EvDecoder::def<TT::IssuedCertName, false, 6>(
+                         [this](const Decoder::Tlv& d) { return d.vd().decode(issuedCertName); }));
     if (!ok) {
       return false;
     }
@@ -382,7 +382,7 @@ private:
   void prepareChallengeRequest()
   {
     m_state = State::CHALLENGE_EXEC;
-    m_challengeRequest.clear();
+    m_challengeRequest.params.clear();
     if (m_challengeResponse.status == Status::BEFORE_CHALLENGE) {
       m_challengeRequest.challenge->start(*m_challengeRegion, m_challengeRequest, challengeCallback,
                                           this);
@@ -473,7 +473,8 @@ private:
       return;
     }
 
-    StaticRegion<1024> packetRegion;
+    // StaticRegion<1024> packetRegion;
+    StaticRegion<2048> packetRegion;
     switch (m_session.getState()) {
       case Session::State::NEW_RES:
       case Session::State::CHALLENGE_RES: {
@@ -554,8 +555,7 @@ class NopChallenge : public Challenge
 public:
   tlv::Value getId() const override
   {
-    static auto id = tlv::Value::fromString("nop");
-    return id;
+    return challenge_consts::nop();
   }
 
   void start(Region&, ChallengeRequest&, void (*cb)(void*, bool), void* arg) override
@@ -568,6 +568,59 @@ public:
   {
     cb(arg, false);
   }
+};
+
+/** @brief The "possession" challenge where client must present an existing certificate. */
+class PossessionChallenge : public Challenge
+{
+public:
+  explicit PossessionChallenge(Data cert, PrivateKey& signer)
+    : m_cert(std::move(cert))
+    , m_signer(signer)
+  {}
+
+  tlv::Value getId() const override
+  {
+    return challenge_consts::possession();
+  }
+
+  void start(Region& region, ChallengeRequest& request, void (*cb)(void*, bool), void* arg) override
+  {
+    Encoder encoder(region);
+    encoder.prepend(m_cert);
+    encoder.trim();
+    if (!encoder) {
+      cb(arg, false);
+      return;
+    }
+
+    request.params.set(challenge_consts::issuedcert(), tlv::Value(encoder));
+    cb(arg, true);
+  }
+
+  void next(Region& region, const ChallengeResponse& response, ChallengeRequest& request,
+            void (*cb)(void*, bool), void* arg) override
+  {
+    tlv::Value nonce = response.params.get(challenge_consts::nonce());
+    uint8_t* sig = region.alloc(m_signer.getMaxSigLen());
+    if (nonce.size() != 16 || sig == nullptr) {
+      cb(arg, false);
+      return;
+    }
+
+    ssize_t sigLen = m_signer.sign({ nonce }, sig);
+    if (sigLen < 0) {
+      cb(arg, false);
+      return;
+    }
+
+    request.params.set(challenge_consts::proof(), tlv::Value(sig, sigLen));
+    cb(arg, true);
+  }
+
+private:
+  Data m_cert;
+  PrivateKey& m_signer;
 };
 
 } // namespace client

@@ -151,6 +151,89 @@ makeISigPolicy()
 } // namespace detail
 namespace packet_struct {
 
+class ParameterKV
+{
+public:
+  class Parser
+  {
+  public:
+    explicit Parser(ParameterKV& target)
+      : m_target(target)
+    {
+      m_target.clear();
+    }
+
+    bool parseKey(const Decoder::Tlv& d)
+    {
+      if (m_pos >= detail::MaxChallengeParams::value) {
+        return false;
+      }
+      m_target.m_kv[m_pos] = std::make_pair(tlv::Value(d.value, d.length), tlv::Value());
+      return true;
+    }
+
+    bool parseValue(const Decoder::Tlv& d)
+    {
+      if (m_pos >= detail::MaxChallengeParams::value) {
+        return false;
+      }
+      auto key = m_target.m_kv[m_pos].first;
+      m_target.m_kv[m_pos] = std::make_pair(key, tlv::Value(d.value, d.length));
+      ++m_pos;
+      return true;
+    }
+
+  private:
+    ParameterKV& m_target;
+    size_t m_pos = 0;
+  };
+
+  /** @brief Retrieve parameter value by parameter key. */
+  tlv::Value get(tlv::Value key) const
+  {
+    for (const auto& p : m_kv) {
+      if (p.first == key) {
+        return p.second;
+      }
+    }
+    return tlv::Value();
+  }
+
+  /** @brief Set a parameter. */
+  bool set(tlv::Value key, tlv::Value value)
+  {
+    assert(!!key);
+    for (auto& p : m_kv) {
+      if (!p.first) {
+        p = std::make_pair(key, value);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** @brief Clear parameters. */
+  void clear()
+  {
+    m_kv.fill(std::make_pair(tlv::Value(), tlv::Value()));
+  }
+
+  /** @brief Prepend ParameterKey-ParameterValue pairs to Encoder. */
+  void encodeTo(Encoder& encoder) const
+  {
+    for (auto it = m_kv.rbegin(); it != m_kv.rend(); ++it) {
+      if (!it->first) {
+        continue;
+      }
+      encoder.prependTlv(TT::ParameterValue, it->second);
+      encoder.prependTlv(TT::ParameterKey, it->first);
+    }
+  }
+
+private:
+  std::array<std::pair<tlv::Value, tlv::Value>, detail::MaxChallengeParams::value> m_kv;
+};
+
 struct CaProfile
 {
   /** @brief CA prefix. */
@@ -190,8 +273,8 @@ struct ChallengeRequest
   /** @brief Challenge reference. */
   ChallengeT* challenge = nullptr;
 
-  /** @brief Parameter key-value pairs; empty key indicates empty slot. */
-  std::array<std::pair<tlv::Value, tlv::Value>, detail::MaxChallengeParams::value> params;
+  /** @brief Parameter key-value pairs. */
+  ParameterKV params;
 };
 
 struct ChallengeResponse
@@ -207,6 +290,9 @@ struct ChallengeResponse
 
   /** @brief Session expiration time. Calculates remaining time. */
   port::Clock::Time expireTime = {};
+
+  /** @brief Parameter key-value pairs. */
+  ParameterKV params;
 
   /** @brief Issued certificate full name. */
   Name issuedCertName;

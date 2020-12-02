@@ -2,6 +2,7 @@
 #define NDNPH_APP_NDNCERT_AN_HPP
 
 #include "../../packet/component.hpp"
+#include "../../tlv/value.hpp"
 
 namespace ndnph {
 namespace ndncert {
@@ -34,6 +35,8 @@ enum
   ErrorCode = 0xAB,
   ErrorInfo = 0xAD,
   AuthenticationTag = 0xAF,
+  CertToRevoke = 0xB1,
+  ProbeRedirect = 0xB3,
 };
 using namespace ndnph::TT;
 } // namespace TT
@@ -91,6 +94,7 @@ enum
   CHALLENGE = 1,
   PENDING = 2,
   SUCCESS = 3,
+  FAILURE = 4,
 };
 } // namespace Status
 
@@ -109,6 +113,45 @@ enum
   NoAvailableName = 9,
 };
 } // namespace ErrorCode
+
+namespace challenge_consts {
+
+inline tlv::Value
+nop()
+{
+  static auto v = tlv::Value::fromString("nop");
+  return v;
+}
+
+inline tlv::Value
+possession()
+{
+  static auto v = tlv::Value::fromString("possession");
+  return v;
+}
+
+inline tlv::Value
+issuedcert()
+{
+  static auto v = tlv::Value::fromString("issued-cert");
+  return v;
+}
+
+inline tlv::Value
+nonce()
+{
+  static auto v = tlv::Value::fromString("nonce");
+  return v;
+}
+
+inline tlv::Value
+proof()
+{
+  static auto v = tlv::Value::fromString("proof");
+  return v;
+}
+
+} // namespace challenge_consts
 
 } // namespace ndncert
 } // namespace ndnph
