@@ -1,18 +1,11 @@
-#include <NDNph-config.h>
-#include <NDNph.h>
+#include "cli-common.hpp"
 
-#include <cinttypes>
-#include <fstream>
-#include <iostream>
+ndnph::StaticRegion<65536> region;
+ndnph::Face& face = cli_common::openUplink();
 
-sockaddr_in uplink = {};
 const char* profileFilename = nullptr;
 ndnph::Component identitySuffix;
 
-ndnph::UdpUnicastTransport transport;
-ndnph::Face face(transport);
-
-ndnph::StaticRegion<65536> region;
 ndnph::ndncert::client::CaProfile profile;
 ndnph::EcPrivateKey myPvt;
 ndnph::EcPublicKey myPub;
@@ -21,19 +14,9 @@ bool running = true;
 static bool
 parseArgs(int argc, char** argv)
 {
-  uplink.sin_family = AF_INET;
-  uplink.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-  uplink.sin_port = htons(6363);
-
   int c;
-  while ((c = getopt(argc, argv, "U:P:s:")) != -1) {
+  while ((c = getopt(argc, argv, "P:s:")) != -1) {
     switch (c) {
-      case 'U': {
-        if (!inet_aton(optarg, &uplink.sin_addr)) {
-          return false;
-        }
-        break;
-      }
       case 'P': {
         profileFilename = optarg;
         break;
@@ -105,16 +88,11 @@ main(int argc, char** argv)
 {
   if (!parseArgs(argc, argv)) {
     fprintf(stderr,
-            "ndnph-ndncertclient [-U UPLINK] -P CA-PROFILE [-s IDENTITY-SUFFIX]\n"
-            "  UPLINK is an IPv4 address of the uplink router\n"
+            "ndnph-ndncertclient -P CA-PROFILE [-s IDENTITY-SUFFIX]\n"
             "  CA-PROFILE is a CA profile filename\n"
             "  IDENTITY-SUFFIX is the last component of requested identity\n"
             "Note: this program demonstrates protocol operations but cannot persist keys\n");
     return 2;
-  }
-
-  if (!transport.beginTunnel(&uplink)) {
-    return 3;
   }
 
   if (!loadCaProfile()) {

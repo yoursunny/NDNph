@@ -1,11 +1,6 @@
-#include <NDNph-config.h>
-#include <NDNph.h>
+#include "cli-common.hpp"
 
-#include <cinttypes>
-#include <unistd.h>
-
-ndnph::UdpUnicastTransport transport;
-ndnph::Face face(transport);
+ndnph::Face& face = cli_common::openUplink();
 
 std::unique_ptr<ndnph::PingClient> client;
 
@@ -44,11 +39,12 @@ main(int argc, char** argv)
     fprintf(stderr, "ndnph-pingclient [-i INTERVAL] PREFIX\n"
                     "  PREFIX should have 'ping' suffix to interact with ndn-tools ndnpingserver\n"
                     "  INTERVAL must be between 1 and 60000 milliseconds\n"
-                    "  INTERVAL should be no less than RTT, or all requests will timeout\n");
+                    "  INTERVAL should be no less than RTT, or all requests will timeout\n"
+                    "\n"
+                    "Optional environment variable: NDNPH_UPLINK_UDP=192.0.2.1\n");
     return 2;
   }
 
-  transport.beginTunnel({ 127, 0, 0, 1 });
   for (;;) {
     ndnph::port::Clock::sleep(1);
     face.loop();

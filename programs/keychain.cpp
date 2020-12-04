@@ -1,52 +1,7 @@
-#include <NDNph-config.h>
-#include <NDNph.h>
-
-#include <cinttypes>
-#include <iomanip>
-#include <iostream>
+#include "cli-common.hpp"
 
 ndnph::StaticRegion<65536> region;
-ndnph::KeyChain keyChain;
-
-static ndnph::Data
-loadCertificate(const std::string& id)
-{
-  auto cert = keyChain.certs.get(id.data(), region);
-  if (!cert) {
-    fprintf(stderr, "Certificate not found\n");
-    exit(4);
-  }
-  return cert;
-}
-
-static ndnph::Data
-inputCertificate(ndnph::EcPublicKey* pub)
-{
-  const size_t bufferSize = 4096;
-  uint8_t* buffer = region.alloc(bufferSize);
-  std::cin.read(reinterpret_cast<char*>(buffer), bufferSize);
-
-  auto data = region.create<ndnph::Data>();
-  if (!data || !ndnph::Decoder(buffer, std::cin.gcount()).decode(data) ||
-      !(pub == nullptr ? ndnph::certificate::isCertificate(data) : pub->import(region, data))) {
-    fprintf(stderr, "Input certificate decode error\n");
-    exit(4);
-  }
-  return data;
-}
-
-template<typename Encodable>
-static void
-output(const Encodable& packet)
-{
-  ndnph::Encoder encoder(region);
-  if (!encoder.prepend(packet)) {
-    fprintf(stderr, "Encode error\n");
-    exit(4);
-  }
-  encoder.trim();
-  std::cout.write(reinterpret_cast<const char*>(encoder.begin()), encoder.size());
-}
+ndnph::KeyChain& keyChain = cli_common::openKeyChain();
 
 static bool
 keygen(int argc, char** argv)
@@ -54,8 +9,8 @@ keygen(int argc, char** argv)
   if (argc != 4) {
     return false;
   }
+  std::string id = cli_common::checkKeyChainId(argv[2]);
   auto name = ndnph::Name::parse(region, argv[3]);
-  std::string id(argv[2]);
 
   ndnph::EcPrivateKey pvt;
   ndnph::EcPublicKey pub;
@@ -71,7 +26,7 @@ keygen(int argc, char** argv)
     exit(4);
   }
 
-  output(cert);
+  cli_common::output(cert);
   return true;
 }
 
@@ -81,8 +36,8 @@ certinfo(int argc, char** argv)
   if (argc != 3) {
     return false;
   }
-  std::string id(argv[2]);
-  auto cert = loadCertificate(id + "_cert");
+  std::string id = cli_common::checkKeyChainId(argv[2]);
+  auto cert = cli_common::loadCertificate(region, id + "_cert");
   auto vp = ndnph::certificate::getValidity(cert);
 
   std::cout << "Name:     " << cert.getName() << std::endl;
@@ -98,9 +53,9 @@ certexport(int argc, char** argv)
   if (argc != 3) {
     return false;
   }
-  std::string id(argv[2]);
-  auto cert = loadCertificate(id + "_cert");
-  output(cert);
+  std::string id = cli_common::checkKeyChainId(argv[2]);
+  auto cert = cli_common::loadCertificate(region, id + "_cert");
+  cli_common::output(cert);
   return true;
 }
 
@@ -110,7 +65,7 @@ certsign(int argc, char** argv)
   if (argc != 3) {
     return false;
   }
-  std::string id(argv[2]);
+  std::string id = cli_common::checkKeyChainId(argv[2]);
 
   ndnph::EcPrivateKey issuerPvt;
   ndnph::EcPublicKey issuerPub;
@@ -120,13 +75,13 @@ certsign(int argc, char** argv)
   }
 
   ndnph::EcPublicKey pub;
-  inputCertificate(&pub);
+  cli_common::inputCertificate(region, &pub);
   ndnph::ValidityPeriod vp;
   time(&vp.notBefore);
   vp.notAfter = vp.notBefore + 86400 * 90;
 
   auto cert = pub.buildCertificate(region, pub.getName(), vp, issuerPvt);
-  output(cert);
+  cli_common::output(cert);
   return true;
 }
 
@@ -138,7 +93,7 @@ certimport(int argc, char** argv)
   }
   std::string id(argv[2]);
 
-  auto cert = inputCertificate(nullptr);
+  auto cert = cli_common::inputCertificate(region, nullptr);
   if (!keyChain.certs.set((id + "_cert").data(), cert, region)) {
     fprintf(stderr, "Save certificate error\n");
     exit(4);
@@ -152,21 +107,18 @@ execute(int argc, char** argv)
   if (argc <= 1) {
     return false;
   }
-  if (strcmp(argv[1], "keygen") == 0) {
-    return keygen(argc, argv);
+#define SUBCOMMAND(cmd)                                                                            \
+  if (strcmp(argv[1], #cmd) == 0) {                                                                \
+    return cmd(argc, argv);                                                                        \
   }
-  if (strcmp(argv[1], "certinfo") == 0) {
-    return certinfo(argc, argv);
-  }
-  if (strcmp(argv[1], "certexport") == 0) {
-    return certexport(argc, argv);
-  }
-  if (strcmp(argv[1], "certsign") == 0) {
-    return certsign(argc, argv);
-  }
-  if (strcmp(argv[1], "certimport") == 0) {
-    return certimport(argc, argv);
-  }
+
+  SUBCOMMAND(keygen)
+  SUBCOMMAND(certinfo)
+  SUBCOMMAND(certexport)
+  SUBCOMMAND(certsign)
+  SUBCOMMAND(certimport)
+
+#undef SUBCOMMAND
   return false;
 }
 
@@ -195,16 +147,6 @@ usage()
 int
 main(int argc, char** argv)
 {
-  const char* keyChainEnv = getenv("NDNPH_KEYCHAIN");
-  if (keyChainEnv == nullptr) {
-    usage();
-    return 2;
-  }
-  if (!keyChain.open(keyChainEnv)) {
-    fprintf(stderr, "KeyChain open error\n");
-    return 3;
-  }
-
   if (!execute(argc, argv)) {
     usage();
     return 2;
