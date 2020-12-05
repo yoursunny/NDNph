@@ -1,0 +1,101 @@
+name: build
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: install dependencies
+        run: |
+          sudo apt-get install lcov libboost-dev
+          python -m pip install --upgrade pip
+          pip install cmake meson ninja
+      - name: install Google Test
+        run: |
+          cd $HOME
+          curl -sL https://github.com/google/googletest/archive/release-1.10.0.tar.gz | tar -xz
+          mkdir gtest-build && cd gtest-build
+          cmake -G Ninja ../googletest-release-1.10.0
+          ninja
+          sudo $(which ninja) install
+      - name: install Mbed TLS
+        run: |
+          cd $HOME
+          curl -sL https://github.com/ARMmbed/mbedtls/archive/v2.24.0.tar.gz | tar -xz
+          mkdir mbedtls-build && cd mbedtls-build
+          cmake -G Ninja ../mbedtls-2.24.0 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
+          ninja
+          sudo $(which ninja) install
+      - uses: actions/checkout@v2
+      - name: check meson.build lists and code style
+        run: |
+          mk/update-list.sh
+          mk/format-code.sh
+          [[ $(git status --porcelain | tee >(cat 1>&2) | wc -l) -eq 0 ]]
+      - name: build and test with coverage
+        run: |
+          meson build.coverage -Db_coverage=true -Dwerror=true -Dunittest=enabled -Dprograms=disabled
+          cd build.coverage
+          if ! ninja test; then
+            cat meson-logs/testlog.txt
+            false
+          fi
+          ninja coverage
+          lcov --extract meson-logs/coverage.info $(readlink -f ../src)'/*' > coverage.lcov
+      - name: build and test with sanitizer
+        run: |
+          meson build.sanitize -Db_sanitize=address,undefined -Dunittest=enabled -Dprograms=enabled
+          cd build.sanitize
+          if ! ninja test; then
+            cat meson-logs/testlog.txt
+            false
+          fi
+      - name: build and test with LLVM
+        run: |
+          LDFLAGS='-fuse-ld=lld -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.txt --buildtype debugoptimized -Dunittest=enabled -Dprograms=enabled
+          cd build.llvm
+          if ! ninja test; then
+            cat meson-logs/testlog.txt
+            false
+          fi
+      - uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: build.coverage/coverage.lcov
+  arduino:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: arduino/setup-arduino-cli@v1.1.1
+      - name: install Arduino cores and libraries
+        run: |
+          arduino-cli version
+          arduino-cli core update-index --additional-urls $ARDUINO_CORE_URI
+          arduino-cli core install esp8266:esp8266 esp32:esp32 adafruit:nrf52 --additional-urls $ARDUINO_CORE_URI
+          arduino-cli lib update-index
+          arduino-cli lib install ArduinoUnit
+        env:
+          ARDUINO_CORE_URI: https://arduino.esp8266.com/stable/package_esp8266com_index.json,https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json,https://www.adafruit.com/package_adafruit_index.json
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install adafruit-nrfutil esptool
+      - uses: actions/checkout@v2
+      - name: link library
+        run: |
+          mkdir -p $HOME/Arduino/libraries
+          ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/NDNph
+      - name: compile in ESP8266
+        run: |
+          arduino-cli compile -b esp8266:esp8266:nodemcuv2 ./examples/unittest
+      - name: compile in ESP32
+        run: |
+          arduino-cli compile -b esp32:esp32:esp32wrover ./examples/unittest
+      - name: compile in nRF52
+        run: |
+          arduino-cli compile -b adafruit:nrf52:feather52832 ./examples/unittest
