@@ -1,4 +1,4 @@
-# NDNph Examples
+# NDNph Example Sketches
 
 This examples directory is to allow running unit tests in Arduino IDE.
 Examples on how to use NDNph in a program can be found in:

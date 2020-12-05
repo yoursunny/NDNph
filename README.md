@@ -1,6 +1,6 @@
 # NDNph: Named Data Networking packet headers
 
-[![Travis build status](https://img.shields.io/travis/com/yoursunny/NDNph?style=flat)](https://travis-ci.com/github/yoursunny/NDNph) [![Coveralls code coverage](https://img.shields.io/coveralls/github/yoursunny/NDNph?style=flat)](https://coveralls.io/github/yoursunny/NDNph) [![GitHub code size](https://img.shields.io/github/languages/code-size/yoursunny/NDNph?style=flat)](https://github.com/yoursunny/NDNph)
+[![GitHub Workflow status](https://img.shields.io/github/workflow/status/yoursunny/NDNph/build?style=flat)](https://github.com/yoursunny/NDNph/actions) [![Coveralls code coverage](https://img.shields.io/coveralls/github/yoursunny/NDNph?style=flat)](https://coveralls.io/github/yoursunny/NDNph) [![GitHub code size](https://img.shields.io/github/languages/code-size/yoursunny/NDNph?style=flat)](https://github.com/yoursunny/NDNph)
 
 **NDNph** provides [Named Data Networking](https://named-data.net/) packet encoding and more in a header-only C++11 library. It is part of [esp8266ndn](https://github.com/yoursunny/esp8266ndn) that supports microcontroller programming in Arduino IDE. NDNph can also work independently on Linux and other platforms.
 
@@ -39,7 +39,9 @@ KeyChain
   * HMAC-SHA256: no
   * RSA: no
   * Null: yes
-* [NDN certificates](https://named-data.net/doc/ndn-cxx/0.7.0/specs/certificate-format.html): basic support
+* [NDN certificates](https://named-data.net/doc/ndn-cxx/0.7.1/specs/certificate-format.html): basic support
+* Persistent key and certificate storage: binary files
+* Trust schema: no
 
 Application layer services
 
@@ -67,3 +69,4 @@ For Linux,
 4. Run unit test (optional): `ninja test`
 5. Install headers to system: `sudo ninja install`
 6. Add `#include <NDNph-config.h>` and `#include <NDNph.h>` in your project, and start coding.
+7. Check out the [example programs](programs/) for how to use.
