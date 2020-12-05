@@ -2,36 +2,40 @@
 
 ndnph::StaticRegion<65536> region;
 ndnph::Face& face = cli_common::openUplink();
+ndnph::KeyChain& keyChain = cli_common::openKeyChain();
 
 const char* profileFilename = nullptr;
-ndnph::Component identitySuffix;
+std::string identitySlot;
+std::string possessionSlot;
 
 ndnph::ndncert::client::CaProfile profile;
 ndnph::EcPrivateKey myPvt;
 ndnph::EcPublicKey myPub;
+ndnph::EcPrivateKey possessionPvt;
 bool running = true;
 
 static bool
 parseArgs(int argc, char** argv)
 {
   int c;
-  while ((c = getopt(argc, argv, "P:s:")) != -1) {
+  while ((c = getopt(argc, argv, "P:i:E:")) != -1) {
     switch (c) {
       case 'P': {
         profileFilename = optarg;
         break;
       }
-      case 's': {
-        identitySuffix = ndnph::Component::parse(region, optarg);
-        if (!identitySuffix) {
-          return false;
-        }
+      case 'i': {
+        identitySlot = cli_common::checkKeyChainId(optarg);
+        break;
+      }
+      case 'E': {
+        possessionSlot = cli_common::checkKeyChainId(optarg);
         break;
       }
     }
   }
 
-  return argc - optind == 0 && profileFilename != nullptr;
+  return argc - optind == 0 && profileFilename != nullptr && !identitySlot.empty();
 }
 
 static bool
@@ -58,58 +62,55 @@ loadCaProfile()
   return profile.fromData(region, data);
 }
 
-static bool
-makeMyKeyPair()
-{
-  ndnph::StaticRegion<2048> temp;
-  ndnph::Name identity = profile.prefix.getPrefix(-1);
-  if (!!identitySuffix) {
-    identity = identity.append(temp, identitySuffix);
-  } else {
-    identity = identity.append<ndnph::convention::Timestamp>(temp, ndnph::convention::TimeValue());
-  }
-  assert(!!identity);
-
-  return ndnph::ec::generate(region, identity, myPvt, myPub);
-}
-
 static void
 clientCallback(void*, ndnph::Data cert)
 {
   running = false;
   if (!cert) {
-    exit(5);
+    exit(1);
   }
-  std::cout << cert.getName() << std::endl;
+  cli_common::output(cert);
 }
 
 int
 main(int argc, char** argv)
 {
   if (!parseArgs(argc, argv)) {
-    fprintf(stderr,
-            "ndnph-ndncertclient -P CA-PROFILE [-s IDENTITY-SUFFIX]\n"
-            "  CA-PROFILE is a CA profile filename\n"
-            "  IDENTITY-SUFFIX is the last component of requested identity\n"
-            "Note: this program demonstrates protocol operations but cannot persist keys\n");
-    return 2;
+    fprintf(stderr, "ndnph-ndncertclient -P CA-PROFILE -i IDENTITY-ID [-E POSSESSION-ID]\n"
+                    "  CA-PROFILE is a CA profile filename.\n"
+                    "  IDENTITY-ID is a KeyChain slot of the requester keypair.\n"
+                    "    Generate a keypair with the 'ndnph-keychain keygen' command.\n"
+                    "  -E enables proof of possession challenge.\n"
+                    "  POSSESSION-ID is a KeyChain slot for the existing keypair.\n"
+                    "\n"
+                    "  New certificate from NDNCERT is written to stdout.\n"
+                    "    Import to the KeyChain with the 'ndnph-keychain certimport' command.\n");
+    return 1;
   }
 
   if (!loadCaProfile()) {
-    return 4;
+    fprintf(stderr, "Error loading CA profile\n");
+    return 1;
   }
-  std::cout << profile.prefix << std::endl;
+  cli_common::loadKey(region, identitySlot + "_key", myPvt, myPub);
 
-  if (!makeMyKeyPair()) {
-    return 5;
-  }
-  std::cout << myPvt.getName() << std::endl;
-
+  ndnph::ndncert::client::ChallengeList challenges{};
   ndnph::ndncert::client::NopChallenge nopChallenge;
+  challenges[0] = &nopChallenge;
+  std::unique_ptr<ndnph::ndncert::client::PossessionChallenge> possessionChallenge;
+  if (!possessionSlot.empty()) {
+    ndnph::EcPublicKey possessionPub;
+    cli_common::loadKey(region, possessionSlot + "_key", possessionPvt, possessionPub);
+    auto possessionCert = cli_common::loadCertificate(region, possessionSlot + "_cert");
+    possessionChallenge.reset(
+      new ndnph::ndncert::client::PossessionChallenge(possessionCert, possessionPvt));
+    challenges[1] = possessionChallenge.get();
+  }
+
   ndnph::ndncert::Client::requestCertificate({
     .face = face,
     .profile = profile,
-    .challenges = { &nopChallenge },
+    .challenges = challenges,
     .pub = myPub,
     .pvt = myPvt,
     .cb = clientCallback,

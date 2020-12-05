@@ -49,7 +49,8 @@ openKeyChain()
   if (!ready) {
     const char* env = getenv("NDNPH_KEYCHAIN");
     if (env == nullptr) {
-      fprintf(stderr, "NDNPH_KEYCHAIN environment variable missing\n");
+      fprintf(stderr,
+              "KeyChain path missing: set NDNPH_KEYCHAIN=/path/to/keychain environment variable\n");
       exit(1);
     }
 
@@ -77,6 +78,17 @@ checkKeyChainId(const std::string& id)
     exit(1);
   }
   return id;
+}
+
+/** @brief Load a key from the KeyChain. */
+inline void
+loadKey(ndnph::Region& region, const std::string& id, ndnph::EcPrivateKey& pvt,
+        ndnph::EcPublicKey& pub)
+{
+  if (!ndnph::ec::load(openKeyChain(), id.data(), region, pvt, pub)) {
+    fprintf(stderr, "Key [%s] not found in KeyChain\n", id.data());
+    exit(1);
+  }
 }
 
 /** @brief Load a certificate from the KeyChain. */

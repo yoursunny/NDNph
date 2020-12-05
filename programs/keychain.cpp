@@ -17,13 +17,13 @@ keygen(int argc, char** argv)
   bool ok = ndnph::ec::generate(region, name, pvt, pub, keyChain, (id + "_key").data());
   if (!ok) {
     fprintf(stderr, "EC generate error\n");
-    exit(4);
+    exit(1);
   }
 
   auto cert = pub.selfSign(region, ndnph::ValidityPeriod::getMax(), pvt);
   if (!keyChain.certs.set((id + "_cert").data(), cert, region)) {
     fprintf(stderr, "Save certificate error\n");
-    exit(4);
+    exit(1);
   }
 
   cli_common::output(cert);
@@ -69,10 +69,7 @@ certsign(int argc, char** argv)
 
   ndnph::EcPrivateKey issuerPvt;
   ndnph::EcPublicKey issuerPub;
-  if (!ndnph::ec::load(keyChain, (id + "_key").data(), region, issuerPvt, issuerPub)) {
-    fprintf(stderr, "Issuer key not found\n");
-    exit(4);
-  }
+  cli_common::loadKey(region, id + "_key", issuerPvt, issuerPub);
 
   ndnph::EcPublicKey pub;
   cli_common::inputCertificate(region, &pub);
@@ -96,7 +93,7 @@ certimport(int argc, char** argv)
   auto cert = cli_common::inputCertificate(region, nullptr);
   if (!keyChain.certs.set((id + "_cert").data(), cert, region)) {
     fprintf(stderr, "Save certificate error\n");
-    exit(4);
+    exit(1);
   }
   return true;
 }
@@ -138,10 +135,7 @@ usage()
                   "  Issue certificate, signing with private key ID.\n"
                   "\n"
                   "ndnph-keychain certimport ID < issued-cert.data \n"
-                  "  Install certificate to ID.\n"
-                  "\n"
-                  "Required environment variable: NDNPH_KEYCHAIN=/path/to/keychain\n"
-                  "ID can only have digits and lower case letters.\n");
+                  "  Install certificate to ID.\n");
 }
 
 int
@@ -149,7 +143,7 @@ main(int argc, char** argv)
 {
   if (!execute(argc, argv)) {
     usage();
-    return 2;
+    return 1;
   }
   return 0;
 }

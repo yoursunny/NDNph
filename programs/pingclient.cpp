@@ -37,12 +37,10 @@ main(int argc, char** argv)
 {
   if (!parseArgs(argc, argv)) {
     fprintf(stderr, "ndnph-pingclient [-i INTERVAL] PREFIX\n"
-                    "  PREFIX should have 'ping' suffix to interact with ndn-tools ndnpingserver\n"
-                    "  INTERVAL must be between 1 and 60000 milliseconds\n"
-                    "  INTERVAL should be no less than RTT, or all requests will timeout\n"
-                    "\n"
-                    "Optional environment variable: NDNPH_UPLINK_UDP=192.0.2.1\n");
-    return 2;
+                    "  PREFIX should have 'ping' suffix to interact with ndn-tools ndnpingserver.\n"
+                    "  INTERVAL must be between 1 and 60000 milliseconds.\n"
+                    "  INTERVAL should be no less than RTT, or all requests will timeout.\n");
+    return 1;
   }
 
   for (;;) {
