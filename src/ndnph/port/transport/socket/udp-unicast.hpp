@@ -18,7 +18,9 @@ class UdpUnicastTransport
   , public transport::DynamicRxQueueMixin
 {
 public:
-  explicit UdpUnicastTransport() = default;
+  explicit UdpUnicastTransport(size_t bufLen = DEFAULT_BUFLEN)
+    : DynamicRxQueueMixin(bufLen)
+  {}
 
   /** @brief Start listening on given local address. */
   bool beginListen(const sockaddr_in* laddr)
@@ -120,14 +122,14 @@ private:
     end();
     m_fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (m_fd < 0) {
-#ifdef NDNPH_SOCKET_PERROR
+#ifdef NDNPH_SOCKET_DEBUG
       perror("UdpUnicastTransport socket()");
 #endif
       return false;
     }
     const int yes = 1;
     if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
-#ifdef NDNPH_SOCKET_PERROR
+#ifdef NDNPH_SOCKET_DEBUG
       perror("UdpUnicastTransport setsockopt(SO_REUSEADDR)");
 #endif
       return false;
@@ -138,7 +140,7 @@ private:
   bool bindSocket(const sockaddr_in* laddr)
   {
     if (bind(m_fd, reinterpret_cast<const sockaddr*>(laddr), sizeof(*laddr)) < 0) {
-#ifdef NDNPH_SOCKET_PERROR
+#ifdef NDNPH_SOCKET_DEBUG
       perror("UdpUnicastTransport bind()");
 #endif
       return false;
@@ -149,7 +151,7 @@ private:
   bool connectSocket(const sockaddr_in* raddr)
   {
     if (connect(m_fd, reinterpret_cast<const sockaddr*>(raddr), sizeof(*raddr)) < 0) {
-#ifdef NDNPH_SOCKET_PERROR
+#ifdef NDNPH_SOCKET_DEBUG
       perror("UdpUnicastTransport connect()");
 #endif
       return false;
@@ -172,7 +174,7 @@ private:
     int error = 0;
     socklen_t len = sizeof(error);
     getsockopt(m_fd, SOL_SOCKET, SO_ERROR, &error, &len);
-#ifdef NDNPH_SOCKET_PERROR
+#ifdef NDNPH_SOCKET_DEBUG
     if (error != 0) {
       errno = error;
       perror("UdpUnicastTransport getsockopt(SO_ERROR)");
@@ -182,14 +184,12 @@ private:
 
 private:
   int m_fd = -1;
-  mutable ssize_t m_mtu = -1;
+  ssize_t m_mtu = -1;
 };
 
 } // namespace port_transport_socket
 
-#ifdef NDNPH_PORT_TRANSPORT_SOCKET
 using UdpUnicastTransport = port_transport_socket::UdpUnicastTransport;
-#endif
 
 } // namespace ndnph
 

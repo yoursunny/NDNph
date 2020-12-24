@@ -62,6 +62,7 @@ For Linux,
    * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
    * [Mbed TLS](https://github.com/ARMmbed/mbedtls), install from source
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
+   * [libmemif](https://docs.fd.io/vpp/20.09/dc/db3/libmemif_build_doc.html), install from source
    * [Google Test](https://github.com/google/googletest), install from source (only needed by unit tests)
    * Note: all dependencies are optional, but extra porting work will be necessary
 2. Create build directory: `meson build`

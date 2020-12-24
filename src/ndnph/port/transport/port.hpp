@@ -1,11 +1,18 @@
 #ifndef NDNPH_PORT_TRANSPORT_PORT_HPP
 #define NDNPH_PORT_TRANSPORT_PORT_HPP
 
-#if defined(NDNPH_PORT_TRANSPORT_CUSTOM)
+#ifdef NDNPH_PORT_TRANSPORT_CUSTOM
 // Custom transport port will be included later.
-#elif defined(NDNPH_PORT_TRANSPORT_SOCKET)
-#include "socket/udp-unicast.hpp"
 #else
+
+#ifdef NDNPH_PORT_TRANSPORT_SOCKET
+#include "socket/udp-unicast.hpp"
 #endif
+
+#ifdef NDNPH_PORT_TRANSPORT_MEMIF
+#include "memif.hpp"
+#endif
+
+#endif // NDNPH_PORT_TRANSPORT_CUSTOM
 
 #endif // NDNPH_PORT_TRANSPORT_PORT_HPP

@@ -2,6 +2,8 @@
 #define NDNPH_PROGRAMS_CLI_COMMON_HPP
 
 #include <NDNph-config.h>
+#define NDNPH_MEMIF_DEBUG
+#define NDNPH_SOCKET_DEBUG
 #include <NDNph.h>
 
 #include <cinttypes>
@@ -11,33 +13,67 @@
 #include <unistd.h>
 
 namespace cli_common {
+namespace detail {
 
-/** @brief Open uplink face according to `NDNPH_UPLINK_UDP` environ. */
+inline ndnph::Face*
+openMemif(const char* socketName)
+{
+#ifdef NDNPH_PORT_TRANSPORT_MEMIF
+  static ndnph::StaticRegion<16384> rxRegion;
+  static ndnph::MemifTransport transport(rxRegion);
+  if (!transport.begin(socketName, 0)) {
+    return nullptr;
+  }
+  static ndnph::Face face(transport);
+  return &face;
+#else
+  (void)socketName;
+  return nullptr;
+#endif // NDNPH_PORT_TRANSPORT_MEMIF
+}
+
+inline ndnph::Face*
+openUdp()
+{
+  sockaddr_in raddr = {};
+  raddr.sin_family = AF_INET;
+  raddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  raddr.sin_port = htons(6363);
+
+  const char* env = getenv("NDNPH_UPLINK_UDP");
+  if (env != nullptr && inet_aton(env, &raddr.sin_addr) == 0) {
+    return nullptr;
+  }
+
+  static ndnph::UdpUnicastTransport transport(1500);
+  if (!transport.beginTunnel(&raddr)) {
+    return nullptr;
+  }
+  static ndnph::Face face(transport);
+  return &face;
+}
+
+} // namespace detail
+
+/** @brief Open uplink face. */
 inline ndnph::Face&
 openUplink()
 {
-  static ndnph::UdpUnicastTransport transport;
-  static ndnph::Face face(transport);
-  static bool ready = false;
-  if (!ready) {
-    sockaddr_in raddr = {};
-    raddr.sin_family = AF_INET;
-    raddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    raddr.sin_port = htons(6363);
-
-    ready = true;
-    const char* env = getenv("NDNPH_UPLINK_UDP");
-    if (env != nullptr) {
-      ready = inet_aton(env, &raddr.sin_addr) != 0;
+  static ndnph::Face* face = nullptr;
+  if (face == nullptr) {
+    const char* envMemif = getenv("NDNPH_UPLINK_MEMIF");
+    if (envMemif != nullptr) {
+      face = detail::openMemif(envMemif);
     }
-
-    ready = ready && transport.beginTunnel(&raddr);
-    if (!ready) {
+    if (face == nullptr) {
+      face = detail::openUdp();
+    }
+    if (face == nullptr) {
       fprintf(stderr, "Unable to open uplink\n");
       exit(1);
     }
   }
-  return face;
+  return *face;
 }
 
 /** @brief Open KeyChain according to `NDNPH_KEYCHAIN` environ. */

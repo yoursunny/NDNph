@@ -22,6 +22,11 @@ if have_socket_h
   conf.set('NDNPH_PORT_TRANSPORT_SOCKET', '')
 endif
 
+libmemif = meson.get_compiler('cpp').find_library('memif', required: false)
+if libmemif.found() and meson.get_compiler('cpp').has_header('libmemif.h')
+  conf.set('NDNPH_PORT_TRANSPORT_MEMIF', '')
+endif
+
 have_this_thread = meson.get_compiler('cpp').compiles('''
 #include <chrono>
 #include <thread>
@@ -40,7 +45,7 @@ config_h = configure_file(output: 'NDNph-config.h', configuration: conf)
 lib_dep = declare_dependency(
   include_directories: include_directories('.'),
   compile_args: ['-include', 'NDNph-config.h'],
-  dependencies: [boost, mbedcrypto])
+  dependencies: [boost, mbedcrypto, libmemif])
 
 install_subdir('ndnph', install_dir: 'include')
 install_headers('NDNph.h', config_h)

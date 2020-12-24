@@ -146,12 +146,15 @@ private:
  */
 class DynamicRxQueueMixin : public RxQueueMixin
 {
+public:
+  static constexpr size_t DEFAULT_BUFLEN = 1500;
+
 protected:
   /**
    * @brief Constructor.
    * @param bufLen buffer length, typically MTU.
    */
-  explicit DynamicRxQueueMixin(size_t bufLen = 1500)
+  explicit DynamicRxQueueMixin(size_t bufLen = DEFAULT_BUFLEN)
     : m_region(sizeofSubRegions(bufLen, NDNPH_TRANSPORT_RXQUEUELEN))
   {
     this->initAllocBuffers([=] { return makeSubRegion(m_region, bufLen); });
