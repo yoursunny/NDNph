@@ -100,9 +100,8 @@ public:
    * @param signer private key corresponding to @c this->certRequest .
    * @return an Encodable object, or a falsy value upon failure.
    */
-  detail::SignedInterestRef toInterest(Region& region, const CaProfile& profile,
-                                       detail::ISigPolicy& signingPolicy,
-                                       const EcPrivateKey& signer) const
+  Interest::Signed toInterest(Region& region, const CaProfile& profile,
+                              detail::ISigPolicy& signingPolicy, const EcPrivateKey& signer) const
   {
     Encoder encoder(region);
     encoder.prepend([this](Encoder& encoder) { encoder.prependTlv(TT::EcdhPub, ecdhPub); },
@@ -112,7 +111,7 @@ public:
     Name name = profile.prefix.append(region, getNewComponent());
     Interest interest = region.create<Interest>();
     if (!encoder || !name || !interest) {
-      return detail::SignedInterestRef();
+      return Interest::Signed();
     }
     interest.setName(name);
     interest.setMustBeFresh(true);
@@ -180,10 +179,9 @@ public:
    * @param signer private key corresponding to @c newRequest->certReqest .
    * @return an Encodable object, or a falsy value upon failure.
    */
-  detail::SignedInterestRef toInterest(Region& region, const CaProfile& profile,
-                                       const uint8_t* requestId, detail::SessionKey& sessionKey,
-                                       detail::ISigPolicy& signingPolicy,
-                                       const EcPrivateKey& signer) const
+  Interest::Signed toInterest(Region& region, const CaProfile& profile, const uint8_t* requestId,
+                              detail::SessionKey& sessionKey, detail::ISigPolicy& signingPolicy,
+                              const EcPrivateKey& signer) const
   {
     assert(challenge != nullptr);
     Encoder encoder(region);
@@ -192,7 +190,7 @@ public:
       params);
     encoder.trim();
     if (!encoder) {
-      return detail::SignedInterestRef();
+      return Interest::Signed();
     }
     auto encrypted = sessionKey.encrypt(region, tlv::Value(encoder), requestId);
 
@@ -201,7 +199,7 @@ public:
       { getChallengeComponent(), Component(region, detail::RequestIdLen::value, requestId) }, true);
     Interest interest = region.create<Interest>();
     if (!encrypted || !name || !interest) {
-      return detail::SignedInterestRef();
+      return Interest::Signed();
     }
     interest.setName(name);
     interest.setMustBeFresh(true);
@@ -277,8 +275,8 @@ public:
     return m_state;
   }
 
-  detail::SignedInterestRef makeNewRequest(Region& packetRegion, const EcPublicKey& pub,
-                                           const EcPrivateKey& pvt)
+  Interest::Signed makeNewRequest(Region& packetRegion, const EcPublicKey& pub,
+                                  const EcPrivateKey& pvt)
   {
     if (m_state != State::NEW_REQ) {
       return setFailure();
@@ -332,7 +330,7 @@ public:
     return m_state == State::CHALLENGE_EXEC;
   }
 
-  detail::SignedInterestRef makeChallengeRequest(Region& packetRegion)
+  Interest::Signed makeChallengeRequest(Region& packetRegion)
   {
     if (m_state != State::CHALLENGE_REQ) {
       return setFailure();
@@ -370,7 +368,7 @@ public:
   }
 
 private:
-  template<typename T = detail::SignedInterestRef>
+  template<typename T = Interest::Signed>
   T setFailure(T&& value = T())
   {
     if (!value) {

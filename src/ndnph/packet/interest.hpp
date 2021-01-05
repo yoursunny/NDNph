@@ -347,22 +347,26 @@ public:
                        [this](Encoder& encoder) { encodeMiddle(encoder); });
   }
 
+  /** @brief Result of Interest::sign operation. */
+  using Signed = detail::SignedInterestRef;
+
+  /** @brief Result of Interest::parameterize operation. */
   class Parameterized : public detail::ParameterizedInterestRef
   {
   public:
     using detail::ParameterizedInterestRef::ParameterizedInterestRef;
 
-    detail::SignedInterestRef sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const
+    Signed sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const
     {
-      return detail::SignedInterestRef(obj, m_appParameters, key, std::move(sigInfo));
+      return Signed(obj, m_appParameters, key, std::move(sigInfo));
     }
 
     template<typename ISigPolicy>
-    detail::SignedInterestRef sign(const PrivateKey& key, Region& region, ISigPolicy& policy) const
+    Signed sign(const PrivateKey& key, Region& region, ISigPolicy& policy) const
     {
       ISigInfo si;
       if (!policy.create(region, si)) {
-        return detail::SignedInterestRef();
+        return Signed();
       }
       return sign(key, si);
     }
@@ -395,7 +399,7 @@ public:
    * call sign() on its return value.
    */
   template<typename... Arg>
-  detail::SignedInterestRef sign(Arg&&... arg) const
+  Signed sign(Arg&&... arg) const
   {
     return parameterize(tlv::Value()).sign(std::forward<Arg>(arg)...);
   }

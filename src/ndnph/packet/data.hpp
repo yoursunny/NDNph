@@ -262,15 +262,18 @@ public:
     return Decoder(encoder.begin(), encoder.size()).decode(*this);
   }
 
+  /** @brief Result of Data::sign operation. */
+  using Signed = detail::SignedDataRef;
+
   /**
    * @brief Sign the packet with a private key.
    * @return an Encodable object. This object is valid only if Data and PrivateKey are kept alive.
    *         It's recommended to pass it to Encoder immediately without saving as variable.
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
    */
-  detail::SignedDataRef sign(const PrivateKey& key, DSigInfo sigInfo = DSigInfo()) const
+  Signed sign(const PrivateKey& key, DSigInfo sigInfo = DSigInfo()) const
   {
-    return detail::SignedDataRef(obj, key, std::move(sigInfo));
+    return Signed(obj, key, std::move(sigInfo));
   }
 
   /**

@@ -59,7 +59,7 @@ public:
    * @param signer private key corresponding to @c cert .
    * @return an Encodable object, or a falsy value upon failure.
    */
-  detail::SignedDataRef toData(Region& region, EcPrivateKey& signer) const
+  Data::Signed toData(Region& region, EcPrivateKey& signer) const
   {
     Encoder encoder(region);
     encoder.prepend([this](Encoder& encoder) { encoder.prependTlv(TT::CaPrefix, prefix); },
@@ -76,7 +76,7 @@ public:
 
     Data data = region.create<Data>();
     if (!encoder || !version || !segment || !name || !data) {
-      return detail::SignedDataRef();
+      return Data::Signed();
     }
     data.setName(name);
     data.setFreshnessPeriod(30000);
@@ -132,8 +132,8 @@ public:
    * @param signer private key corresponding to CA certificate.
    * @return an Encodable object, or a falsy value upon failure.
    */
-  detail::SignedDataRef toData(Region& region, const Interest& newRequest,
-                               const ChallengeList& challenges, const EcPrivateKey& signer) const
+  Data::Signed toData(Region& region, const Interest& newRequest, const ChallengeList& challenges,
+                      const EcPrivateKey& signer) const
   {
     Encoder encoder(region);
     encoder.prepend(
@@ -154,7 +154,7 @@ public:
 
     Data data = region.create<Data>();
     if (!encoder || !data || !newRequest) {
-      return detail::SignedDataRef();
+      return Data::Signed();
     }
     data.setName(newRequest.getName());
     data.setFreshnessPeriod(4000);
@@ -237,9 +237,8 @@ public:
    * @param signer private key corresponding to CA certificate.
    * @return an Encodable object, or a falsy value upon failure.
    */
-  detail::SignedDataRef toData(Region& region, const Interest& challengeRequest,
-                               const uint8_t* requestId, detail::SessionKey& sessionKey,
-                               const EcPrivateKey& signer) const
+  Data::Signed toData(Region& region, const Interest& challengeRequest, const uint8_t* requestId,
+                      detail::SessionKey& sessionKey, const EcPrivateKey& signer) const
   {
     Encoder encoder(region);
     switch (status) {
@@ -263,13 +262,13 @@ public:
     encoder.prepend(tlv::NniElement<>(TT::Status, status));
     encoder.trim();
     if (!encoder) {
-      return detail::SignedDataRef();
+      return Data::Signed();
     }
     auto encrypted = sessionKey.encrypt(region, tlv::Value(encoder), requestId);
 
     Data data = region.create<Data>();
     if (!encrypted || !data || !challengeRequest) {
-      return detail::SignedDataRef();
+      return Data::Signed();
     }
     data.setName(challengeRequest.getName());
     data.setFreshnessPeriod(4000);
@@ -278,7 +277,7 @@ public:
   }
 };
 
-inline detail::SignedDataRef
+inline Data::Signed
 makeError(Region& region, const Interest& interest, uint8_t errorCode, const EcPrivateKey& signer)
 {
   Encoder encoder(region);
@@ -288,7 +287,7 @@ makeError(Region& region, const Interest& interest, uint8_t errorCode, const EcP
 
   Data data = region.create<Data>();
   if (!encoder || !data || !interest) {
-    return detail::SignedDataRef();
+    return Data::Signed();
   }
   data.setName(interest.getName());
   data.setFreshnessPeriod(4000);
@@ -316,7 +315,7 @@ public:
     }
   }
 
-  detail::SignedDataRef handleNewRequest(Region& packetRegion, const Interest& interest)
+  Data::Signed handleNewRequest(Region& packetRegion, const Interest& interest)
   {
     if (!m_newRequest.fromInterest(m_region, interest, m_profile, m_signingPolicy)) {
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
@@ -329,12 +328,12 @@ public:
         !port::RandomSource::generate(m_newResponse.requestId, sizeof(m_newResponse.requestId)) ||
         !m_sessionKey.makeKey(ecdhPvt, m_newRequest.ecdhPub, m_newResponse.salt,
                               m_newResponse.requestId)) {
-      return detail::SignedDataRef();
+      return Data::Signed();
     }
     return m_newResponse.toData(packetRegion, interest, m_challenges, m_signer);
   }
 
-  detail::SignedDataRef handleChallengeRequest(Region& packetRegion, const Interest& interest)
+  Data::Signed handleChallengeRequest(Region& packetRegion, const Interest& interest)
   {
     m_challengeRegion->reset();
     Challenge* prevChallenge = m_challengeRequest.challenge;
