@@ -56,4 +56,9 @@
 #include "ndnph/tlv/value.hpp"
 #include "ndnph/tlv/varnum.hpp"
 #include "ndnph/port/transport/port.hpp"
+#ifdef NDNPH_WANT_CLI
+#include "ndnph/cli/io.hpp"
+#include "ndnph/cli/keychain.hpp"
+#include "ndnph/cli/uplink.hpp"
+#endif // NDNPH_WANT_CLI
 #endif // NDNPH_H

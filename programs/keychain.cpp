@@ -1,7 +1,10 @@
-#include "cli-common.hpp"
+#define NDNPH_WANT_CLI
+#include <NDNph-config.h>
+#include <NDNph.h>
+#include <iomanip>
 
 ndnph::StaticRegion<65536> region;
-ndnph::KeyChain& keyChain = cli_common::openKeyChain();
+ndnph::KeyChain& keyChain = ndnph::cli::openKeyChain();
 
 static bool
 keygen(int argc, char** argv)
@@ -9,7 +12,7 @@ keygen(int argc, char** argv)
   if (argc != 4) {
     return false;
   }
-  std::string id = cli_common::checkKeyChainId(argv[2]);
+  std::string id = ndnph::cli::checkKeyChainId(argv[2]);
   auto name = ndnph::Name::parse(region, argv[3]);
 
   ndnph::EcPrivateKey pvt;
@@ -26,7 +29,7 @@ keygen(int argc, char** argv)
     exit(1);
   }
 
-  cli_common::output(cert);
+  ndnph::cli::output(cert);
   return true;
 }
 
@@ -36,8 +39,8 @@ certinfo(int argc, char** argv)
   if (argc != 3) {
     return false;
   }
-  std::string id = cli_common::checkKeyChainId(argv[2]);
-  auto cert = cli_common::loadCertificate(region, id + "_cert");
+  std::string id = ndnph::cli::checkKeyChainId(argv[2]);
+  auto cert = ndnph::cli::loadCertificate(region, id + "_cert");
   auto vp = ndnph::certificate::getValidity(cert);
 
   std::cout << "Name:     " << cert.getName() << std::endl;
@@ -53,9 +56,9 @@ certexport(int argc, char** argv)
   if (argc != 3) {
     return false;
   }
-  std::string id = cli_common::checkKeyChainId(argv[2]);
-  auto cert = cli_common::loadCertificate(region, id + "_cert");
-  cli_common::output(cert);
+  std::string id = ndnph::cli::checkKeyChainId(argv[2]);
+  auto cert = ndnph::cli::loadCertificate(region, id + "_cert");
+  ndnph::cli::output(cert);
   return true;
 }
 
@@ -65,20 +68,20 @@ certsign(int argc, char** argv)
   if (argc != 3) {
     return false;
   }
-  std::string id = cli_common::checkKeyChainId(argv[2]);
+  std::string id = ndnph::cli::checkKeyChainId(argv[2]);
 
   ndnph::EcPrivateKey issuerPvt;
   ndnph::EcPublicKey issuerPub;
-  cli_common::loadKey(region, id + "_key", issuerPvt, issuerPub);
+  ndnph::cli::loadKey(region, id + "_key", issuerPvt, issuerPub);
 
   ndnph::EcPublicKey pub;
-  cli_common::inputCertificate(region, &pub);
+  ndnph::cli::inputCertificate(region, &pub);
   ndnph::ValidityPeriod vp;
   time(&vp.notBefore);
   vp.notAfter = vp.notBefore + 86400 * 90;
 
   auto cert = pub.buildCertificate(region, pub.getName(), vp, issuerPvt);
-  cli_common::output(cert);
+  ndnph::cli::output(cert);
   return true;
 }
 
@@ -90,7 +93,7 @@ certimport(int argc, char** argv)
   }
   std::string id(argv[2]);
 
-  auto cert = cli_common::inputCertificate(region, nullptr);
+  auto cert = ndnph::cli::inputCertificate(region, nullptr);
   if (!keyChain.certs.set((id + "_cert").data(), cert, region)) {
     fprintf(stderr, "Save certificate error\n");
     exit(1);

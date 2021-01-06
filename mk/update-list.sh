@@ -8,11 +8,12 @@ export LC_ALL=C
   cd src/ndnph
   echo '#ifndef NDNPH_H'
   echo '#define NDNPH_H'
-  for P in clock ec fs queue random sha256 timingsafe; do
-    echo '#include "ndnph/port/'$P'/port.hpp"'
-  done
-  find . -path ./port -prune -o -name '*.hpp' -printf '%P\n' | sort | sed 's|.*|#include "ndnph/\0"|'
+  find port -path port/transport -prune -o -name 'port.hpp' -printf '%P\n' | sort | sed -e 's|.*|#include "ndnph/port/\0"|'
+  find . -path ./port -prune -o -path ./cli -prune -o -name '*.hpp' -printf '%P\n' | sort | sed 's|.*|#include "ndnph/\0"|'
   echo '#include "ndnph/port/transport/port.hpp"'
+  echo '#ifdef NDNPH_WANT_CLI'
+  find cli -name '*.hpp' -printf '%P\n' | sort | sed -e 's|.*|#include "ndnph/cli/\0"|'
+  echo '#endif // NDNPH_WANT_CLI'
   echo '#endif // NDNPH_H'
 ) > src/NDNph.h
 

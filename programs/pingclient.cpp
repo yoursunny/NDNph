@@ -1,6 +1,11 @@
-#include "cli-common.hpp"
+#define NDNPH_WANT_CLI
+#include <NDNph-config.h>
+#define NDNPH_MEMIF_DEBUG
+#define NDNPH_SOCKET_DEBUG
+#include <NDNph.h>
+#include <cinttypes>
 
-ndnph::Face& face = cli_common::openUplink();
+ndnph::Face& face = ndnph::cli::openUplink();
 
 std::unique_ptr<ndnph::PingClient> client;
 

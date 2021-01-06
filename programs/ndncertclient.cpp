@@ -1,8 +1,12 @@
-#include "cli-common.hpp"
+#define NDNPH_WANT_CLI
+#include <NDNph-config.h>
+#define NDNPH_MEMIF_DEBUG
+#define NDNPH_SOCKET_DEBUG
+#include <NDNph.h>
 
 ndnph::StaticRegion<65536> region;
-ndnph::Face& face = cli_common::openUplink();
-ndnph::KeyChain& keyChain = cli_common::openKeyChain();
+ndnph::Face& face = ndnph::cli::openUplink();
+ndnph::KeyChain& keyChain = ndnph::cli::openKeyChain();
 
 const char* profileFilename = nullptr;
 std::string identitySlot;
@@ -25,11 +29,11 @@ parseArgs(int argc, char** argv)
         break;
       }
       case 'i': {
-        identitySlot = cli_common::checkKeyChainId(optarg);
+        identitySlot = ndnph::cli::checkKeyChainId(optarg);
         break;
       }
       case 'E': {
-        possessionSlot = cli_common::checkKeyChainId(optarg);
+        possessionSlot = ndnph::cli::checkKeyChainId(optarg);
         break;
       }
     }
@@ -69,7 +73,7 @@ clientCallback(void*, ndnph::Data cert)
   if (!cert) {
     exit(1);
   }
-  cli_common::output(cert);
+  ndnph::cli::output(cert);
 }
 
 int
@@ -92,7 +96,7 @@ main(int argc, char** argv)
     fprintf(stderr, "Error loading CA profile\n");
     return 1;
   }
-  cli_common::loadKey(region, identitySlot + "_key", myPvt, myPub);
+  ndnph::cli::loadKey(region, identitySlot + "_key", myPvt, myPub);
 
   ndnph::ndncert::client::ChallengeList challenges{};
   ndnph::ndncert::client::NopChallenge nopChallenge;
@@ -100,8 +104,8 @@ main(int argc, char** argv)
   std::unique_ptr<ndnph::ndncert::client::PossessionChallenge> possessionChallenge;
   if (!possessionSlot.empty()) {
     ndnph::EcPublicKey possessionPub;
-    cli_common::loadKey(region, possessionSlot + "_key", possessionPvt, possessionPub);
-    auto possessionCert = cli_common::loadCertificate(region, possessionSlot + "_cert");
+    ndnph::cli::loadKey(region, possessionSlot + "_key", possessionPvt, possessionPub);
+    auto possessionCert = ndnph::cli::loadCertificate(region, possessionSlot + "_cert");
     possessionChallenge.reset(
       new ndnph::ndncert::client::PossessionChallenge(possessionCert, possessionPvt));
     challenges[1] = possessionChallenge.get();

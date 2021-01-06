@@ -13,7 +13,7 @@ All commands accept `-h` command line flag for usage instructions.
 
 ## Environment Variables
 
-These programs can be configured through environment variables defined in `cli-common.hpp`.
+These programs can be configured through environment variables.
 
 `NDNPH_KEYCHAIN` is the filesystem path of KeyChain storage.
 This is required in programs that access the persistent KeyChain.
@@ -31,5 +31,11 @@ You can create a memif face in NDN-DPDK with this locator:
 }
 ```
 
+`NDNPH_UPLINK_UDP_LISTEN=1` enables UDP listen mode.
+
 `NDNPH_UPLINK_UDP` specifies IPv4 address of the uplink router.
 The default is `127.0.0.1`, which connects to local NFD over UDP.
+
+`NDNPH_UPLINK_UDP_PORT` specifies UDP port.
+It is used as local port in listen mode, or remote port in tunnel mode.
+The default is `6363`.
