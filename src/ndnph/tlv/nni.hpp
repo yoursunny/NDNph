@@ -36,12 +36,9 @@ public:
     }
   }
 
-private:
   static T readValue(const uint8_t* value);
 
   static void writeValue(uint8_t* room, T n);
-
-  friend NNI;
 
 private:
   T m_number = 0;
