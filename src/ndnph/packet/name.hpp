@@ -2,7 +2,6 @@
 #define NDNPH_PACKET_NAME_HPP
 
 #include "../core/input-iterator-pointer-proxy.hpp"
-#include "../tlv/value.hpp"
 #include "component.hpp"
 
 namespace ndnph {

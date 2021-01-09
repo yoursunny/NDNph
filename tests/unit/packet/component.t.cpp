@@ -50,7 +50,9 @@ TEST(Component, From)
 
   Component comp = Component::from(region, 0x04, tlv::Value(value1.data(), value1.size()),
                                    tlv::Value(value2.data(), value2.size()));
-  EXPECT_THAT(std::vector<uint8_t>(comp.tlv(), comp.tlv() + comp.size()),
+  Encoder encoder(region);
+  encoder.prepend(comp);
+  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()),
               g::ElementsAre(0x04, 0x05, 0xA0, 0xA1, 0xB0, 0xB1, 0xB2));
 }
 

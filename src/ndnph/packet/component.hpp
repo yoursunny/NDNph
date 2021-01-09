@@ -4,8 +4,7 @@
 #include "../an.hpp"
 #include "../core/printing.hpp"
 #include "../core/region.hpp"
-#include "../tlv/decoder.hpp"
-#include "../tlv/encoder.hpp"
+#include "../tlv/value.hpp"
 
 namespace ndnph {
 
@@ -173,6 +172,11 @@ public:
   size_t size() const
   {
     return m_value - m_tlv + m_length;
+  }
+
+  void encodeTo(Encoder& encoder) const
+  {
+    encoder.prepend(tlv::Value(m_tlv, size()));
   }
 
   bool decodeFrom(const Decoder::Tlv& d)

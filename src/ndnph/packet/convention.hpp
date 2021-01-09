@@ -10,27 +10,69 @@ namespace convention {
 
 /** @brief Indicate that TLV-VALUE should be a random number. */
 class RandomValue
-{};
+{
+public:
+  /**
+   * @brief Generate TLV-VALUE.
+   * @return whether success and the number.
+   */
+  std::pair<bool, uint64_t>
+  toNumber() const
+  {
+    uint64_t value = 0;
+    bool ok = port::RandomSource::generate(reinterpret_cast<uint8_t*>(&value), sizeof(value));
+    return std::make_pair(ok, value);
+  }
+};
 
 /** @brief Indicate that TLV-VALUE should be a timestamp. */
 class TimeValue
 {
 public:
-  explicit TimeValue(time_t t = 0, uint64_t multiplier = Microseconds)
-    : t(t)
-    , multiplier(multiplier)
+  /**
+   * @brief Constructor.
+   * @param t timestamp, or 0 to use current time.
+   * @param unit time unit.
+   * @param allowFallback if true, use RandomValue() when clock is unavailable.
+   */
+  explicit TimeValue(time_t t = 0, uint64_t unit = Microseconds, bool allowFallback = false)
+    : m_t(t)
+    , m_unit(unit)
+    , m_allowFallback(allowFallback)
   {}
 
-  enum Multiplier
+  enum Unit
   {
     Seconds = 1,
     Milliseconds = 1000,
     Microseconds = 1000000,
   };
 
-public:
-  time_t t;
-  uint64_t multiplier;
+  /**
+   * @brief Generate TLV-VALUE.
+   * @return whether success and the number.
+   */
+  std::pair<bool, uint64_t>
+  toNumber() const
+  {
+    time_t t = m_t;
+    if (t == 0) {
+      time(&t);
+      if (t < 540109800) {
+        if (m_allowFallback) {
+          return RandomValue().toNumber();
+        } else {
+          return std::make_pair(false, 0);
+        }
+      }
+    }
+    return std::make_pair(true, t * m_unit);
+  }
+
+private:
+  time_t m_t;
+  uint64_t m_unit;
+  bool m_allowFallback;
 };
 
 namespace detail {
@@ -97,45 +139,18 @@ public:
   }
 
   /**
-   * @brief Create with random value.
-   * @warning In case the random number generator fails, returns an empty component.
-   *          This would usually lead to encoding an invalid packet.
-   *          However, it rarely occurs on a correctly integrated system.
+   * @brief Create with RandomValue or TimeValue.
+   * @tparam G RandomValue or TimeValue.
+   * @warning In case the value generator fails, returns an empty component. This would usually
+   *          encode an invalid packet, but it rarely occurs on a correctly integrated system.
    */
-  static Component create(Region& region, const RandomValue&)
+  template<typename G>
+  static Component create(Region& region, const G& gen, decltype(&G::toNumber) = nullptr)
   {
-    uint8_t value[8];
-    if (!port::RandomSource::generate(value, sizeof(value))) {
-      return Component();
-    }
-    size_t length = 8;
-    if ((value[0] | value[1] | value[2] | value[3]) == 0x00) {
-      length = 4;
-      if ((value[4] | value[5]) == 0x00) {
-        length = 2;
-        if (value[6] == 0x00) {
-          length = 1;
-        }
-      }
-    }
-    return Component(region, tlvType, length, &value[sizeof(value) - length]);
-  }
-
-  /**
-   * @brief Create with timestamp.
-   * @param timeVal a specified timestamp, or zero to use current time.
-   *                In case the clock is unavailable, a random number is used instead.
-   */
-  static Component create(Region& region, const TimeValue& timeVal)
-  {
-    time_t t = timeVal.t;
-    if (t == 0) {
-      time(&t);
-      if (t < 540109800) {
-        return create(region, RandomValue());
-      }
-    }
-    return create(region, t * timeVal.multiplier);
+    bool ok = false;
+    uint64_t value = 0;
+    std::tie(ok, value) = gen.toNumber();
+    return create(region, value);
   }
 
   static bool match(const Component& comp)
