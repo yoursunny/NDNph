@@ -3,6 +3,7 @@
 #ifdef NDNPH_HAVE_MBED
 
 #include "../../keychain/ec.hpp"
+#include "../../packet/encrypted-message.hpp"
 #include "../../port/clock/port.hpp"
 #include "../../port/mbed-common.hpp"
 #include <mbedtls/hkdf.h>
@@ -39,18 +40,28 @@ public:
   /** @brief Encrypt to encrypted-message. */
   tlv::Value encrypt(Region& region, tlv::Value plaintext, const uint8_t* requestId)
   {
-    return m_aes.encrypt(region, plaintext, requestId, RequestIdLen::value);
+    return m_aes.encrypt<Encrypted>(region, plaintext, requestId, RequestIdLen::value);
   }
 
   /** @brief Decrypt from encrypted-message. */
-  tlv::Value decrypt(Region& region, tlv::Value encrypted, const uint8_t* requestId)
+  tlv::Value decrypt(Region& region, tlv::Value message, const uint8_t* requestId)
   {
+    Encrypted encrypted;
+    bool ok = EvDecoder::decodeValue(message.makeDecoder(),
+                                     EvDecoder::def<TT::InitializationVector>(&encrypted),
+                                     EvDecoder::def<TT::AuthenticationTag>(&encrypted),
+                                     EvDecoder::def<TT::EncryptedPayload>(&encrypted));
+    if (!ok) {
+      return tlv::Value();
+    }
     return m_aes.decrypt(region, encrypted, requestId, RequestIdLen::value);
   }
 
 private:
-  using AesGcm =
-    mbedtls::AesGcm<128, TT::InitializationVector, TT::AuthenticationTag, TT::EncryptedPayload>;
+  using AesGcm = mbedtls::AesGcm<128>;
+  using Encrypted =
+    EncryptedMessage<TT::InitializationVector, AesGcm::IvLen::value, TT::AuthenticationTag,
+                     AesGcm::TagLen::value, TT::EncryptedPayload>;
   AesGcm m_aes;
 };
 

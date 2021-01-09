@@ -16,8 +16,7 @@ public:
    * @brief Generate TLV-VALUE.
    * @return whether success and the number.
    */
-  std::pair<bool, uint64_t>
-  toNumber() const
+  std::pair<bool, uint64_t> toNumber() const
   {
     uint64_t value = 0;
     bool ok = port::RandomSource::generate(reinterpret_cast<uint8_t*>(&value), sizeof(value));
@@ -52,8 +51,7 @@ public:
    * @brief Generate TLV-VALUE.
    * @return whether success and the number.
    */
-  std::pair<bool, uint64_t>
-  toNumber() const
+  std::pair<bool, uint64_t> toNumber() const
   {
     time_t t = m_t;
     if (t == 0) {

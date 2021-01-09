@@ -185,6 +185,13 @@ public:
     return m_ok;
   }
 
+  bool write(uint8_t room[12])
+  {
+    tlv::NNI8::writeValue(room, random);
+    tlv::NNI4::writeValue(room + 8, counter);
+    return true;
+  }
+
   bool advance(size_t size)
   {
     uint64_t nBlocks = (size / BlockSize::value) + static_cast<int>(size % BlockSize::value != 0);
@@ -196,14 +203,10 @@ public:
     return m_ok;
   }
 
-  bool check(tlv::Value iv, size_t size)
+  bool check(const uint8_t* iv, size_t size)
   {
-    if (iv.size() != sizeof(random) + sizeof(counter)) {
-      return false;
-    }
-
-    uint64_t rand = tlv::NNI8::readValue(iv.begin());
-    uint32_t cnt = tlv::NNI4::readValue(iv.begin() + sizeof(rand));
+    uint64_t rand = tlv::NNI8::readValue(iv);
+    uint32_t cnt = tlv::NNI4::readValue(iv + sizeof(rand));
 
     if (counter == 0) {
       random = rand;
@@ -229,25 +232,19 @@ public:
 /**
  * @brief AES-GCM secret key.
  * @tparam keyBits AES key size in bits, either 128 or 256.
- * @tparam ttIV TLV-TYPE of initialization-vector element.
- * @tparam ttTag TLV-TYPE of authentication-tag element.
- * @tparam ttEP TLV-TYPE of encrypted-payload element.
  *
  * InitializationVector is 12 octets. Other sizes are not supported. IV is constructed from an
  * 8-octet random number and a 4-octet counter, incremented for every encrypted block.
  * AuthenticationTag is 16 octets. Other sizes are not supported.
- *
- * TLV encoding has the structure:
- *   encrypted-message = initialization-vector authentication-tag encrypted-payload
- * TLV-TYPE numbers are given in template parameters. Other structures are not supported.
  */
-template<int keyBits, int ttIV, int ttTag, int ttEP>
+template<int keyBits>
 class AesGcm
 {
 public:
   static_assert(keyBits == 128 || keyBits == 256, "");
   using Key = std::array<uint8_t, keyBits / 8>;
-  using AuthenticationTagLen = std::integral_constant<size_t, 16>;
+  using IvLen = std::integral_constant<size_t, 12>;
+  using TagLen = std::integral_constant<size_t, 16>;
 
   explicit AesGcm()
   {
@@ -275,6 +272,7 @@ public:
 
   /**
    * @brief Encrypt to encrypted-message.
+   * @tparam Encrypted a specialization of @c EncryptedMessage .
    * @param region where to allocate memory.
    * @param plaintext input plaintext.
    * @param aad additional associated data.
@@ -282,23 +280,19 @@ public:
    * @return encrypted-message, or a falsy value upon failure.
    * @post internal IV is incremented by number of encrypted blocks.
    */
+  template<typename Encrypted>
   tlv::Value encrypt(Region& region, tlv::Value plaintext, const uint8_t* aad = nullptr,
                      size_t aadLen = 0)
   {
+    CheckEncryptedMessage<Encrypted>{};
     Encoder encoder(region);
-    uint8_t* ciphertext = encoder.prependRoom(plaintext.size());
-    encoder.prependTypeLength(ttEP, plaintext.size());
-    uint8_t* tag = encoder.prependRoom(AuthenticationTagLen::value);
-    encoder.prependTypeLength(ttTag, AuthenticationTagLen::value);
-    encoder.prepend(tlv::NNI8(m_ivEncrypt.random), tlv::NNI4(m_ivEncrypt.counter));
-    const uint8_t* iv = encoder.begin();
-    encoder.prependTypeLength(ttIV, 12);
+    auto place = Encrypted::prependInPlace(encoder, plaintext.size());
     encoder.trim();
 
-    bool ok = m_ok && !!encoder &&
-              mbedtls_gcm_crypt_and_tag(&m_ctx, MBEDTLS_GCM_ENCRYPT, plaintext.size(), iv, 12, aad,
-                                        aadLen, plaintext.begin(), ciphertext,
-                                        AuthenticationTagLen::value, tag) == 0 &&
+    bool ok = m_ok && !!encoder && m_ivEncrypt.write(place.iv) &&
+              mbedtls_gcm_crypt_and_tag(&m_ctx, MBEDTLS_GCM_ENCRYPT, plaintext.size(), place.iv,
+                                        IvLen::value, aad, aadLen, plaintext.begin(),
+                                        place.ciphertext, TagLen::value, place.tag) == 0 &&
               m_ivEncrypt.advance(plaintext.size());
     if (!ok) {
       encoder.discard();
@@ -309,6 +303,7 @@ public:
 
   /**
    * @brief Decrypt from encrypted-message.
+   * @tparam Encrypted a specialization of @c EncryptedMessage .
    * @param region where to allocate memory.
    * @param encrypted encrypted-message.
    * @param aad additional associated data.
@@ -321,27 +316,23 @@ public:
    * for a second time would result in failure due to duplicate IV. Caller should deduplicate
    * incoming messages, or disable this check by calling @p clearDecryptIvChecker() every time.
    */
-  tlv::Value decrypt(Region& region, tlv::Value encrypted, const uint8_t* aad = nullptr,
+  template<typename Encrypted>
+  tlv::Value decrypt(Region& region, const Encrypted& encrypted, const uint8_t* aad = nullptr,
                      size_t aadLen = 0)
   {
-    tlv::Value iv, tag, ciphertext;
+    CheckEncryptedMessage<Encrypted>{};
+    uint8_t* plaintext = region.alloc(encrypted.ciphertext.size());
     bool ok =
-      EvDecoder::decodeValue(encrypted.makeDecoder(), EvDecoder::def<ttIV>(&iv),
-                             EvDecoder::def<ttTag>(&tag), EvDecoder::def<ttEP>(&ciphertext));
-    if (!(m_ok && ok && tag.size() == AuthenticationTagLen::value &&
-          m_ivDecrypt.check(iv, ciphertext.size()))) {
-      return tlv::Value();
-    }
-
-    uint8_t* plaintext = region.alloc(ciphertext.size());
-    ok = plaintext != nullptr &&
-         mbedtls_gcm_auth_decrypt(&m_ctx, ciphertext.size(), iv.begin(), iv.size(), aad, aadLen,
-                                  tag.begin(), tag.size(), ciphertext.begin(), plaintext) == 0;
+      m_ok && m_ivDecrypt.check(encrypted.iv.data(), encrypted.ciphertext.size()) &&
+      plaintext != nullptr &&
+      mbedtls_gcm_auth_decrypt(&m_ctx, encrypted.ciphertext.size(), encrypted.iv.data(),
+                               encrypted.iv.size(), aad, aadLen, encrypted.tag.data(),
+                               encrypted.tag.size(), encrypted.ciphertext.begin(), plaintext) == 0;
     if (!ok) {
-      region.free(plaintext, ciphertext.size());
+      region.free(plaintext, encrypted.ciphertext.size());
       return tlv::Value();
     }
-    return tlv::Value(plaintext, ciphertext.size());
+    return tlv::Value(plaintext, encrypted.ciphertext.size());
   }
 
   void clearDecryptIvChecker()
@@ -350,6 +341,13 @@ public:
   }
 
 private:
+  template<typename Encrypted>
+  struct CheckEncryptedMessage
+  {
+    static_assert(Encrypted::IvLen::value == IvLen::value, "");
+    static_assert(Encrypted::TagLen::value == TagLen::value, "");
+  };
+
   mbedtls_gcm_context m_ctx;
   detail::IvHelper m_ivEncrypt;
   detail::IvHelper m_ivDecrypt;
