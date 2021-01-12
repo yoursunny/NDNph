@@ -71,7 +71,7 @@ public:
            EvDecoder::decodeValue(
              data.getContent().makeDecoder(),
              EvDecoder::def<TT::CaPrefix>([&](const Decoder::Tlv& d) {
-               if (!d.vd().decode(prefix) || data.getName().getPrefix(-3) != prefix) {
+               if (!d.vd().decode(prefix) || data.getName().getPrefix(-4) != prefix) {
                  return false;
                }
                prefix = prefix.clone(region);
@@ -108,7 +108,7 @@ public:
                     [this](Encoder& encoder) { encoder.prependTlv(TT::CertRequest, certRequest); });
     encoder.trim();
 
-    Name name = profile.prefix.append(region, getNewComponent());
+    Name name = profile.prefix.append(region, { getCaComponent(), getNewComponent() });
     Interest interest = region.create<Interest>();
     if (!encoder || !name || !interest) {
       return Interest::Signed();
@@ -194,9 +194,10 @@ public:
     }
     auto encrypted = sessionKey.encrypt(region, tlv::Value(encoder), requestId);
 
-    Name name = profile.prefix.append(
-      region,
-      { getChallengeComponent(), Component(region, detail::RequestIdLen::value, requestId) }, true);
+    Name name = profile.prefix.append(region,
+                                      { getCaComponent(), getChallengeComponent(),
+                                        Component(region, detail::RequestIdLen::value, requestId) },
+                                      true);
     Interest interest = region.create<Interest>();
     if (!encrypted || !name || !interest) {
       return Interest::Signed();
@@ -259,15 +260,15 @@ public:
     assert(m_challengeRegion != nullptr);
   }
 
-  enum State
+  enum class State
   {
-    NEW_REQ,        ///< ready to send NEW request
-    NEW_RES,        ///< waiting for NEW response
-    CHALLENGE_EXEC, ///< waiting for challenge execution
-    CHALLENGE_REQ,  ///< ready to send CHALLENGE request
-    CHALLENGE_RES,  ///< waiting for CHALLENGE response
-    SUCCESS,        ///< certificate issued
-    FAILURE,        ///< procedure failed
+    SendNewRequest,
+    WaitNewResponse,
+    ExecuteChallenge,
+    SendChallengeRequest,
+    WaitChallengeResponse,
+    Success,
+    Failure,
   };
 
   State getState() const
@@ -278,7 +279,7 @@ public:
   Interest::Signed makeNewRequest(Region& packetRegion, const EcPublicKey& pub,
                                   const EcPrivateKey& pvt)
   {
-    if (m_state != State::NEW_REQ) {
+    if (m_state != State::SendNewRequest) {
       return setFailure();
     }
 
@@ -300,13 +301,13 @@ public:
       return setFailure();
     }
 
-    m_state = State::NEW_RES;
+    m_state = State::WaitNewResponse;
     return setFailure(m_newRequest.toInterest(packetRegion, m_profile, m_signingPolicy, pvt));
   }
 
   bool handleNewResponse(const Data& data)
   {
-    if (m_state != State::NEW_RES ||
+    if (m_state != State::WaitNewResponse ||
         !m_newResponse.fromData(m_region, data, m_profile, m_challenges)) {
       return setFailure(false);
     }
@@ -327,15 +328,15 @@ public:
 
   bool waitForChallenge() const
   {
-    return m_state == State::CHALLENGE_EXEC;
+    return m_state == State::ExecuteChallenge;
   }
 
   Interest::Signed makeChallengeRequest(Region& packetRegion)
   {
-    if (m_state != State::CHALLENGE_REQ) {
+    if (m_state != State::SendChallengeRequest) {
       return setFailure();
     }
-    m_state = State::CHALLENGE_RES;
+    m_state = State::WaitChallengeResponse;
     return setFailure(m_challengeRequest.toInterest(
       packetRegion, m_profile, m_newResponse.requestId, m_sessionKey, m_signingPolicy, *m_pvt));
   }
@@ -343,7 +344,7 @@ public:
   bool handleChallengeResponse(const Data& data)
   {
     m_challengeRegion->reset();
-    if (m_state != State::CHALLENGE_RES ||
+    if (m_state != State::WaitChallengeResponse ||
         !m_challengeResponse.fromData(*m_challengeRegion, data, m_profile, m_newResponse.requestId,
                                       m_sessionKey)) {
       return setFailure(false);
@@ -353,10 +354,10 @@ public:
         prepareChallengeRequest();
         break;
       case Status::SUCCESS:
-        m_state = State::SUCCESS;
+        m_state = State::Success;
         break;
       default:
-        m_state = State::FAILURE;
+        m_state = State::Failure;
         break;
     }
     return true;
@@ -372,14 +373,14 @@ private:
   T setFailure(T&& value = T())
   {
     if (!value) {
-      m_state = State::FAILURE;
+      m_state = State::Failure;
     }
     return value;
   }
 
   void prepareChallengeRequest()
   {
-    m_state = State::CHALLENGE_EXEC;
+    m_state = State::ExecuteChallenge;
     m_challengeRequest.params.clear();
     if (m_challengeResponse.status == Status::BEFORE_CHALLENGE) {
       m_challengeRequest.challenge->start(*m_challengeRegion, m_challengeRequest, challengeCallback,
@@ -392,7 +393,7 @@ private:
 
   static void challengeCallback(void* self, bool ok)
   {
-    static_cast<Session*>(self)->m_state = ok ? State::CHALLENGE_REQ : State::FAILURE;
+    static_cast<Session*>(self)->m_state = ok ? State::SendChallengeRequest : State::Failure;
   }
 
 private:
@@ -408,7 +409,7 @@ private:
   detail::SessionKey m_sessionKey;
   ChallengeRequest m_challengeRequest;
   ChallengeResponse m_challengeResponse;
-  State m_state = State::NEW_REQ;
+  State m_state = State::SendNewRequest;
 };
 
 /** @brief Client application. */
@@ -474,18 +475,18 @@ private:
     // StaticRegion<1024> packetRegion;
     StaticRegion<2048> packetRegion;
     switch (m_session.getState()) {
-      case Session::State::NEW_RES:
-      case Session::State::CHALLENGE_RES: {
+      case Session::State::WaitNewResponse:
+      case Session::State::WaitChallengeResponse: {
         if (timeout) {
           invokeCallback();
         }
         break;
       }
-      case Session::State::CHALLENGE_REQ: {
+      case Session::State::SendChallengeRequest: {
         sendWithDeadline(m_session.makeChallengeRequest(packetRegion));
         break;
       }
-      case Session::State::SUCCESS: {
+      case Session::State::Success: {
         auto interest = packetRegion.create<Interest>();
         interest.setName(m_session.getIssuedCertName());
         sendWithDeadline(interest);
@@ -511,11 +512,11 @@ private:
     }
 
     switch (m_session.getState()) {
-      case Session::State::NEW_RES: {
+      case Session::State::WaitNewResponse: {
         m_session.handleNewResponse(data);
         break;
       }
-      case Session::State::CHALLENGE_RES: {
+      case Session::State::WaitChallengeResponse: {
         m_session.handleChallengeResponse(data);
         break;
       }

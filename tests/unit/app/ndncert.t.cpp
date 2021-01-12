@@ -20,7 +20,7 @@ protected:
   {
     DynamicRegion packetRegion(4096);
 
-    sProfile.prefix = Name::parse(sRegion, "/authority/CA");
+    sProfile.prefix = Name::parse(sRegion, "/authority");
     ASSERT_TRUE(sProfile.prefix);
     sProfile.maxValidityPeriod = 86400;
     ASSERT_TRUE(ec::generate(sRegion, sProfile.prefix.getPrefix(-1), sPvt, sPub));
@@ -30,8 +30,9 @@ protected:
 
     Data profileData = packetRegion.create<Data>();
     ASSERT_TRUE(profileData.decodeFrom(sProfile.toData(packetRegion, sPvt)));
+    EXPECT_EQ(test::toString(profileData.getName().getPrefix(3)), "/8=authority/8=CA/8=INFO");
     ASSERT_TRUE(cProfile.fromData(cRegion, profileData));
-    EXPECT_EQ(test::toString(cProfile.prefix), "/8=authority/8=CA");
+    EXPECT_EQ(test::toString(cProfile.prefix), "/8=authority");
     EXPECT_EQ(cProfile.maxValidityPeriod, 86400);
 
     Name cName = Name::parse(cRegion, "/client");
@@ -96,7 +97,7 @@ TEST_F(NdncertFixture, Packets)
   server::NopChallenge sNopChallenge;
   server::Session sSession(sProfile, sPvt, { &sNopChallenge });
 
-  EXPECT_EQ(cSession.getState(), client::Session::State::NEW_REQ);
+  EXPECT_EQ(cSession.getState(), client::Session::State::SendNewRequest);
   auto newRequestInterest = packetRegion.create<Interest>();
   ASSERT_TRUE(newRequestInterest.decodeFrom(cSession.makeNewRequest(packetRegion, cPub, cPvt)));
 
@@ -104,14 +105,14 @@ TEST_F(NdncertFixture, Packets)
   ASSERT_TRUE(
     newResponseData.decodeFrom(sSession.handleNewRequest(packetRegion, newRequestInterest)));
 
-  EXPECT_EQ(cSession.getState(), client::Session::State::NEW_RES);
+  EXPECT_EQ(cSession.getState(), client::Session::State::WaitNewResponse);
   ASSERT_TRUE(cSession.handleNewResponse(newResponseData));
   packetRegion.reset();
 
   EXPECT_FALSE(!!cSession.getIssuedCertName());
   EXPECT_FALSE(cSession.waitForChallenge());
 
-  EXPECT_EQ(cSession.getState(), client::Session::State::CHALLENGE_REQ);
+  EXPECT_EQ(cSession.getState(), client::Session::State::SendChallengeRequest);
   auto challengeRequestInterest = packetRegion.create<Interest>();
   ASSERT_TRUE(challengeRequestInterest.decodeFrom(cSession.makeChallengeRequest(packetRegion)));
 
@@ -119,11 +120,11 @@ TEST_F(NdncertFixture, Packets)
   ASSERT_TRUE(challengeResponseData.decodeFrom(
     sSession.handleChallengeRequest(packetRegion, challengeRequestInterest)));
 
-  EXPECT_EQ(cSession.getState(), client::Session::State::CHALLENGE_RES);
+  EXPECT_EQ(cSession.getState(), client::Session::State::WaitChallengeResponse);
   ASSERT_TRUE(cSession.handleChallengeResponse(challengeResponseData));
   packetRegion.reset();
 
-  EXPECT_EQ(cSession.getState(), client::Session::State::SUCCESS);
+  EXPECT_EQ(cSession.getState(), client::Session::State::Success);
   EXPECT_FALSE(cSession.waitForChallenge());
   EXPECT_TRUE(!!cSession.getIssuedCertName());
 }

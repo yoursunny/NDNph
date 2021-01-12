@@ -72,7 +72,7 @@ public:
 
     Component version = convention::Version::create(region, convention::TimeValue());
     Component segment = convention::Segment::create(region, 0);
-    Name name = prefix.append(region, { getInfoComponent(), version, segment });
+    Name name = prefix.append(region, { getCaComponent(), getInfoComponent(), version, segment });
 
     Data data = region.create<Data>();
     if (!encoder || !version || !segment || !name || !data) {
@@ -93,8 +93,9 @@ public:
   /** @brief Determine whether @p name is a valid NEW request packet name. */
   static bool isName(const CaProfile& profile, const Name& name)
   {
-    return name.size() == profile.prefix.size() + 2 && profile.prefix.isPrefixOf(name) &&
-           name[-2] == getNewComponent() && name[-1].is<convention::ParamsDigest>();
+    return name.size() == profile.prefix.size() + 3 && profile.prefix.isPrefixOf(name) &&
+           name[-3] == getCaComponent() && name[-2] == getNewComponent() &&
+           name[-1].is<convention::ParamsDigest>();
   }
 
   /**
@@ -170,8 +171,9 @@ public:
   /** @brief Determine whether @p name is a valid CHALLENGE request packet name. */
   static bool isName(const CaProfile& profile, const Name& name)
   {
-    return name.size() == profile.prefix.size() + 3 && profile.prefix.isPrefixOf(name) &&
-           name[-3] == getChallengeComponent() && name[-2].type() == TT::GenericNameComponent &&
+    return name.size() == profile.prefix.size() + 4 && profile.prefix.isPrefixOf(name) &&
+           name[-4] == getCaComponent() && name[-3] == getChallengeComponent() &&
+           name[-2].type() == TT::GenericNameComponent &&
            name[-2].length() == detail::RequestIdLen::value &&
            name[-1].is<convention::ParamsDigest>();
   }
