@@ -64,6 +64,7 @@ TEST(Component, Parse)
     auto comp = Component::parse(region, "A");
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), TT::GenericNameComponent);
+    EXPECT_EQ(comp.length(), 1);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
                 g::ElementsAre(0x41));
     EXPECT_EQ(test::toString(comp), "8=A");
@@ -71,12 +72,13 @@ TEST(Component, Parse)
   }
 
   {
-    auto comp = Component::parse(region, "56=9%3D%a6");
+    auto comp = Component::parse(region, "56=%009%3D%00%a6%00");
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), 56);
+    EXPECT_EQ(comp.length(), 6);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
-                g::ElementsAre(0x39, 0x3D, 0xA6));
-    EXPECT_EQ(test::toString(comp), "56=9%3D%A6");
+                g::ElementsAre(0x00, 0x39, 0x3D, 0x00, 0xA6, 0x00));
+    EXPECT_EQ(test::toString(comp), "56=%009%3D%00%A6%00");
     region.reset();
   }
 
@@ -93,6 +95,7 @@ TEST(Component, Parse)
     auto comp = Component::parse(region, "56=....");
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), 56);
+    EXPECT_EQ(comp.length(), 1);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
                 g::ElementsAre(0x2E));
     EXPECT_EQ(test::toString(comp), "56=....");
@@ -103,6 +106,7 @@ TEST(Component, Parse)
     auto comp = Component::parse(region, "255=..D..");
     ASSERT_FALSE(!comp);
     EXPECT_EQ(comp.type(), 255);
+    EXPECT_EQ(comp.length(), 5);
     EXPECT_THAT(std::vector<uint8_t>(comp.value(), comp.value() + comp.length()),
                 g::ElementsAre(0x2E, 0x2E, 0x44, 0x2E, 0x2E));
     EXPECT_EQ(test::toString(comp), "255=..D..");

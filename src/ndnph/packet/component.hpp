@@ -248,8 +248,8 @@ private:
     output(buf);
     size_t nNonPeriods = 0;
     std::for_each(m_value, m_value + m_length, [&](uint8_t ch) {
-      if (strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~", ch) !=
-          nullptr) {
+      if (ch != 0x00 && strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
+                               ch) != nullptr) {
         snprintf(buf, sizeof(buf), "%c", static_cast<char>(ch));
       } else {
         snprintf(buf, sizeof(buf), "%%%02X", static_cast<int>(ch));
