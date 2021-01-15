@@ -57,6 +57,36 @@ class InterestRefBase : public RefRegion<InterestObj>
 public:
   using RefRegion::RefRegion;
 
+  const Name& getName() const
+  {
+    return obj->name;
+  }
+
+  bool getCanBePrefix() const
+  {
+    return obj->canBePrefix;
+  }
+
+  bool getMustBeFresh() const
+  {
+    return obj->mustBeFresh;
+  }
+
+  uint32_t getNonce() const
+  {
+    return obj->nonce;
+  }
+
+  uint16_t getLifetime() const
+  {
+    return obj->lifetime;
+  }
+
+  uint8_t getHopLimit() const
+  {
+    return obj->hopLimit;
+  }
+
 protected:
   ~InterestRefBase() = default;
 
@@ -258,19 +288,9 @@ class Interest : public detail::InterestRefBase
 public:
   using InterestRefBase::InterestRefBase;
 
-  const Name& getName() const
-  {
-    return obj->name;
-  }
-
   void setName(const Name& v)
   {
     obj->name = v;
-  }
-
-  bool getCanBePrefix() const
-  {
-    return obj->canBePrefix;
   }
 
   void setCanBePrefix(bool v)
@@ -278,19 +298,9 @@ public:
     obj->canBePrefix = v;
   }
 
-  bool getMustBeFresh() const
-  {
-    return obj->mustBeFresh;
-  }
-
   void setMustBeFresh(bool v)
   {
     obj->mustBeFresh = v;
-  }
-
-  uint32_t getNonce() const
-  {
-    return obj->nonce;
   }
 
   void setNonce(uint32_t v)
@@ -298,19 +308,9 @@ public:
     obj->nonce = v;
   }
 
-  uint16_t getLifetime() const
-  {
-    return obj->lifetime;
-  }
-
   void setLifetime(uint16_t v)
   {
     obj->lifetime = v;
-  }
-
-  uint8_t getHopLimit() const
-  {
-    return obj->hopLimit;
   }
 
   void setHopLimit(uint8_t v)

@@ -138,6 +138,101 @@ protected:
     return pi != nullptr && send(std::forward<Arg>(arg)..., *pi);
   }
 
+  /** @brief Helper to keep track an outgoing pending Interest. */
+  class OutgoingPendingInterest
+  {
+  public:
+    OutgoingPendingInterest(PacketHandler* ph)
+      : m_ph(*ph)
+    {
+      port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_pitToken), sizeof(m_pitToken));
+      m_expire = port::Clock::now();
+    }
+
+    /**
+     * @brief Send an Interest.
+     * @tparam Packet @c Interest or its parameterized / signed variant.
+     * @param interest the Interest.
+     * @param timeout timeout in milliseconds. Default is InterestLifetime.
+     * @param arg other arguments to @c PacketHandler::send() .
+     */
+    template<typename Packet, typename... Arg>
+    bool send(const Packet& interest, int timeout, Arg&&... arg)
+    {
+      m_expire = ndnph::port::Clock::add(ndnph::port::Clock::now(), timeout);
+      return m_ph.send(interest, WithPitToken(++m_pitToken), std::forward<Arg>(arg)...);
+    }
+
+    template<typename Packet>
+    bool send(const Packet& interest)
+    {
+      return send(interest, interest.getLifetime());
+    }
+
+    template<typename Packet, typename ArgFirst, typename... Arg,
+             typename = typename std::enable_if<!std::is_integral<ArgFirst>::value>::type>
+    bool send(const Packet& interest, ArgFirst&& arg1, Arg&&... arg)
+    {
+      return send(interest, interest.getLifetime(), std::forward<ArgFirst>(arg1),
+                  std::forward<Arg>(arg)...);
+    }
+
+    /**
+     * @brief Compare PIT token of current incoming packet against last outgoing Interest.
+     * @pre one of processInterest, processData, or processNack is executing.
+     *
+     * Comparing PIT token alone is unreliable because PIT token is not guaranteed to be unique.
+     * If the application has saved a copy of the outgoing Interest or its name, it's
+     * recommended to use @c match() instead.
+     */
+    bool matchPitToken() const
+    {
+      auto pi = m_ph.getCurrentPacketInfo();
+      return pi != nullptr && pi->pitToken == m_pitToken;
+    }
+
+    /**
+     * @brief Check Interest-Data match.
+     * @pre processData is executing.
+     * @param data incoming Data.
+     * @param interest saved outgoing Interest.
+     */
+    bool match(const Data& data, const Interest& interest) const
+    {
+      return matchPitToken() && interest.match(data);
+    }
+
+    /**
+     * @brief Check Interest-Data match.
+     * @pre processData is executing.
+     * @param data incoming Data.
+     * @param name saved outgoing Interest name.
+     * @param canBePrefix CanBePrefix flag on the Interest.
+     */
+    bool match(const Data& data, const Name& name, bool canBePrefix = true) const
+    {
+      StaticRegion<512> region;
+      auto interest = region.create<Interest>();
+      if (!interest) {
+        return false;
+      }
+      interest.setName(name);
+      interest.setCanBePrefix(canBePrefix);
+      return match(data, interest);
+    }
+
+    /** @brief Determine if the pending Interest has expired / timed out. */
+    bool expired() const
+    {
+      return ndnph::port::Clock::isBefore(m_expire, ndnph::port::Clock::now());
+    }
+
+  private:
+    PacketHandler& m_ph;
+    uint64_t m_pitToken = 0;
+    port::Clock::Time m_expire;
+  };
+
 private:
   /** @brief Override to be invoked periodically. */
   virtual void loop() {}

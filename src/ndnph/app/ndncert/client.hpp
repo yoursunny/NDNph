@@ -309,10 +309,9 @@ private:
       : m_client(client)
     {}
 
-    bool operator()(State state, int deadline = 4000)
+    bool operator()(State state)
     {
       m_client->m_state = state;
-      m_client->m_deadline = ndnph::port::Clock::add(ndnph::port::Clock::now(), deadline);
       m_set = true;
       return true;
     }
@@ -331,14 +330,13 @@ private:
 
   explicit Client(const Options& opts)
     : PacketHandler(opts.face)
+    , m_pending(this)
     , m_profile(opts.profile)
     , m_challenges(opts.challenges)
     , m_pvt(opts.pvt)
     , m_cb(opts.cb)
     , m_cbCtx(opts.ctx)
   {
-    ndnph::port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_lastPitToken),
-                                        sizeof(m_lastPitToken));
     sendNewRequest(opts.pub);
   }
 
@@ -356,7 +354,7 @@ private:
       case State::WaitNewResponse:
       case State::WaitChallengeResponse:
       case State::WaitIssuedCert: {
-        if (ndnph::port::Clock::isBefore(m_deadline, ndnph::port::Clock::now())) {
+        if (m_pending.expired()) {
           m_state = State::Failure;
         }
         break;
@@ -377,7 +375,7 @@ private:
 
   bool processData(Data data) final
   {
-    if (getCurrentPacketInfo()->pitToken != m_lastPitToken) {
+    if (!m_pending.matchPitToken()) {
       return false;
     }
 
@@ -417,8 +415,7 @@ private:
       return;
     }
 
-    send(m_newRequest.toInterest(region, m_profile, m_signingPolicy, m_pvt),
-         WithPitToken(++m_lastPitToken)) &&
+    m_pending.send(m_newRequest.toInterest(region, m_profile, m_signingPolicy, m_pvt)) &&
       gotoState(State::WaitNewResponse);
   }
 
@@ -469,9 +466,8 @@ private:
   {
     StaticRegion<2048> region;
     GotoState gotoState(this);
-    send(m_challengeRequest.toInterest(region, m_profile, m_newResponse.requestId, m_sessionKey,
-                                       m_signingPolicy, m_pvt),
-         WithPitToken(++m_lastPitToken)) &&
+    m_pending.send(m_challengeRequest.toInterest(region, m_profile, m_newResponse.requestId,
+                                                 m_sessionKey, m_signingPolicy, m_pvt)) &&
       gotoState(State::WaitChallengeResponse);
   }
 
@@ -506,7 +502,7 @@ private:
       return;
     }
     interest.setName(m_challengeResponse.issuedCertName);
-    send(interest, WithPitToken(++m_lastPitToken)) && gotoState(State::WaitIssuedCert);
+    m_pending.send(interest) && gotoState(State::WaitIssuedCert);
   }
 
   bool handleIssuedCert(Data data)
@@ -525,9 +521,8 @@ private:
   }
 
 private:
+  OutgoingPendingInterest m_pending;
   State m_state = State::SendNewRequest;
-  port::Clock::Time m_deadline;
-  uint64_t m_lastPitToken = 0;
 
   const CaProfile& m_profile;
   ChallengeList m_challenges;

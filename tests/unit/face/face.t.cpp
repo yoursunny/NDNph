@@ -12,7 +12,7 @@ TEST(Face, Receive)
 {
   MockTransport transport;
   Face face(transport);
-  MockPacketHandler hA(face, 1);
+  MockPacketHandler h(face, 1);
   MockPacketHandler hB(face, 9);
   StaticRegion<1024> region;
 
@@ -22,9 +22,9 @@ TEST(Face, Receive)
   auto matchInterestName = g::Property(&Interest::getName, g::Eq(interest.getName()));
   {
     g::InSequence seq;
-    EXPECT_CALL(hA, processInterest(matchInterestName))
-      .WillOnce(g::DoAll(g::WithoutArgs([&hA] {
-                           auto pi = hA.getCurrentPacketInfo();
+    EXPECT_CALL(h, processInterest(matchInterestName))
+      .WillOnce(g::DoAll(g::WithoutArgs([&h] {
+                           auto pi = h.getCurrentPacketInfo();
                            ASSERT_THAT(pi, g::NotNull());
                            EXPECT_EQ(pi->endpointId, 4946);
                          }),
@@ -38,7 +38,7 @@ TEST(Face, Receive)
   data.setName(Name(region, { 0x08, 0x01, 0x42 }));
   {
     auto matchDataName = g::Property(&Data::getName, g::Eq(data.getName()));
-    EXPECT_CALL(hA, processData(matchDataName)).WillOnce(g::Return(true));
+    EXPECT_CALL(h, processData(matchDataName)).WillOnce(g::Return(true));
     EXPECT_CALL(hB, processData).Times(0);
   }
   ASSERT_TRUE(transport.receive(data.sign(NullKey::get())));
@@ -47,12 +47,12 @@ TEST(Face, Receive)
   ASSERT_FALSE(!nack);
   {
     g::InSequence seq;
-    EXPECT_CALL(hA, processNack(g::AllOf(
-                      g::Property(&Nack::getHeader, g::Property(&NackHeader::getReason,
-                                                                g::Eq(NackReason::Congestion))),
-                      g::Property(&Nack::getInterest, matchInterestName))))
-      .WillOnce(g::DoAll(g::WithoutArgs([&hA] {
-                           auto pi = hA.getCurrentPacketInfo();
+    EXPECT_CALL(h, processNack(g::AllOf(
+                     g::Property(&Nack::getHeader, g::Property(&NackHeader::getReason,
+                                                               g::Eq(NackReason::Congestion))),
+                     g::Property(&Nack::getInterest, matchInterestName))))
+      .WillOnce(g::DoAll(g::WithoutArgs([&h] {
+                           auto pi = h.getCurrentPacketInfo();
                            ASSERT_THAT(pi, g::NotNull());
                            EXPECT_EQ(pi->pitToken, 0xDE249BD0398EC80F);
                          }),
@@ -62,7 +62,7 @@ TEST(Face, Receive)
   ASSERT_TRUE(transport.receive(region, lp::encode(nack, 0xDE249BD0398EC80F)));
 }
 
-class MyPacketHandler : public MockPacketHandler
+class TestSendHandler : public MockPacketHandler
 {
 public:
   using MockPacketHandler::MockPacketHandler;
@@ -89,35 +89,35 @@ TEST(Face, Send)
 {
   MockTransport transport;
   Face face(transport);
-  MyPacketHandler hA(face);
+  TestSendHandler h(face);
   StaticRegion<1024> region;
 
-  hA.request = region.create<Interest>();
-  ASSERT_FALSE(!hA.request);
-  hA.request.setName(Name::parse(region, "/A"));
-  hA.request.setCanBePrefix(true);
+  h.request = region.create<Interest>();
+  ASSERT_FALSE(!h.request);
+  h.request.setName(Name::parse(region, "/A"));
+  h.request.setCanBePrefix(true);
 
-  hA.data = region.create<Data>();
-  ASSERT_FALSE(!hA.data);
-  hA.data.setName(Name::parse(region, "/A/1"));
+  h.data = region.create<Data>();
+  ASSERT_FALSE(!h.data);
+  h.data.setName(Name::parse(region, "/A/1"));
   Encoder encoderD(region);
-  encoderD.prepend(hA.data.sign(NullKey::get()));
+  encoderD.prepend(h.data.sign(NullKey::get()));
   encoderD.trim();
 
-  hA.nack = Nack::create(hA.request, NackReason::NoRoute);
-  ASSERT_FALSE(!hA.nack);
+  h.nack = Nack::create(h.request, NackReason::NoRoute);
+  ASSERT_FALSE(!h.nack);
   Encoder encoderN(region);
-  encoderN.prepend(lp::encode(hA.nack, 0xDE249BD0398EC80F));
+  encoderN.prepend(lp::encode(h.nack, 0xDE249BD0398EC80F));
   encoderN.trim();
 
-  hA.interest = region.create<Interest>();
-  ASSERT_FALSE(!hA.interest);
-  hA.interest.setName(Name::parse(region, "/B"));
+  h.interest = region.create<Interest>();
+  ASSERT_FALSE(!h.interest);
+  h.interest.setName(Name::parse(region, "/B"));
   Encoder encoderI(region);
-  encoderI.prepend(lp::encode(hA.interest, 0xA31A71CE4C365FF4));
+  encoderI.prepend(lp::encode(h.interest, 0xA31A71CE4C365FF4));
   encoderI.trim();
 
-  hA.setupExpect();
+  h.setupExpect();
   {
     g::InSequence seq;
     EXPECT_CALL(transport, doSend(g::ElementsAreArray(encoderD.begin(), encoderD.end()), 0))
@@ -127,7 +127,173 @@ TEST(Face, Send)
     EXPECT_CALL(transport, doSend(g::ElementsAreArray(encoderI.begin(), encoderI.end()), 2035))
       .WillOnce(g::Return(true));
   }
-  EXPECT_TRUE(transport.receive(region, lp::encode(hA.request, 0xDE249BD0398EC80F), 3202));
+  EXPECT_TRUE(transport.receive(region, lp::encode(h.request, 0xDE249BD0398EC80F), 3202));
+}
+
+class FacePendingFixture : public g::Test
+{
+protected:
+  class Handler : public MockPacketHandler
+  {
+  public:
+    explicit Handler(Face& face)
+      : MockPacketHandler(face)
+      , m_pending(this)
+    {}
+
+    template<typename... Arg>
+    bool send(Arg&&... arg)
+    {
+      return m_pending.send(std::forward<Arg>(arg)...);
+    }
+
+    bool expired() const
+    {
+      return m_pending.expired();
+    }
+
+    void setupExpect()
+    {
+      EXPECT_CALL(*this, processData).WillOnce([this](Data data) {
+        matchPitToken = m_pending.matchPitToken();
+        matchInterest = m_pending.match(data, interest);
+        matchName = m_pending.match(data, name, canBePrefix);
+        return true;
+      });
+    }
+
+  public:
+    Interest interest;
+    Name name;
+    bool canBePrefix = false;
+
+    bool matchPitToken = false;
+    bool matchInterest = false;
+    bool matchName = false;
+
+  private:
+    OutgoingPendingInterest m_pending;
+  };
+
+  explicit FacePendingFixture()
+    : face(transport)
+    , h(face)
+  {}
+
+  void SetUp() override
+  {
+    interest = cRegion.create<Interest>();
+    assert(!!interest);
+    data = pRegion.create<Data>();
+    assert(!!data);
+  }
+
+  void setupRespond(bool withPitToken = true)
+  {
+    EXPECT_CALL(transport, doSend).WillOnce([=](std::vector<uint8_t> wire, uint64_t) {
+      lp::PacketClassify classify;
+      EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
+      EXPECT_EQ(classify.getType(), lp::PacketClassify::Interest);
+
+      h.setupExpect();
+      if (withPitToken) {
+        transport.receive(pRegion, lp::encode(data.sign(NullKey::get()), classify.getPitToken()));
+      } else {
+        transport.receive(pRegion, data.sign(NullKey::get()));
+      }
+      return true;
+    });
+  }
+
+protected:
+  MockTransport transport;
+  Face face;
+  Handler h;
+  StaticRegion<2048> cRegion;
+  StaticRegion<2048> pRegion;
+  Interest interest;
+  Data data;
+};
+
+TEST_F(FacePendingFixture, NormalMatch)
+{
+  interest.setName(Name::parse(cRegion, "/A"));
+  interest.setCanBePrefix(true);
+  interest.setMustBeFresh(true);
+  data.setName(Name::parse(pRegion, "/A/B"));
+  data.setFreshnessPeriod(1);
+
+  setupRespond();
+  h.interest = interest;
+  h.name = interest.getName();
+  h.canBePrefix = true;
+  h.send(interest);
+
+  EXPECT_TRUE(h.matchPitToken);
+  EXPECT_TRUE(h.matchInterest);
+  EXPECT_TRUE(h.matchName);
+}
+
+TEST_F(FacePendingFixture, DigestMatch)
+{
+  auto data1 = pRegion.create<Data>();
+  assert(!!data1);
+  data1.setName(Name::parse(pRegion, "/A/B"));
+  data.decodeFrom(data1.sign(NullKey::get()));
+
+  interest.setName(data.getFullName(cRegion));
+
+  setupRespond();
+  h.interest = interest;
+  h.name = interest.getName();
+  h.canBePrefix = false;
+  h.send(interest);
+
+  EXPECT_TRUE(h.matchPitToken);
+  EXPECT_TRUE(h.matchInterest);
+  EXPECT_TRUE(h.matchName);
+}
+
+TEST_F(FacePendingFixture, MismatchData)
+{
+  interest.setName(Name::parse(cRegion, "/A"));
+  data.setName(Name::parse(pRegion, "/B"));
+
+  setupRespond();
+  h.interest = interest;
+  h.name = interest.getName();
+  h.canBePrefix = false;
+  h.send(interest);
+
+  EXPECT_TRUE(h.matchPitToken);
+  EXPECT_FALSE(h.matchInterest);
+  EXPECT_FALSE(h.matchName);
+}
+
+TEST_F(FacePendingFixture, MismatchPitToken)
+{
+  interest.setName(Name::parse(cRegion, "/A"));
+  data.setName(interest.getName());
+
+  setupRespond(false);
+  h.interest = interest;
+  h.name = interest.getName();
+  h.canBePrefix = false;
+  h.send(interest);
+
+  EXPECT_FALSE(h.matchPitToken);
+  EXPECT_FALSE(h.matchInterest);
+  EXPECT_FALSE(h.matchName);
+}
+
+TEST_F(FacePendingFixture, Expire)
+{
+  interest.setName(Name::parse(cRegion, "/A"));
+  h.send(interest, 100);
+
+  EXPECT_FALSE(h.expired());
+  port::Clock::sleep(200);
+  EXPECT_TRUE(h.expired());
 }
 
 } // namespace
