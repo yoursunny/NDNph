@@ -284,7 +284,7 @@ public:
   tlv::Value encrypt(Region& region, tlv::Value plaintext, const uint8_t* aad = nullptr,
                      size_t aadLen = 0)
   {
-    CheckEncryptedMessage<Encrypted>{};
+    checkEncryptedMessage<Encrypted>();
     Encoder encoder(region);
     auto place = Encrypted::prependInPlace(encoder, plaintext.size());
     encoder.trim();
@@ -320,7 +320,7 @@ public:
   tlv::Value decrypt(Region& region, const Encrypted& encrypted, const uint8_t* aad = nullptr,
                      size_t aadLen = 0)
   {
-    CheckEncryptedMessage<Encrypted>{};
+    checkEncryptedMessage<Encrypted>();
     uint8_t* plaintext = region.alloc(encrypted.ciphertext.size());
     bool ok =
       m_ok && m_ivDecrypt.check(encrypted.iv.data(), encrypted.ciphertext.size()) &&
@@ -342,12 +342,13 @@ public:
 
 private:
   template<typename Encrypted>
-  struct CheckEncryptedMessage
+  static void checkEncryptedMessage()
   {
     static_assert(Encrypted::IvLen::value == IvLen::value, "");
     static_assert(Encrypted::TagLen::value == TagLen::value, "");
-  };
+  }
 
+private:
   mbedtls_gcm_context m_ctx;
   detail::IvHelper m_ivEncrypt;
   detail::IvHelper m_ivDecrypt;

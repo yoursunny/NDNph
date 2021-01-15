@@ -539,7 +539,6 @@ private:
   detail::SessionKey m_sessionKey;
   ChallengeRequest m_challengeRequest;
   ChallengeResponse m_challengeResponse;
-  bool m_fetchSent = false;
 };
 
 /** @brief The "nop" challenge where the server would approve every request. */

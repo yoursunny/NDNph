@@ -16,19 +16,23 @@ jobs:
       - name: install Google Test
         run: |
           cd $HOME
-          curl -sfL https://github.com/google/googletest/archive/release-1.10.0.tar.gz | tar -xz
+          curl -sfL https://github.com/google/googletest/archive/release-${GTESTVER}.tar.gz | tar -xz
           mkdir gtest-build && cd gtest-build
-          cmake -G Ninja ../googletest-release-1.10.0
+          cmake -G Ninja ../googletest-release-${GTESTVER}
           ninja
           sudo $(which ninja) install
+        env:
+          GTESTVER: '1.10.0'
       - name: install Mbed TLS
         run: |
           cd $HOME
-          curl -sfL https://github.com/ARMmbed/mbedtls/archive/v2.25.0.tar.gz | tar -xz
+          curl -sfL https://github.com/ARMmbed/mbedtls/archive/v${MBEDTLSVER}.tar.gz | tar -xz
           mkdir mbedtls-build && cd mbedtls-build
-          cmake -G Ninja ../mbedtls-2.25.0 -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
+          cmake -G Ninja ../mbedtls-${MBEDTLSVER} -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
           ninja
           sudo $(which ninja) install
+        env:
+          MBEDTLSVER: '2.16.9'
       - name: install libmemif
         run: |
           cd $HOME

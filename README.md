@@ -62,7 +62,7 @@ For Linux,
    * C++ compiler such as GCC, install Ubuntu package `build-essential`
    * [Meson](https://mesonbuild.com/), install pip package `meson`
    * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
-   * [Mbed TLS](https://github.com/ARMmbed/mbedtls), install from source
+   * [Mbed TLS](https://github.com/ARMmbed/mbedtls) 2.16+, install from source or Ubuntu 20.04 package `libmbedtls-dev`
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
    * [libmemif](https://docs.fd.io/vpp/20.09/dc/db3/libmemif_build_doc.html), install from source
    * [Google Test](https://github.com/google/googletest), install from source (only needed by unit tests)
