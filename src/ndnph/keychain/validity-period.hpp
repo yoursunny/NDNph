@@ -42,12 +42,12 @@ public:
   /** @brief Get a very long ValidityPeriod. */
   static ValidityPeriod getMax()
   {
-    return ValidityPeriod(540109800, 0xFFFFFFFF);
+    return ValidityPeriod(540109800, MaxTime::value);
   }
 
   ValidityPeriod() = default;
 
-  ValidityPeriod(time_t notBefore, time_t notAfter)
+  explicit ValidityPeriod(time_t notBefore, time_t notAfter)
     : notBefore(notBefore)
     , notAfter(notAfter)
   {}
@@ -127,6 +127,9 @@ private:
 
     detail::UtcTimezone useUtc;
     *v = mktime(&m);
+    if (sizeof(time_t) <= 4 && *v < 0 && (1900 + m.tm_year) >= 2038) {
+      *v = MaxTime::value;
+    }
     return *v >= 0;
   }
 
@@ -136,6 +139,11 @@ public:
 
   /** @brief NotAfter field in seconds since Unix epoch. */
   time_t notAfter = 0;
+
+private:
+  using MaxTime =
+    std::integral_constant<time_t,
+                           sizeof(time_t) <= 4 ? std::numeric_limits<time_t>::max() : 253402300799>;
 };
 
 inline bool
