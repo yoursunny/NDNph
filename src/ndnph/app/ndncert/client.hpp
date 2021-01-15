@@ -247,177 +247,12 @@ public:
   }
 };
 
-/** @brief Client session logic. */
-class Session
-{
-public:
-  explicit Session(const CaProfile& profile, const ChallengeList& challenges)
-    : m_challengeRegion(makeSubRegion(m_region, 512))
-    , m_profile(profile)
-    , m_challenges(challenges)
-    , m_signingPolicy(detail::makeISigPolicy())
-  {
-    assert(m_challengeRegion != nullptr);
-  }
-
-  enum class State
-  {
-    SendNewRequest,
-    WaitNewResponse,
-    ExecuteChallenge,
-    SendChallengeRequest,
-    WaitChallengeResponse,
-    Success,
-    Failure,
-  };
-
-  State getState() const
-  {
-    return m_state;
-  }
-
-  Interest::Signed makeNewRequest(Region& packetRegion, const EcPublicKey& pub,
-                                  const EcPrivateKey& pvt)
-  {
-    if (m_state != State::SendNewRequest) {
-      return setFailure();
-    }
-
-    m_pvt = &pvt;
-
-    int res = mbedtls_ecdh_gen_public(mbedtls::P256::group(), &m_ecdhPvt, &m_newRequest.ecdhPub,
-                                      mbedtls::rng, nullptr);
-    if (res != 0) {
-      return setFailure();
-    }
-
-    time_t now = time(nullptr);
-    ValidityPeriod validity(now, now + 3600);
-    // auto validity = ValidityPeriod::getMax(); // TODO set proper ValidityPeriod
-    auto cert = pub.selfSign(m_region, validity, pvt);
-
-    m_newRequest.certRequest = m_region.create<Data>();
-    if (!m_newRequest.certRequest.decodeFrom(cert)) {
-      return setFailure();
-    }
-
-    m_state = State::WaitNewResponse;
-    return setFailure(m_newRequest.toInterest(packetRegion, m_profile, m_signingPolicy, pvt));
-  }
-
-  bool handleNewResponse(const Data& data)
-  {
-    if (m_state != State::WaitNewResponse ||
-        !m_newResponse.fromData(m_region, data, m_profile, m_challenges)) {
-      return setFailure(false);
-    }
-    for (size_t i = 0; i < m_newResponse.hasChallenge.size(); ++i) {
-      if (m_newResponse.hasChallenge.test(i)) {
-        m_challengeRequest.challenge = m_challenges[i];
-        break;
-      }
-    }
-    if (m_challengeRequest.challenge == nullptr ||
-        !m_sessionKey.makeKey(m_ecdhPvt, m_newResponse.ecdhPub, m_newResponse.salt,
-                              m_newResponse.requestId)) {
-      return setFailure(false);
-    }
-    prepareChallengeRequest();
-    return true;
-  }
-
-  bool waitForChallenge() const
-  {
-    return m_state == State::ExecuteChallenge;
-  }
-
-  Interest::Signed makeChallengeRequest(Region& packetRegion)
-  {
-    if (m_state != State::SendChallengeRequest) {
-      return setFailure();
-    }
-    m_state = State::WaitChallengeResponse;
-    return setFailure(m_challengeRequest.toInterest(
-      packetRegion, m_profile, m_newResponse.requestId, m_sessionKey, m_signingPolicy, *m_pvt));
-  }
-
-  bool handleChallengeResponse(const Data& data)
-  {
-    m_challengeRegion->reset();
-    if (m_state != State::WaitChallengeResponse ||
-        !m_challengeResponse.fromData(*m_challengeRegion, data, m_profile, m_newResponse.requestId,
-                                      m_sessionKey)) {
-      return setFailure(false);
-    }
-    switch (m_challengeResponse.status) {
-      case Status::CHALLENGE:
-        prepareChallengeRequest();
-        break;
-      case Status::SUCCESS:
-        m_state = State::Success;
-        break;
-      default:
-        m_state = State::Failure;
-        break;
-    }
-    return true;
-  }
-
-  Name getIssuedCertName() const
-  {
-    return m_challengeResponse.issuedCertName;
-  }
-
-private:
-  template<typename T = Interest::Signed>
-  T setFailure(T&& value = T())
-  {
-    if (!value) {
-      m_state = State::Failure;
-    }
-    return value;
-  }
-
-  void prepareChallengeRequest()
-  {
-    m_state = State::ExecuteChallenge;
-    m_challengeRequest.params.clear();
-    if (m_challengeResponse.status == Status::BEFORE_CHALLENGE) {
-      m_challengeRequest.challenge->start(*m_challengeRegion, m_challengeRequest, challengeCallback,
-                                          this);
-    } else {
-      m_challengeRequest.challenge->next(*m_challengeRegion, m_challengeResponse,
-                                         m_challengeRequest, challengeCallback, this);
-    }
-  }
-
-  static void challengeCallback(void* self, bool ok)
-  {
-    static_cast<Session*>(self)->m_state = ok ? State::SendChallengeRequest : State::Failure;
-  }
-
-private:
-  StaticRegion<2048> m_region;
-  Region* m_challengeRegion = nullptr;
-  const CaProfile& m_profile;
-  ChallengeList m_challenges;
-  detail::ISigPolicy m_signingPolicy;
-  const EcPrivateKey* m_pvt = nullptr;
-  mbedtls::Mpi m_ecdhPvt;
-  NewRequest m_newRequest;
-  NewResponse m_newResponse;
-  detail::SessionKey m_sessionKey;
-  ChallengeRequest m_challengeRequest;
-  ChallengeResponse m_challengeResponse;
-  State m_state = State::SendNewRequest;
-};
-
 /** @brief Client application. */
 class Client : public PacketHandler
 {
 public:
   /**
-   * @brief Callback to be invoked when a certificate request completes.
+   * @brief Callback to be invoked upon completion of a certificate request procedure.
    * @param ctx context pointer.
    * @param cert obtained certificate, or a falsy value upon failure.
    */
@@ -440,7 +275,10 @@ public:
     /** @brief Corresponding private key. */
     const EcPrivateKey& pvt;
 
+    /** @brief Completion callback. */
     Callback cb;
+
+    /** @brief Context pointer. */
     void* ctx;
   };
 
@@ -451,47 +289,86 @@ public:
   }
 
 private:
+  enum class State
+  {
+    SendNewRequest,
+    WaitNewResponse,
+    ExecuteChallenge,
+    SendChallengeRequest,
+    WaitChallengeResponse,
+    FetchIssuedCert,
+    WaitIssuedCert,
+    Success,
+    Failure,
+  };
+
+  class GotoState
+  {
+  public:
+    explicit GotoState(Client* client)
+      : m_client(client)
+    {}
+
+    bool operator()(State state, int deadline = 4000)
+    {
+      m_client->m_state = state;
+      m_client->m_deadline = ndnph::port::Clock::add(ndnph::port::Clock::now(), deadline);
+      m_set = true;
+      return true;
+    }
+
+    ~GotoState()
+    {
+      if (!m_set) {
+        m_client->m_state = State::Failure;
+      }
+    }
+
+  private:
+    Client* m_client = nullptr;
+    bool m_set = false;
+  };
+
   explicit Client(const Options& opts)
     : PacketHandler(opts.face)
     , m_profile(opts.profile)
-    , m_session(opts.profile, opts.challenges)
+    , m_challenges(opts.challenges)
+    , m_pvt(opts.pvt)
     , m_cb(opts.cb)
     , m_cbCtx(opts.ctx)
   {
-    StaticRegion<2048> packetRegion;
-    sendWithDeadline(m_session.makeNewRequest(packetRegion, opts.pub, opts.pvt));
+    ndnph::port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_lastPitToken),
+                                        sizeof(m_lastPitToken));
+    sendNewRequest(opts.pub);
   }
 
   void loop() final
   {
-    bool timeout = port::Clock::isBefore(m_deadline, port::Clock::now());
-    if (m_fetchSent) {
-      if (timeout) {
-        invokeCallback();
+    switch (m_state) {
+      case State::SendChallengeRequest: {
+        sendChallengeRequest();
+        break;
       }
-      return;
-    }
-
-    // StaticRegion<1024> packetRegion;
-    StaticRegion<2048> packetRegion;
-    switch (m_session.getState()) {
-      case Session::State::WaitNewResponse:
-      case Session::State::WaitChallengeResponse: {
-        if (timeout) {
-          invokeCallback();
+      case State::FetchIssuedCert: {
+        sendFetchInterest();
+        break;
+      }
+      case State::WaitNewResponse:
+      case State::WaitChallengeResponse:
+      case State::WaitIssuedCert: {
+        if (ndnph::port::Clock::isBefore(m_deadline, ndnph::port::Clock::now())) {
+          m_state = State::Failure;
         }
         break;
       }
-      case Session::State::SendChallengeRequest: {
-        sendWithDeadline(m_session.makeChallengeRequest(packetRegion));
-        break;
+      case State::Success: {
+        delete this;
+        return;
       }
-      case Session::State::Success: {
-        auto interest = packetRegion.create<Interest>();
-        interest.setName(m_session.getIssuedCertName());
-        sendWithDeadline(interest);
-        m_fetchSent = true;
-        break;
+      case State::Failure: {
+        m_cb(m_cbCtx, Data());
+        delete this;
+        return;
       }
       default:
         break;
@@ -500,25 +377,19 @@ private:
 
   bool processData(Data data) final
   {
-    StaticRegion<1024> packetRegion;
-    if (m_fetchSent && m_session.getIssuedCertName() == data.getFullName(packetRegion)) {
-      invokeCallback(data);
-      return true;
-    }
-    packetRegion.reset();
-
-    if (!m_profile.prefix.isPrefixOf(data.getName())) {
+    if (getCurrentPacketInfo()->pitToken != m_lastPitToken) {
       return false;
     }
 
-    switch (m_session.getState()) {
-      case Session::State::WaitNewResponse: {
-        m_session.handleNewResponse(data);
-        break;
+    switch (m_state) {
+      case State::WaitNewResponse: {
+        return handleNewResponse(data);
       }
-      case Session::State::WaitChallengeResponse: {
-        m_session.handleChallengeResponse(data);
-        break;
+      case State::WaitChallengeResponse: {
+        return handleChallengeResponse(data);
+      }
+      case State::WaitIssuedCert: {
+        return handleIssuedCert(data);
       }
       default:
         break;
@@ -526,25 +397,153 @@ private:
     return false;
   }
 
-  template<typename Pkt>
-  void sendWithDeadline(const Pkt& pkt)
+  void sendNewRequest(const EcPublicKey& pub)
   {
-    send(pkt);
-    m_deadline = port::Clock::add(port::Clock::now(), 4000);
+    StaticRegion<2048> region;
+    GotoState gotoState(this);
+    int res = mbedtls_ecdh_gen_public(mbedtls::P256::group(), &m_ecdhPvt, &m_newRequest.ecdhPub,
+                                      mbedtls::rng, nullptr);
+    if (res != 0) {
+      return;
+    }
+
+    time_t now = time(nullptr);
+    ValidityPeriod validity(now, now + 3600);
+    // auto validity = ValidityPeriod::getMax(); // TODO set proper ValidityPeriod
+    auto cert = pub.selfSign(m_region, validity, m_pvt);
+
+    m_newRequest.certRequest = m_region.create<Data>();
+    if (!m_newRequest.certRequest || !m_newRequest.certRequest.decodeFrom(cert)) {
+      return;
+    }
+
+    send(m_newRequest.toInterest(region, m_profile, m_signingPolicy, m_pvt),
+         WithPitToken(++m_lastPitToken)) &&
+      gotoState(State::WaitNewResponse);
   }
 
-  void invokeCallback(Data cert = Data())
+  bool handleNewResponse(Data data)
   {
-    m_cb(m_cbCtx, cert);
-    delete this;
+    bool ok = m_newResponse.fromData(m_region, data, m_profile, m_challenges);
+    if (!ok) {
+      return false;
+    }
+
+    GotoState gotoState(this);
+    for (size_t i = 0; i < m_newResponse.hasChallenge.size(); ++i) {
+      if (m_newResponse.hasChallenge.test(i)) {
+        m_challengeRequest.challenge = m_challenges[i];
+        break;
+      }
+    }
+
+    ok = m_challengeRequest.challenge != nullptr &&
+         m_sessionKey.makeKey(m_ecdhPvt, m_newResponse.ecdhPub, m_newResponse.salt,
+                              m_newResponse.requestId);
+    if (!ok) {
+      return true;
+    }
+    prepareChallengeRequest(gotoState);
+    return true;
+  }
+
+  static void challengeCallback(void* self, bool ok)
+  {
+    static_cast<Client*>(self)->m_state = ok ? State::SendChallengeRequest : State::Failure;
+  }
+
+  void prepareChallengeRequest(GotoState& gotoState)
+  {
+    gotoState(State::ExecuteChallenge);
+    m_challengeRequest.params.clear();
+    if (m_challengeResponse.status == Status::BEFORE_CHALLENGE) {
+      m_challengeRequest.challenge->start(m_challengeRegion, m_challengeRequest, challengeCallback,
+                                          this);
+    } else {
+      m_challengeRequest.challenge->next(m_challengeRegion, m_challengeResponse, m_challengeRequest,
+                                         challengeCallback, this);
+    }
+  }
+
+  void sendChallengeRequest()
+  {
+    StaticRegion<2048> region;
+    GotoState gotoState(this);
+    send(m_challengeRequest.toInterest(region, m_profile, m_newResponse.requestId, m_sessionKey,
+                                       m_signingPolicy, m_pvt),
+         WithPitToken(++m_lastPitToken)) &&
+      gotoState(State::WaitChallengeResponse);
+  }
+
+  bool handleChallengeResponse(Data data)
+  {
+    m_challengeRegion.reset();
+    bool ok = m_challengeResponse.fromData(m_challengeRegion, data, m_profile,
+                                           m_newResponse.requestId, m_sessionKey);
+    if (!ok) {
+      return false;
+    }
+
+    GotoState gotoState(this);
+    switch (m_challengeResponse.status) {
+      case Status::CHALLENGE:
+        prepareChallengeRequest(gotoState);
+        break;
+      case Status::SUCCESS:
+        return gotoState(State::FetchIssuedCert);
+      default:
+        break;
+    }
+    return true;
+  }
+
+  void sendFetchInterest()
+  {
+    ndnph::StaticRegion<2048> region;
+    GotoState gotoState(this);
+    auto interest = region.create<ndnph::Interest>();
+    if (!interest) {
+      return;
+    }
+    interest.setName(m_challengeResponse.issuedCertName);
+    send(interest, WithPitToken(++m_lastPitToken)) && gotoState(State::WaitIssuedCert);
+  }
+
+  bool handleIssuedCert(Data data)
+  {
+    ndnph::StaticRegion<512> region;
+    if (data.getFullName(region) != m_challengeResponse.issuedCertName) {
+      return false;
+    }
+
+    GotoState gotoState(this);
+    if (!ec::isCertificate(data)) {
+      return true;
+    }
+    m_cb(m_cbCtx, data);
+    return gotoState(State::Success);
   }
 
 private:
+  State m_state = State::SendNewRequest;
+  port::Clock::Time m_deadline;
+  uint64_t m_lastPitToken = 0;
+
   const CaProfile& m_profile;
-  Session m_session;
+  ChallengeList m_challenges;
+  const EcPrivateKey& m_pvt;
   Callback m_cb;
   void* m_cbCtx;
-  port::Clock::Time m_deadline;
+
+  StaticRegion<2048> m_region;
+  StaticRegion<512> m_challengeRegion;
+  detail::ISigPolicy m_signingPolicy;
+  mbedtls::Mpi m_ecdhPvt;
+  NewRequest m_newRequest;
+  NewResponse m_newResponse;
+  detail::SessionKey m_sessionKey;
+  ChallengeRequest m_challengeRequest;
+  ChallengeResponse m_challengeResponse;
   bool m_fetchSent = false;
 };
 

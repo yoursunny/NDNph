@@ -441,13 +441,13 @@ private:
     const Name& interestName = interest.getName();
     if (NewRequest::isName(m_profile, interestName)) {
       m_session.reset(new Session(m_profile, m_signer, m_challenges));
-      send(m_session->handleNewRequest(packetRegion, interest));
+      reply(m_session->handleNewRequest(packetRegion, interest));
       return true;
     } else if (m_session != nullptr && ChallengeRequest::isName(m_profile, interestName)) {
-      send(m_session->handleChallengeRequest(packetRegion, interest));
+      reply(m_session->handleChallengeRequest(packetRegion, interest));
       return true;
     } else if (m_session != nullptr && m_session->getIssuedCertName() == interestName) {
-      send(m_session->getIssuedCert());
+      reply(m_session->getIssuedCert());
       return true;
     }
     return false;

@@ -88,47 +88,6 @@ protected:
   std::string cIssuedCertName;
 };
 
-TEST_F(NdncertFixture, Packets)
-{
-  DynamicRegion packetRegion(4096);
-
-  client::NopChallenge cNopChallenge;
-  client::Session cSession(cProfile, { &cNopChallenge });
-  server::NopChallenge sNopChallenge;
-  server::Session sSession(sProfile, sPvt, { &sNopChallenge });
-
-  EXPECT_EQ(cSession.getState(), client::Session::State::SendNewRequest);
-  auto newRequestInterest = packetRegion.create<Interest>();
-  ASSERT_TRUE(newRequestInterest.decodeFrom(cSession.makeNewRequest(packetRegion, cPub, cPvt)));
-
-  auto newResponseData = packetRegion.create<Data>();
-  ASSERT_TRUE(
-    newResponseData.decodeFrom(sSession.handleNewRequest(packetRegion, newRequestInterest)));
-
-  EXPECT_EQ(cSession.getState(), client::Session::State::WaitNewResponse);
-  ASSERT_TRUE(cSession.handleNewResponse(newResponseData));
-  packetRegion.reset();
-
-  EXPECT_FALSE(!!cSession.getIssuedCertName());
-  EXPECT_FALSE(cSession.waitForChallenge());
-
-  EXPECT_EQ(cSession.getState(), client::Session::State::SendChallengeRequest);
-  auto challengeRequestInterest = packetRegion.create<Interest>();
-  ASSERT_TRUE(challengeRequestInterest.decodeFrom(cSession.makeChallengeRequest(packetRegion)));
-
-  auto challengeResponseData = packetRegion.create<Data>();
-  ASSERT_TRUE(challengeResponseData.decodeFrom(
-    sSession.handleChallengeRequest(packetRegion, challengeRequestInterest)));
-
-  EXPECT_EQ(cSession.getState(), client::Session::State::WaitChallengeResponse);
-  ASSERT_TRUE(cSession.handleChallengeResponse(challengeResponseData));
-  packetRegion.reset();
-
-  EXPECT_EQ(cSession.getState(), client::Session::State::Success);
-  EXPECT_FALSE(cSession.waitForChallenge());
-  EXPECT_TRUE(!!cSession.getIssuedCertName());
-}
-
 TEST_F(NdncertFixture, WorkflowNop)
 {
   server::NopChallenge sNopChallenge;
