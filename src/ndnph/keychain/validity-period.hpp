@@ -58,6 +58,12 @@ public:
     return notBefore <= t && t <= notAfter;
   }
 
+  /** @brief Calculate the intersection of this and @c other ValidityPeriod. */
+  ValidityPeriod intersect(const ValidityPeriod& other) const
+  {
+    return ValidityPeriod(std::max(notBefore, other.notBefore), std::min(notAfter, other.notAfter));
+  }
+
   void encodeTo(Encoder& encoder) const
   {
     encoder.prependTlv(

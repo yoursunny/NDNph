@@ -81,7 +81,8 @@ public:
              EvDecoder::defNni<TT::MaxValidityPeriod>(&maxValidityPeriod),
              EvDecoder::def<TT::CaCertificate>([&](const Decoder::Tlv& d) {
                cert = region.create<Data>();
-               return !!cert && d.vd().decode(cert) && pub.import(region, cert);
+               return !!cert && cert.decodeFrom(tlv::Value(d.value, d.length)) // copying
+                      && pub.import(region, cert);
              })) &&
            data.verify(pub);
   }
@@ -406,10 +407,13 @@ private:
     }
 
     time_t now = time(nullptr);
-    ValidityPeriod validity(now, now + 3600);
-    // auto validity = ValidityPeriod::getMax(); // TODO set proper ValidityPeriod
-    auto cert = pub.selfSign(m_region, validity, m_pvt);
+    auto validity = certificate::getValidity(m_profile.cert)
+                      .intersect(ValidityPeriod(now, now + m_profile.maxValidityPeriod));
+    if (!validity.includes(now)) {
+      return;
+    }
 
+    auto cert = pub.selfSign(m_region, validity, m_pvt);
     m_newRequest.certRequest = m_region.create<Data>();
     if (!m_newRequest.certRequest || !m_newRequest.certRequest.decodeFrom(cert)) {
       return;

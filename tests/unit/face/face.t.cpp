@@ -289,6 +289,8 @@ TEST_F(FacePendingFixture, MismatchPitToken)
 TEST_F(FacePendingFixture, Expire)
 {
   interest.setName(Name::parse(cRegion, "/A"));
+
+  EXPECT_CALL(transport, doSend).Times(1);
   h.send(interest, 100);
 
   EXPECT_FALSE(h.expired());

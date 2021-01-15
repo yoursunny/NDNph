@@ -323,6 +323,8 @@ public:
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
     }
 
+    // TODO check ValidityPeriod
+
     mbedtls::Mpi ecdhPvt;
     if (mbedtls_ecdh_gen_public(mbedtls::P256::group(), &ecdhPvt, &m_newResponse.ecdhPub,
                                 mbedtls::rng, nullptr) != 0 ||
@@ -368,7 +370,7 @@ public:
     m_challengeResponse.params = result.params;
     if (result.success) {
       m_issuedCert = m_region.create<Data>();
-      auto validity = ValidityPeriod::getMax(); // TODO set proper ValidityPeriod
+      auto validity = certificate::getValidity(m_newRequest.certRequest);
       if (m_issuedCert.decodeFrom(m_newRequest.pub.buildCertificate(
             m_region, m_newRequest.pub.getName(), validity, m_signer)) &&
           !!(m_challengeResponse.issuedCertName = m_issuedCert.getFullName(m_region))) {
