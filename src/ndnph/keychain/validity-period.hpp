@@ -42,7 +42,7 @@ public:
   /** @brief Get a very long ValidityPeriod. */
   static ValidityPeriod getMax()
   {
-    return ValidityPeriod(540109800, MaxTime::value);
+    return ValidityPeriod(540109800, MAX_TIME);
   }
 
   ValidityPeriod() = default;
@@ -88,8 +88,13 @@ public:
   }
 
 private:
+  static constexpr time_t MAX_TIME =
+    sizeof(time_t) <= 4 ? std::numeric_limits<time_t>::max() : 253402300799;
   static constexpr size_t TIMESTAMP_LEN = 15;
   static constexpr size_t TIMESTAMP_BUFLEN = TIMESTAMP_LEN + 1;
+  static constexpr size_t ENCODE_LENGTH =
+    tlv::sizeofVarNum(TT::NotBefore) + tlv::sizeofVarNum(TIMESTAMP_LEN) + TIMESTAMP_LEN +
+    tlv::sizeofVarNum(TT::NotAfter) + tlv::sizeofVarNum(TIMESTAMP_LEN) + TIMESTAMP_LEN;
 
   static const char* getTimestampFormat()
   {
@@ -128,7 +133,7 @@ private:
     detail::UtcTimezone useUtc;
     *v = mktime(&m);
     if (sizeof(time_t) <= 4 && *v < 0 && (1900 + m.tm_year) >= 2038) {
-      *v = MaxTime::value;
+      *v = MAX_TIME;
     }
     return *v >= 0;
   }
@@ -139,11 +144,6 @@ public:
 
   /** @brief NotAfter field in seconds since Unix epoch. */
   time_t notAfter = 0;
-
-private:
-  using MaxTime =
-    std::integral_constant<time_t,
-                           sizeof(time_t) <= 4 ? std::numeric_limits<time_t>::max() : 253402300799>;
 };
 
 inline bool

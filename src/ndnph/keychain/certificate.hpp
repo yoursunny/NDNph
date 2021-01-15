@@ -223,70 +223,32 @@ getValidity(const Data& data)
 } // namespace certificate
 namespace detail {
 
-template<typename Signer>
-class CertificateBuilder
+template<typename Signer, typename Modify>
+Data::Signed
+buildCertificate(Region& region, const Name& name, const ValidityPeriod& validity,
+                 const Signer& signer, const Modify& modify)
 {
-public:
-  template<typename Modify>
-  static CertificateBuilder<Signer> create(Region& region, const Name& name,
-                                           const ValidityPeriod& validity, const Signer& signer,
-                                           const Modify& modify)
+  auto data = region.create<Data>();
+  if (!data) {
+    return Data::Signed();
+  }
+  data.setName(certificate::toCertName(region, name));
+  data.setContentType(ContentType::Key);
+  data.setFreshnessPeriod(3600000);
+
+  DSigInfo si;
   {
-    CertificateBuilder<Signer> builder(region, signer);
-    if (!builder) {
-      return builder.reset();
-    }
-
-    Data& data = builder.m_data;
-    data.setName(certificate::toCertName(region, name));
-    data.setContentType(ContentType::Key);
-    data.setFreshnessPeriod(3600000);
-    bool ok = modify(data);
-    if (!ok) {
-      return builder.reset();
-    }
-
-    DSigInfo& si = builder.m_si;
-    {
-      Encoder encoder(region);
-      encoder.prepend(validity);
-      si.extensions = tlv::Value(encoder);
-      encoder.trim();
-    }
-    return builder;
+    Encoder encoder(region);
+    encoder.prepend(validity);
+    si.extensions = tlv::Value(encoder);
+    encoder.trim();
   }
 
-  explicit operator bool() const
-  {
-    return !!m_data;
+  if (!modify(data)) {
+    return Data::Signed();
   }
-
-  void encodeTo(Encoder& encoder) const
-  {
-    if (!m_data) {
-      encoder.setError();
-    } else {
-      m_data.sign(m_signer, m_si).encodeTo(encoder);
-    }
-  }
-
-private:
-  explicit CertificateBuilder(Region& region, const Signer& signer)
-    : m_data(region.create<Data>())
-    , m_signer(signer)
-  {}
-
-  CertificateBuilder<Signer>& reset()
-  {
-    m_data = Data();
-    return *this;
-  }
-
-private:
-  Data m_data;
-  DSigInfo m_si;
-  const Signer& m_signer;
-};
+  return data.sign(signer, std::move(si));
+}
 
 } // namespace detail
 } // namespace ndnph

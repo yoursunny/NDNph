@@ -143,24 +143,22 @@ public:
    *         are kept alive.
    */
   template<typename Signer>
-  detail::CertificateBuilder<Signer> buildCertificate(Region& region, const Name& name,
-                                                      const ValidityPeriod& validity,
-                                                      const Signer& signer) const
+  Data::Signed buildCertificate(Region& region, const Name& name, const ValidityPeriod& validity,
+                                const Signer& signer) const
   {
-    return detail::CertificateBuilder<Signer>::create(
-      region, name, validity, signer, [&](Data& data) {
-        auto spkiHdr = detail::getSpkiHeader();
-        size_t spkiLen = spkiHdr.size() + KeyLen::value;
-        uint8_t* spki = region.alloc(spkiLen);
-        if (spki == nullptr) {
-          return false;
-        }
+    return detail::buildCertificate(region, name, validity, signer, [&](Data& data) {
+      auto spkiHdr = detail::getSpkiHeader();
+      size_t spkiLen = spkiHdr.size() + KeyLen::value;
+      uint8_t* spki = region.alloc(spkiLen);
+      if (spki == nullptr) {
+        return false;
+      }
 
-        auto pos = std::copy_n(spkiHdr.begin(), spkiHdr.size(), spki);
-        std::copy_n(m_raw, KeyLen::value, pos);
-        data.setContent(tlv::Value(spki, spkiLen));
-        return true;
-      });
+      auto pos = std::copy_n(spkiHdr.begin(), spkiHdr.size(), spki);
+      std::copy_n(m_raw, KeyLen::value, pos);
+      data.setContent(tlv::Value(spki, spkiLen));
+      return true;
+    });
   }
 
   /**
@@ -173,8 +171,7 @@ public:
    *         are kept alive.
    */
   template<typename Signer>
-  detail::CertificateBuilder<Signer> selfSign(Region& region, const ValidityPeriod& validity,
-                                              const Signer& signer) const
+  Data::Signed selfSign(Region& region, const ValidityPeriod& validity, const Signer& signer) const
   {
     Name certName = certificate::makeCertName(region, getName(), certificate::getIssuerSelf());
     return buildCertificate(region, certName, validity, signer);

@@ -30,6 +30,7 @@ Packet encoding and decoding
 Transports
 
 * UDP: unicast only
+* libmemif
 
 KeyChain
 
