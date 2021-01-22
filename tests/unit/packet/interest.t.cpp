@@ -33,6 +33,7 @@ TEST(Interest, EncodeMinimal)
   });
   interest.setName(Name(&wire[4], 3));
   interest.setNonce(0xA0A1A2A3);
+  EXPECT_EQ(test::toString(interest), "/8=A");
 
   Encoder encoder(region);
   bool ok = encoder.prepend(interest);
@@ -73,6 +74,7 @@ TEST(Interest, EncodeFull)
   interest.setNonce(0xA0A1A2A3);
   interest.setLifetime(8198);
   interest.setHopLimit(5);
+  EXPECT_EQ(test::toString(interest), "/8=A[P][F]");
 
   Encoder encoder(region);
   bool ok = encoder.prepend(lp::encode(interest, 0xB0B1B2B3B4B5B6B7));

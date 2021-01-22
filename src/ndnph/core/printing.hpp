@@ -3,11 +3,7 @@
 
 #include "common.hpp"
 
-#if defined(ARDUINO_ARCH_ESP32)
-#define NDNPH_PRINT_ARDUINO
-#include <Stream.h>
-#include <StreamString.h>
-#elif defined(ARDUINO)
+#ifdef ARDUINO
 #define NDNPH_PRINT_ARDUINO
 #include <Print.h>
 #include <Printable.h>
@@ -17,21 +13,35 @@
 #endif
 
 namespace ndnph {
-namespace detail {
 
 #if defined(ARDUINO_ARCH_ESP32)
 
 // On ESP32, ::Printable type is not trivially destructible because it has a virtual destructor.
 // Consequently, it cannot serve as a base class in a type that needs to be allocated from Region.
-// This Printable class is a workaround that relies on implicit conversion to ::String.
+// This Printable class is a workaround that relies on implicit conversion to Esp32Printable.
 class Printable
 {
-public:
-  operator String() const
+private:
+  class Esp32Printable : public ::Printable
   {
-    StreamString ss;
-    printTo(ss);
-    return ss;
+  public:
+    Esp32Printable(const ndnph::Printable* obj)
+      : m_obj(obj)
+    {}
+
+    size_t printTo(::Print& p) const final
+    {
+      return m_obj->printTo(p);
+    }
+
+  private:
+    const ndnph::Printable* m_obj;
+  };
+
+public:
+  operator Esp32Printable() const
+  {
+    return Esp32Printable(this);
   }
 
   virtual size_t printTo(::Print& p) const = 0;
@@ -55,7 +65,6 @@ protected:
 
 #endif
 
-} // namespace detail
 } // namespace ndnph
 
 #endif // NDNPH_CORE_PRINTING_HPP

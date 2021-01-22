@@ -13,7 +13,7 @@ namespace ndnph {
  *
  * This type is immutable, except `decodeFrom()` method.
  */
-class Component : public detail::Printable
+class Component : public Printable
 {
 public:
   explicit Component() = default;

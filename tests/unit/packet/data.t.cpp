@@ -83,6 +83,7 @@ TEST(Data, EncodeFull)
   EXPECT_EQ(decoded.getFreshnessPeriod(), 500);
   EXPECT_EQ(decoded.getIsFinalBlock(), true);
   EXPECT_THAT(decoded.getContent(), g::SizeIs(2));
+  EXPECT_EQ(test::toString(decoded), "/8=A/8=B");
 
   {
     MockPublicKey key;

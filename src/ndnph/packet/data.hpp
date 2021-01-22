@@ -138,7 +138,9 @@ private:
 } // namespace detail
 
 /** @brief Data packet. */
-class Data : public detail::RefRegion<detail::DataObj>
+class Data
+  : public Printable
+  , public detail::RefRegion<detail::DataObj>
 {
 public:
   using RefRegion::RefRegion;
@@ -315,7 +317,22 @@ public:
     }
     return getName().append<convention::ImplicitDigest>(region, digest);
   }
+
+#ifdef NDNPH_PRINT_ARDUINO
+  size_t printTo(::Print& p) const final
+  {
+    return p.print(getName());
+  }
+#endif
 };
+
+#ifdef NDNPH_PRINT_OSTREAM
+inline std::ostream&
+operator<<(std::ostream& os, const Data& data)
+{
+  return os << data.getName();
+}
+#endif
 
 } // namespace ndnph
 

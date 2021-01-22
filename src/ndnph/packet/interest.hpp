@@ -283,7 +283,9 @@ private:
 } // namespace detail
 
 /** @brief Interest packet. */
-class Interest : public detail::InterestRefBase
+class Interest
+  : public Printable
+  , public detail::InterestRefBase
 {
 public:
   using InterestRefBase::InterestRefBase;
@@ -504,6 +506,7 @@ public:
 
   /**
    * @brief Determine whether Data can satisfy Interest.
+   * @tparam DataT the ndnph::Data type.
    *
    * This method only works reliably on decoded packets. For packets that are being constructed
    * or modified, this method may give incorrect results for parameterized/signed Interests or
@@ -532,7 +535,37 @@ public:
         return false;
     }
   }
+
+#ifdef NDNPH_PRINT_ARDUINO
+  size_t printTo(::Print& p) const final
+  {
+    size_t count = 0;
+    count += p.print(getName());
+    if (getCanBePrefix()) {
+      count += p.print("[P]");
+    }
+    if (getMustBeFresh()) {
+      count += p.print("[F]");
+    }
+    return count;
+  }
+#endif
 };
+
+#ifdef NDNPH_PRINT_OSTREAM
+inline std::ostream&
+operator<<(std::ostream& os, const Interest& interest)
+{
+  os << interest.getName();
+  if (interest.getCanBePrefix()) {
+    os << "[P]";
+  }
+  if (interest.getMustBeFresh()) {
+    os << "[F]";
+  }
+  return os;
+}
+#endif
 
 } // namespace ndnph
 

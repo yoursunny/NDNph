@@ -11,7 +11,7 @@ namespace ndnph {
  *
  * This type is immutable, except `decodeFrom()` method.
  */
-class Name : public detail::Printable
+class Name : public Printable
 {
 public:
   /** @brief Construct referencing TLV-VALUE. */
