@@ -262,13 +262,16 @@ public:
   CompareResult compare(const Name& other) const
   {
     size_t commonLength = std::min(m_length, other.m_length);
-    int commonCmp = std::memcmp(m_value, other.m_value, commonLength);
-    if (commonCmp < 0) {
-      return CMP_LT;
+    if (commonLength > 0) {
+      int commonCmp = std::memcmp(m_value, other.m_value, commonLength);
+      if (commonCmp < 0) {
+        return CMP_LT;
+      }
+      if (commonCmp > 0) {
+        return CMP_GT;
+      }
     }
-    if (commonCmp > 0) {
-      return CMP_GT;
-    }
+
     if (m_length > commonLength) {
       return CMP_RPREFIX;
     }

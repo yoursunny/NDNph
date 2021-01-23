@@ -1,6 +1,7 @@
-#include "ndnph/app/rdr-metadata-producer.hpp"
+#include "ndnph/app/rdr.hpp"
 #include "ndnph/port/clock/port.hpp"
 
+#include "mock/bridge-fixture.hpp"
 #include "mock/mock-transport.hpp"
 #include "test-common.hpp"
 
@@ -14,8 +15,7 @@ TEST(Rdr, Producer)
 
   StaticRegion<1024> prefixRegion;
   Name rdrPrefix = Name::parse(prefixRegion, "/dataset/32=metadata");
-  StaticRegion<1024> encodingRegion;
-  RdrMetadataProducer producer(rdrPrefix, face, encodingRegion);
+  RdrMetadataProducer producer(rdrPrefix, face);
 
   uint64_t lastVersion = 0;
   auto testOneInterest = [&](const char* interestName, bool canBePrefix, bool mustBeFresh,
@@ -28,15 +28,18 @@ TEST(Rdr, Producer)
         Data data = region.create<Data>();
         assert(!!data);
         EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(data));
+
         const Name& name = data.getName();
         EXPECT_EQ(name.size(), 4);
         EXPECT_TRUE(rdrPrefix.isPrefixOf(name));
         EXPECT_TRUE(name[-2].is<convention::Version>());
+
         uint64_t version = name[-2].as<convention::Version>();
         EXPECT_GT(version, lastVersion);
         lastVersion = version;
         EXPECT_TRUE(name[-1].is<convention::Segment>());
         EXPECT_EQ(name[-1].as<convention::Segment>(), 0);
+
         auto content = data.getContent();
         Name datasetPrefix;
         EXPECT_TRUE(content.makeDecoder().decode(datasetPrefix));
@@ -71,6 +74,57 @@ TEST(Rdr, Producer)
 
   producer.setDatasetPrefix(Name::parse(prefixRegion, "/dataset/35=%1A"));
   testOneInterest("/dataset/32=metadata", true, true, "/dataset/35=%1A");
+}
+
+class RdrEndToEndFixture : public BridgeFixture
+{
+protected:
+  static void consumerCallback(void* ctx, Data data)
+  {
+    RdrEndToEndFixture& self = *reinterpret_cast<RdrEndToEndFixture*>(ctx);
+    auto versioned = rdr::parseMetadata(data);
+    if (!!self.expectedName) {
+      EXPECT_TRUE(!!versioned);
+      EXPECT_EQ(versioned, self.expectedName);
+      EXPECT_EQ(data.getFreshnessPeriod(), 6);
+      EXPECT_EQ(data.getName()[-2].as<convention::Version>(), 51);
+    } else {
+      EXPECT_FALSE(!!versioned);
+    }
+    self.hasCallback = true;
+  }
+
+protected:
+  Name expectedName;
+  bool hasCallback = false;
+};
+
+TEST_F(RdrEndToEndFixture, Consumer)
+{
+  StaticRegion<1024> prefixRegion;
+  auto rdrPrefix = Name::parse(prefixRegion, "/dataset");
+  auto rdrPrefix2 = Name::parse(prefixRegion, "/dataset/32=metadata");
+
+  RdrMetadataProducer producer(rdrPrefix, faceA,
+                               RdrMetadataProducer::Options{
+                                 .initialVersion = 50,
+                                 .freshnessPeriod = 6,
+                                 .signer = DigestKey::get(),
+                               });
+  RdrMetadataConsumer consumer(faceB, RdrMetadataConsumer::Options{
+                                        .verifier = DigestKey::get(),
+                                        .interestLifetime = 100,
+                                      });
+
+  hasCallback = false;
+  consumer.start(rdrPrefix, consumerCallback, this);
+  runInThreads([] {}, [&] { return !hasCallback; });
+
+  hasCallback = false;
+  expectedName = Name::parse(prefixRegion, "/dataset/35=%02");
+  producer.setDatasetPrefix(expectedName);
+  consumer.start(rdrPrefix2, consumerCallback, this);
+  runInThreads([] {}, [&] { return !hasCallback; });
 }
 
 } // namespace
