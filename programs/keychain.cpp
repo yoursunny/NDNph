@@ -76,10 +76,7 @@ certsign(int argc, char** argv)
 
   ndnph::EcPublicKey pub;
   ndnph::cli::inputCertificate(region, &pub);
-  ndnph::ValidityPeriod vp;
-  time(&vp.notBefore);
-  vp.notAfter = vp.notBefore + 86400 * 90;
-
+  auto vp = ndnph::ValidityPeriod::daysFromNow(90);
   auto cert = pub.buildCertificate(region, pub.getName(), vp, issuerPvt);
   ndnph::cli::output(cert);
   return true;

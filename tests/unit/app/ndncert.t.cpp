@@ -108,9 +108,8 @@ TEST_F(NdncertFixture, WorkflowPossession)
   EcPublicKey oUserPub;
   ASSERT_TRUE(ec::generate(oRegion, Name::parse(oRegion, "/requester"), oUserPvt, oUserPub));
   auto oUserCert = oRegion.create<Data>();
-  time_t now = time(nullptr);
   ASSERT_TRUE(oUserCert.decodeFrom(oUserPub.buildCertificate(
-    oRegion, oUserPvt.getName(), ValidityPeriod(now, now + 3600), oRootPvt)));
+    oRegion, oUserPvt.getName(), ValidityPeriod::secondsFromNow(3600), oRootPvt)));
 
   server::PossessionChallenge sPossessionChallenge;
   client::PossessionChallenge cPossessionChallenge(oUserCert, oUserPvt);

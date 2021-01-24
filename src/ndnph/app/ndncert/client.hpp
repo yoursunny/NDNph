@@ -406,10 +406,9 @@ private:
       return;
     }
 
-    time_t now = time(nullptr);
     auto validity = certificate::getValidity(m_profile.cert)
-                      .intersect(ValidityPeriod(now, now + m_profile.maxValidityPeriod));
-    if (!validity.includes(now)) {
+                      .intersect(ValidityPeriod::secondsFromNow(m_profile.maxValidityPeriod));
+    if (!validity.includesUnix()) {
       return;
     }
 

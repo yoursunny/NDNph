@@ -2,6 +2,7 @@
 #define NDNPH_KEYCHAIN_VALIDITY_PERIOD_HPP
 
 #include "../an.hpp"
+#include "../port/unixtime/port.hpp"
 #include "../tlv/ev-decoder.hpp"
 #include "../tlv/value.hpp"
 
@@ -45,6 +46,19 @@ public:
     return ValidityPeriod(540109800, MAX_TIME);
   }
 
+  /** @brief Get a ValidityPeriod from now until @c seconds later. */
+  static ValidityPeriod secondsFromNow(uint64_t seconds)
+  {
+    time_t now = port::UnixTime::now() / 1000000;
+    return ValidityPeriod(now, now + seconds);
+  }
+
+  /** @brief Get a ValidityPeriod from now until @c days later. */
+  static ValidityPeriod daysFromNow(uint64_t days)
+  {
+    return secondsFromNow(86400 * days);
+  }
+
   ValidityPeriod() = default;
 
   explicit ValidityPeriod(time_t notBefore, time_t notAfter)
@@ -52,10 +66,16 @@ public:
     , notAfter(notAfter)
   {}
 
-  /** @brief Determine whether the specified timestamp is within validity period. */
+  /** @brief Determine whether the timestamp (in seconds) is within validity period. */
   bool includes(time_t t)
   {
     return notBefore <= t && t <= notAfter;
+  }
+
+  /** @brief Determine whether the Unix timestamp (in microseconds) is within validity period. */
+  bool includesUnix(uint64_t t = port::UnixTime::now())
+  {
+    return includes(t / 1000000);
   }
 
   /** @brief Calculate the intersection of this and @c other ValidityPeriod. */

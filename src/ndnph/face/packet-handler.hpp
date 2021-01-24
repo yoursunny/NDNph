@@ -1,6 +1,7 @@
 #ifndef NDNPH_FACE_PACKET_HANDLER_HPP
 #define NDNPH_FACE_PACKET_HANDLER_HPP
 
+#include "../port/clock/port.hpp"
 #include "face.hpp"
 
 namespace ndnph {

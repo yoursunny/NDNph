@@ -1,8 +1,8 @@
 #ifndef NDNPH_PACKET_SIG_INFO_HPP
 #define NDNPH_PACKET_SIG_INFO_HPP
 
-#include "../port/clock/port.hpp"
 #include "../port/random/port.hpp"
+#include "../port/unixtime/port.hpp"
 #include "../tlv/ev-decoder.hpp"
 #include "name.hpp"
 
@@ -217,17 +217,6 @@ class Time
 public:
   using Order = std::integral_constant<int, 2>;
 
-  /**
-   * @brief Constructor.
-   * @param now current Unix timestamp; the default is obtaining from @c time() function.
-   *            Passing an invalid timestmap (including when @c time() function is unavailable)
-   *            would result in validation failures.
-   */
-  explicit Time(uint64_t now = time(nullptr) * 1000)
-    : m_base(port::Clock::now())
-    , m_initial(now)
-  {}
-
   tlv::NniElement<> create()
   {
     uint64_t timestamp = std::max(now(), m_last + 1);
@@ -250,12 +239,11 @@ public:
 private:
   uint64_t now() const
   {
-    return m_initial + port::Clock::sub(port::Clock::now(), m_base);
+    // SigTime field uses milliseconds
+    return port::UnixTime::now() / 1000;
   }
 
 private:
-  const port::Clock::Time m_base;
-  const uint64_t m_initial;
   uint64_t m_last = 0;
 };
 

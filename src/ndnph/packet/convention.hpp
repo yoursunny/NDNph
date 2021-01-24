@@ -2,6 +2,7 @@
 #define NDNPH_PACKET_CONVENTION_HPP
 
 #include "../port/random/port.hpp"
+#include "../port/unixtime/port.hpp"
 #include "../tlv/nni.hpp"
 #include "component.hpp"
 
@@ -28,24 +29,24 @@ public:
 class TimeValue
 {
 public:
+  enum Unit
+  {
+    Seconds = 1000000,
+    Milliseconds = 1000,
+    Microseconds = 1,
+  };
+
   /**
    * @brief Constructor.
-   * @param t timestamp, or 0 to use current time.
+   * @param t timestamp in microseconds, or 0 to use current time.
    * @param unit time unit.
    * @param allowFallback if true, use RandomValue() when clock is unavailable.
    */
-  explicit TimeValue(time_t t = 0, uint64_t unit = Microseconds, bool allowFallback = false)
+  explicit TimeValue(uint64_t t = 0, uint64_t unit = Microseconds, bool allowFallback = false)
     : m_t(t)
     , m_unit(unit)
     , m_allowFallback(allowFallback)
   {}
-
-  enum Unit
-  {
-    Seconds = 1,
-    Milliseconds = 1000,
-    Microseconds = 1000000,
-  };
 
   /**
    * @brief Generate TLV-VALUE.
@@ -53,10 +54,10 @@ public:
    */
   std::pair<bool, uint64_t> toNumber() const
   {
-    time_t t = m_t;
+    uint64_t t = m_t;
     if (t == 0) {
-      time(&t);
-      if (t < 540109800) {
+      t = port::UnixTime::now();
+      if (!port::UnixTime::valid(t)) {
         if (m_allowFallback) {
           return RandomValue().toNumber();
         } else {
@@ -64,11 +65,11 @@ public:
         }
       }
     }
-    return std::make_pair(true, t * m_unit);
+    return std::make_pair(true, t / m_unit);
   }
 
 private:
-  time_t m_t;
+  uint64_t m_t;
   uint64_t m_unit;
   bool m_allowFallback;
 };
@@ -148,6 +149,9 @@ public:
     bool ok = false;
     uint64_t value = 0;
     std::tie(ok, value) = gen.toNumber();
+    if (!ok) {
+      return Component(region, 0, nullptr);
+    }
     return create(region, value);
   }
 
@@ -251,7 +255,7 @@ using Version = detail::TypedNumber<TT::VersionNameComponent>;
  * Supported operations include those in convention::Segment, and:
  * @code
  * name.append<convention::Timestamp>(region, convention::RandomValue());
- * name.append<convention::Timestamp>(region, convention::TimeValue(now));
+ * name.append<convention::Timestamp>(region, convention::TimeValue(port::UnixTime::now()));
  * @endcode
  */
 using Timestamp = detail::TypedNumber<TT::TimestampNameComponent>;

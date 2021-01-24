@@ -536,11 +536,10 @@ private:
     StaticRegion<2048> temp;
     ndnph::Data data = temp.create<ndnph::Data>();
     assert(!!data);
-    time_t now = time(nullptr);
 
     m_region.reset();
     if (!(m_cert.makeDecoder().decode(data) && m_pub.import(temp, data) &&
-          certificate::getValidity(data).includes(now))) {
+          certificate::getValidity(data).includesUnix())) {
       // don't reveal the error until proof is submitted
       m_pub = EcPublicKey();
     }

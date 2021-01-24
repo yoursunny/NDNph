@@ -7,39 +7,48 @@
 namespace ndnph {
 namespace port_clock_ino {
 
+using TimeMillis = decltype(::millis());
+
 /** @brief Clock implemented with Arduino API. */
 class Clock
 {
 public:
   Clock() = delete;
 
-  using Time = decltype(::millis());
+  struct Time
+  {
+    TimeMillis ms = 0;
+  };
 
   static Time now()
   {
-    return ::millis();
+    Time r;
+    r.ms = ::millis();
+    return r;
   }
 
   static Time add(Time t, int ms)
   {
-    return t + ms;
+    Time r;
+    r.ms = t.ms + ms;
+    return r;
   }
 
   static int sub(Time a, Time b)
   {
     if (isBefore(a, b)) {
-      Time diff = b - a;
+      auto diff = b.ms - a.ms;
       return -static_cast<int>(diff);
     }
-    Time diff = a - b;
+    auto diff = a.ms - b.ms;
     return static_cast<int>(diff);
   }
 
   static bool isBefore(Time a, Time b)
   {
-    static_assert(std::is_unsigned<Time>::value, "");
-    Time diff = a - b;
-    return diff > std::numeric_limits<Time>::max() / 2;
+    static_assert(std::is_unsigned<TimeMillis>::value, "");
+    auto diff = a.ms - b.ms;
+    return diff > std::numeric_limits<TimeMillis>::max() / 2;
   }
 
   static void sleep(int ms)

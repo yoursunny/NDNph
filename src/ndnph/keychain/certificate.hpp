@@ -171,12 +171,11 @@ makeCertName(Region& region, const Name& input, const Component& issuerId, const
  * @param region where to allocate memory.
  * @param input subject name, key name, or certificate name; only key name is taken.
  * @param issuerId specified issuerId.
- * @param version version from timestamp; if unspecified, time() will be used if it has
- *                a reasonable value, otherwise it's randomly generated.
+ * @param version version number; default is current Unix timestamp or a random number.
  * @return certificate name, or an empty name upon failure.
  */
 inline Name
-makeCertName(Region& region, const Name& input, const Component& issuerId, time_t version = 0)
+makeCertName(Region& region, const Name& input, const Component& issuerId, uint64_t version = 0)
 {
   return toKeyName(region, input)
     .append(region,
