@@ -48,7 +48,7 @@ Application layer services
 
 * [ndnping](https://github.com/named-data/ndn-tools/tree/master/tools/ping) server and client
 * segmented object producer and consumer
-* [Realtime Data Retrieval (RDR)](https://redmine.named-data.net/projects/ndn-tlv/wiki/RDR) metadata producer
+* [Realtime Data Retrieval (RDR)](https://redmine.named-data.net/projects/ndn-tlv/wiki/RDR) metadata producer and consumer
 * [NDNCERT](https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3) server and client
   * supported challenges: "nop" and "possession"
 
@@ -66,7 +66,7 @@ For Linux,
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
    * [libmemif](https://docs.fd.io/vpp/20.09/dc/db3/libmemif_build_doc.html), install from source
    * [Google Test](https://github.com/google/googletest), install from source (only needed by unit tests)
-   * Note: all dependencies are optional, but extra porting work will be necessary
+   * Note: all dependencies are optional, but omitting a dependency would necessitate extra porting work
 2. Create build directory: `meson build`
 3. Enter build directory and execute build: `cd build && ninja`
 4. Run unit test (optional): `ninja test`
