@@ -24,8 +24,7 @@ public:
     doLoop();
   }
 
-  using RxCallback = void (*)(void* ctx, Region& region, const uint8_t* pkt, size_t pktLen,
-                              uint64_t endpointId);
+  using RxCallback = void (*)(void* ctx, const uint8_t* pkt, size_t pktLen, uint64_t endpointId);
 
   /** @brief Set incoming packet callback. */
   void setRxCallback(RxCallback cb, void* ctx)
@@ -42,9 +41,9 @@ public:
 
 protected:
   /** @brief Invoke incoming packet callback for a received packet. */
-  void invokeRxCallback(Region& region, const uint8_t* pkt, size_t pktLen, uint64_t endpointId = 0)
+  void invokeRxCallback(const uint8_t* pkt, size_t pktLen, uint64_t endpointId = 0)
   {
-    m_rxCb(m_rxCtx, region, pkt, pktLen, endpointId);
+    m_rxCb(m_rxCtx, pkt, pktLen, endpointId);
   }
 
 private:

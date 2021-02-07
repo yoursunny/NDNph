@@ -12,8 +12,7 @@ inline Face*
 openMemif(const char* socketName)
 {
 #ifdef NDNPH_PORT_TRANSPORT_MEMIF
-  static StaticRegion<65536> rxRegion;
-  static MemifTransport transport(rxRegion);
+  static MemifTransport transport;
   if (!transport.begin(socketName, 0)) {
     return nullptr;
   }

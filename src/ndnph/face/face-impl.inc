@@ -79,8 +79,9 @@ Face::send(Region& region, const Packet& packet, PacketInfo pi)
 }
 
 inline void
-Face::transportRx(Region& region, const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
+Face::transportRx(const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
 {
+  region.reset();
   using PT = lp::PacketClassify::Type;
 
   lp::PacketClassify classify;

@@ -1,7 +1,6 @@
 #ifndef NDNPH_PACKET_INTEREST_HPP
 #define NDNPH_PACKET_INTEREST_HPP
 
-#include "../core/in-region.hpp"
 #include "../keychain/private-key.hpp"
 #include "../keychain/public-key.hpp"
 #include "../port/random/port.hpp"

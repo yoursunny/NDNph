@@ -136,8 +136,8 @@ public:
   explicit FaceFragmentationFixture()
     : fragRegionA(16384)
     , fragRegionB(16384)
-    , fragmenterA(fragRegionA, 1200)
-    , fragmenterB(fragRegionB, 1200)
+    , fragmenterA(fragRegionA, 1500)
+    , fragmenterB(fragRegionB, 1500)
     , reassemblerA(fragRegionA)
     , reassemblerB(fragRegionB)
   {

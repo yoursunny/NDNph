@@ -23,11 +23,10 @@ public:
   }
 
 private:
-  static void innerRx(void* self0, Region& region, const uint8_t* pkt, size_t pktLen,
-                      uint64_t endpointId)
+  static void innerRx(void* self0, const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
   {
     ForceEndpointId& self = *reinterpret_cast<ForceEndpointId*>(self0);
-    self.invokeRxCallback(region, pkt, pktLen, endpointId);
+    self.invokeRxCallback(pkt, pktLen, endpointId);
   }
 
   bool doIsUp() const final

@@ -19,7 +19,6 @@
 #include "ndnph/app/segment-consumer.hpp"
 #include "ndnph/app/segment-producer.hpp"
 #include "ndnph/core/common.hpp"
-#include "ndnph/core/in-region.hpp"
 #include "ndnph/core/input-iterator-pointer-proxy.hpp"
 #include "ndnph/core/operators.hpp"
 #include "ndnph/core/printing.hpp"

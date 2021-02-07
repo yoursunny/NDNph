@@ -89,8 +89,8 @@ public:
 
   /**
    * @brief Allocate and create an object, and return its reference.
-   * @tparam RefType a subclass of detail::RefRegion<ObjType>,
-   *                 where ObjType is a subclass of detail::InRegion.
+   * @tparam RefType a subclass of @c RefRegion<ObjType> ,
+   *                 where @c ObjType is a subclass of @c InRegion .
    * @return a reference to the created object.
    * @warning If `!ref` is true on the returned reference, it indicates allocation failure.
    *          Using the reference in that case would cause segmentation fault.
@@ -200,6 +200,67 @@ makeSubRegion(Region& parent, size_t capacity)
   }
   return parent.make<Region>(room, capacity);
 }
+
+/** @brief Base class of an object associated with a Region. */
+class WithRegion
+{
+public:
+  WithRegion(WithRegion&&) = default;
+
+protected:
+  explicit WithRegion(Region& region)
+    : region(region)
+  {}
+
+  WithRegion(const WithRegion&) = delete;
+  WithRegion& operator=(const WithRegion&) = delete;
+
+protected:
+  Region& region;
+
+  friend Region& regionOf(const WithRegion* obj)
+  {
+    return obj->region;
+  }
+};
+
+/** @brief Base class of an object allocated in a Region. */
+class InRegion : public WithRegion
+{
+protected:
+  explicit InRegion(Region& region)
+    : WithRegion(region)
+  {}
+};
+
+/** @brief Base class of an object referencing an InRegion object. */
+template<typename Obj>
+class RefRegion
+{
+public:
+  using ObjType = Obj;
+  static_assert(std::is_base_of<InRegion, ObjType>::value, "");
+
+  explicit RefRegion(ObjType* obj = nullptr)
+    : obj(obj)
+  {}
+
+  explicit operator bool() const
+  {
+    return obj != nullptr;
+  }
+
+protected:
+  ~RefRegion() = default;
+
+protected:
+  ObjType* obj = nullptr;
+
+  friend Region& regionOf(const RefRegion<Obj>& ref)
+  {
+    return regionOf(ref.obj);
+  }
+};
 
 } // namespace ndnph
 

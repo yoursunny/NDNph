@@ -1,7 +1,7 @@
 #define NDNPH_WANT_CLI
-#include <NDNph-config.h>
 #define NDNPH_MEMIF_DEBUG
 #define NDNPH_SOCKET_DEBUG
+#include <NDNph-config.h>
 #include <NDNph.h>
 
 ndnph::StaticRegion<65536> region;

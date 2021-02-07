@@ -9,7 +9,7 @@ namespace ndnph {
 class PacketHandler;
 
 /** @brief Network layer face. */
-class Face
+class Face : public WithRegion
 {
 public:
   struct PacketInfo
@@ -18,12 +18,31 @@ public:
     uint64_t pitToken = 0;
   };
 
-  explicit Face(Transport& transport)
-    : m_transport(transport)
+  /**
+   * @brief Constructor.
+   * @param region where to allocate memory for packet objects (e.g. @c DataObj ) during RX.
+   *               This region may be shared among multiple faces, but cannot be shared with
+   *               the fragmenter or reassembler associated with this face.
+   *               Face does not use this region for packet buffers, but it is passed to
+   *               @c PacketHandler processing functions. If a packet processing function
+   *               creates a new packet in this region and transmits that packet, that packet
+   *               would be temporarily encoded in this region during TX.
+   * @param transport underlying transport.
+   */
+  explicit Face(Region& region, Transport& transport)
+    : WithRegion(region)
+    , m_transport(transport)
   {
     m_transport.setRxCallback(transportRx, this);
   }
 
+  explicit Face(Transport& transport)
+    : Face(*new OwnRegion(), transport)
+  {
+    m_ownRegion.reset(static_cast<OwnRegion*>(&region));
+  }
+
+  /** @brief Access the underlying transport. */
   Transport& getTransport() const
   {
     return m_transport;
@@ -47,13 +66,6 @@ public:
    *
    * If reassembly is disabled (this function has not been invoked), the face would drop
    * incoming fragments.
-   *
-   * @bug @c transportRx() is using a Region provided by the transport and sized to the MTU.
-   *      When fragment size is near MTU, creating objects (e.g. @c DataObj ) in the Region would
-   *      fail due to insufficient room. A refactoring is needed to have Face own a Region
-   *      independent from transport.
-   *      This bug could appear without reassembler, but is most prominent with a reassembler
-   *      because larger packet sizes are often in use.
    */
   void setReassembler(lp::Reassembler& reass)
   {
@@ -107,18 +119,19 @@ private:
     Face& m_face;
   };
 
-  static void transportRx(void* self, Region& region, const uint8_t* pkt, size_t pktLen,
-                          uint64_t endpointId)
+  static void transportRx(void* self, const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
   {
-    reinterpret_cast<Face*>(self)->transportRx(region, pkt, pktLen, endpointId);
+    reinterpret_cast<Face*>(self)->transportRx(pkt, pktLen, endpointId);
   }
 
-  void transportRx(Region& region, const uint8_t* pkt, size_t pktLen, uint64_t endpointId);
+  void transportRx(const uint8_t* pkt, size_t pktLen, uint64_t endpointId);
 
   template<typename Packet, typename H = bool (PacketHandler::*)(Packet)>
   bool process(H processPacket, Packet packet);
 
 private:
+  using OwnRegion = StaticRegion<2048>;
+  std::unique_ptr<OwnRegion> m_ownRegion;
   Transport& m_transport;
   lp::Fragmenter* m_frag = nullptr;
   lp::Reassembler* m_reass = nullptr;

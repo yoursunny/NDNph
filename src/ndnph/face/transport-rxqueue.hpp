@@ -50,8 +50,8 @@ protected:
       if (ok) {
         Region& region = *m_item.region;
         region.reset();
-        m_bufLen = region.availableA();
-        m_item.pkt = region.allocA(m_bufLen);
+        m_bufLen = region.available();
+        m_item.pkt = region.alloc(m_bufLen);
         m_item.pktLen = -1;
       }
     }
@@ -89,7 +89,6 @@ protected:
     {
       m_item.pktLen = pktLen;
       m_item.endpointId = endpointId;
-      m_item.region->free(m_item.pkt + pktLen, m_item.pkt + m_bufLen);
     }
 
   private:
@@ -131,7 +130,7 @@ protected:
       if (!ok) {
         break;
       }
-      invokeRxCallback(*item.region, item.pkt, item.pktLen, item.endpointId);
+      invokeRxCallback(item.pkt, item.pktLen, item.endpointId);
       m_allocQ.push(item);
     }
   }

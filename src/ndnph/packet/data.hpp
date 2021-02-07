@@ -1,7 +1,6 @@
 #ifndef NDNPH_PACKET_DATA_HPP
 #define NDNPH_PACKET_DATA_HPP
 
-#include "../core/in-region.hpp"
 #include "../keychain/private-key.hpp"
 #include "../keychain/public-key.hpp"
 #include "../port/sha256/port.hpp"
@@ -140,7 +139,7 @@ private:
 /** @brief Data packet. */
 class Data
   : public Printable
-  , public detail::RefRegion<detail::DataObj>
+  , public RefRegion<detail::DataObj>
 {
 public:
   using RefRegion::RefRegion;

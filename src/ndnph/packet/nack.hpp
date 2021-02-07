@@ -20,7 +20,7 @@ enum class NackReason : uint8_t
 };
 
 /** @brief Nack header field. */
-class NackHeader : public detail::RefRegion<detail::InterestObj>
+class NackHeader : public RefRegion<detail::InterestObj>
 {
 public:
   /** @brief Maximum encoded size. */
@@ -79,7 +79,7 @@ private:
 };
 
 /** @brief Nack packet. */
-class Nack : public detail::RefRegion<detail::InterestObj>
+class Nack : public RefRegion<detail::InterestObj>
 {
 public:
   using RefRegion::RefRegion;

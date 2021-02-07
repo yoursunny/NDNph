@@ -4,6 +4,7 @@
 #include "../../../face/transport-rxqueue.hpp"
 
 #include <arpa/inet.h>
+#include <cinttypes>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -145,6 +146,10 @@ private:
 #endif
       return false;
     }
+#ifdef NDNPH_SOCKET_DEBUG
+    fprintf(stderr, "UdpUnicastTransport bind(%s:%" PRIu16 ")\n", inet_ntoa(laddr->sin_addr),
+            ntohs(laddr->sin_port));
+#endif
     return true;
   }
 
@@ -156,6 +161,10 @@ private:
 #endif
       return false;
     }
+#ifdef NDNPH_SOCKET_DEBUG
+    fprintf(stderr, "UdpUnicastTransport connect(%s:%" PRIu16 ")\n", inet_ntoa(raddr->sin_addr),
+            ntohs(raddr->sin_port));
+#endif
     return true;
   }
 

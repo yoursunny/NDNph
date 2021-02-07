@@ -49,13 +49,8 @@ getEtherHdr()
 class MemifTransport : public virtual Transport
 {
 public:
-  /**
-   * @brief Constructor.
-   * @param rxCallbackRegion a region used during RX callback.
-   */
-  explicit MemifTransport(Region& rxCallbackRegion, uint16_t maxPktLen = 8800)
-    : m_rxCallbackRegion(rxCallbackRegion)
-    , m_maxPktLen(maxPktLen)
+  explicit MemifTransport(uint16_t maxPktLen = 8800)
+    : m_maxPktLen(maxPktLen)
   {}
 
   bool begin(const char* socketName, uint32_t id)
@@ -219,9 +214,7 @@ private:
       if (b.len <= getEtherHdr().size()) {
         continue;
       }
-      self->m_rxCallbackRegion.reset();
-      self->invokeRxCallback(self->m_rxCallbackRegion,
-                             std::next(static_cast<const uint8_t*>(b.data), getEtherHdr().size()),
+      self->invokeRxCallback(std::next(static_cast<const uint8_t*>(b.data), getEtherHdr().size()),
                              b.len - getEtherHdr().size());
     }
 
@@ -233,7 +226,6 @@ private:
   }
 
 private:
-  Region& m_rxCallbackRegion;
   memif_socket_handle_t m_sock = nullptr;
   memif_conn_handle_t m_conn = nullptr;
   uint16_t m_maxPktLen;

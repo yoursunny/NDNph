@@ -256,7 +256,7 @@ TEST_F(SegmentEndToEndFixture, SegmentCallback)
           ++ctxB.segment;
           EXPECT_LE(segment, 15);
 
-          EXPECT_FALSE(!data);
+          ASSERT_FALSE(!data);
           EXPECT_EQ(data.getIsFinalBlock(), segment == 15);
 
           auto content = data.getContent();

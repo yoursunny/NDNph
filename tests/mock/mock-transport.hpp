@@ -24,8 +24,7 @@ public:
 
   bool receive(const std::vector<uint8_t>& wire, uint64_t endpointId = 0)
   {
-    StaticRegion<1024> region;
-    invokeRxCallback(region, wire.data(), wire.size(), endpointId);
+    invokeRxCallback(wire.data(), wire.size(), endpointId);
     return true;
   }
 
@@ -37,15 +36,14 @@ public:
       return false;
     }
     encoder.trim();
-    invokeRxCallback(region, encoder.begin(), encoder.size(), endpointId);
+    invokeRxCallback(encoder.begin(), encoder.size(), endpointId);
     return true;
   }
 
   template<typename Packet>
   bool receive(Packet packet, uint64_t endpointId = 0)
   {
-    Region& region = regionOf(packet);
-    return receive(region, packet, endpointId);
+    return receive(regionOf(packet), packet, endpointId);
   }
 };
 

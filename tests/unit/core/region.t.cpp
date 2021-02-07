@@ -1,5 +1,4 @@
 #include "ndnph/core/region.hpp"
-#include "ndnph/core/in-region.hpp"
 
 #include "test-common.hpp"
 
@@ -51,7 +50,7 @@ TEST(Region, AllocFree)
   EXPECT_EQ(region.availableA(), 1);
 }
 
-class MyObj : public detail::InRegion
+class MyObj : public InRegion
 {
 public:
   explicit MyObj(Region& region, uint32_t x = 1)
@@ -63,7 +62,7 @@ public:
   uint32_t x;
 };
 
-class MyRef : public detail::RefRegion<MyObj>
+class MyRef : public RefRegion<MyObj>
 {
 public:
   using RefRegion::RefRegion;

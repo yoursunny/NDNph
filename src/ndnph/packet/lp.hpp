@@ -135,7 +135,7 @@ encode(Nack nack, uint64_t pitToken = 0)
 }
 
 /** @brief NDNLPv2 fragmenter. */
-class Fragmenter : public detail::InRegion
+class Fragmenter : public WithRegion
 {
 public:
   /** @brief Singly linked list of encodable fragments. */
@@ -155,7 +155,7 @@ public:
    * @param mtu maximum output packet size including NDNLPv2 headers.
    */
   explicit Fragmenter(Region& region, uint16_t mtu)
-    : InRegion(region)
+    : WithRegion(region)
     , m_room(static_cast<int>(mtu) - FragmentOverhead)
   {
     port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_nextSeqNum), sizeof(m_nextSeqNum));
@@ -430,7 +430,7 @@ private:
 /**
  * @brief NDNLPv2 fragmenter.
  */
-class Reassembler : public detail::InRegion
+class Reassembler : public WithRegion
 {
 public:
   /**
@@ -439,7 +439,7 @@ public:
    *               This region may be shared with others fragmenters and reassemblers.
    */
   explicit Reassembler(Region& region)
-    : InRegion(region)
+    : WithRegion(region)
   {}
 
   /**
