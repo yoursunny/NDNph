@@ -209,6 +209,18 @@ private:
   uint8_t* m_end = nullptr;
 };
 
+/** @brief Encoder that auto-discards upon destruction. */
+class ScopedEncoder : public Encoder
+{
+public:
+  using Encoder::Encoder;
+
+  ~ScopedEncoder()
+  {
+    discard();
+  }
+};
+
 } // namespace ndnph
 
 #endif // NDNPH_TLV_ENCODER_HPP

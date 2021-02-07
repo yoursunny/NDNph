@@ -23,6 +23,9 @@ enum class NackReason : uint8_t
 class NackHeader : public detail::RefRegion<detail::InterestObj>
 {
 public:
+  /** @brief Maximum encoded size. */
+  using MaxSize = std::integral_constant<size_t, 3 + 1 + 3 + 1 + 1>;
+
   using RefRegion::RefRegion;
 
   NackReason getReason() const

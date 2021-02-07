@@ -73,7 +73,7 @@ TEST(Data, EncodeFull)
 
   lp::PacketClassify classify;
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
-  ASSERT_EQ(classify.getType(), lp::PacketClassify::Data);
+  ASSERT_EQ(classify.getType(), lp::PacketClassify::Type::Data);
   EXPECT_EQ(classify.getPitToken(), 0xB0B1B2B3B4B5B6B7);
   Data decoded = region.create<Data>();
   ASSERT_FALSE(!decoded);

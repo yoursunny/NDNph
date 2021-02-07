@@ -13,6 +13,12 @@ public:
   using PacketHandler::getCurrentPacketInfo;
   using PacketHandler::PacketHandler;
 
+  template<typename... Arg>
+  bool send(Arg&&... arg)
+  {
+    return PacketHandler::send(std::forward<Arg>(arg)...);
+  }
+
   MOCK_METHOD(bool, processInterest, (Interest), (override));
   MOCK_METHOD(bool, processData, (Data), (override));
   MOCK_METHOD(bool, processNack, (Nack), (override));

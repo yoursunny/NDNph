@@ -84,7 +84,7 @@ TEST(Interest, EncodeFull)
 
   lp::PacketClassify classify;
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
-  ASSERT_EQ(classify.getType(), lp::PacketClassify::Interest);
+  ASSERT_EQ(classify.getType(), lp::PacketClassify::Type::Interest);
   EXPECT_EQ(classify.getPitToken(), 0xB0B1B2B3B4B5B6B7);
 
   Interest decoded = region.create<Interest>();

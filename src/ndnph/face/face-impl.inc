@@ -49,42 +49,86 @@ Face::loop()
   }
 }
 
-inline void
-Face::transportRx(void* self0, Region& region, const uint8_t* pkt, size_t pktLen,
-                  uint64_t endpointId)
+template<typename Packet>
+inline bool
+Face::send(Region& region, const Packet& packet, PacketInfo pi)
 {
-  Face& self = *reinterpret_cast<Face*>(self0);
+  auto lpp = lp::encode(packet, pi.pitToken);
+  if (m_frag == nullptr) {
+    ScopedEncoder encoder(region);
+    return encoder.prepend(lpp) && m_transport.send(encoder.begin(), encoder.size(), pi.endpointId);
+  }
+
+  if (m_reass != nullptr && &regionOf(m_reass) == &regionOf(m_frag)) {
+    m_reass->discard();
+  }
+  auto frag = m_frag->fragment(lpp);
+  if (frag == nullptr) {
+    return false;
+  }
+
+  for (; frag != nullptr; frag = frag->next) {
+    ScopedEncoder encoder(region);
+    bool ok =
+      encoder.prepend(*frag) && m_transport.send(encoder.begin(), encoder.size(), pi.endpointId);
+    if (!ok) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline void
+Face::transportRx(Region& region, const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
+{
+  using PT = lp::PacketClassify::Type;
+
   lp::PacketClassify classify;
   if (!Decoder(pkt, pktLen).decode(classify)) {
     return;
   }
+
+  if (classify.getType() == PT::Fragment && m_reass != nullptr) {
+    m_reass->add(classify.getFragment());
+    classify = m_reass->reassemble();
+  }
+
   PacketInfo pi;
   pi.endpointId = endpointId;
   pi.pitToken = classify.getPitToken();
-  ScopedCurrentPacketInfo piScoped(self, pi);
+  ScopedCurrentPacketInfo piScoped(*this, pi);
 
   switch (classify.getType()) {
-    case lp::PacketClassify::Interest: {
+    case PT::Interest: {
       Interest interest = region.create<Interest>();
       if (interest && classify.decodeInterest(interest)) {
-        self.process(&PacketHandler::processInterest, interest);
+        process(&PacketHandler::processInterest, interest);
       }
       break;
     }
-    case lp::PacketClassify::Data: {
+    case PT::Data: {
       Data data = region.create<Data>();
       if (data && classify.decodeData(data)) {
-        self.process(&PacketHandler::processData, data);
+        process(&PacketHandler::processData, data);
       }
       break;
     }
-    case lp::PacketClassify::Nack: {
+    case PT::Nack: {
       Nack nack = region.create<Nack>();
       if (nack && classify.decodeNack(nack)) {
-        self.process(&PacketHandler::processNack, nack);
+        process(&PacketHandler::processNack, nack);
       }
       break;
     }
+    case PT::None:
+    case PT::Fragment: {
+      // reassembler unavailable or reassembled as invalid packet
+      return;
+    }
+  }
+
+  if (m_reass != nullptr) {
+    m_reass->discard();
   }
 }
 

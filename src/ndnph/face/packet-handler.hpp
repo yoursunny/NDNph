@@ -47,14 +47,13 @@ protected:
   /**
    * @brief Synchronously transmit a packet.
    * @tparam Packet Interest, Data, their signed variants, or Nack.
+   * @param region where to allocate temporary memory for packet encoding.
    * @return whether success.
-   * @post if successful, wire encoding is kept in encoder.
    */
   template<typename Packet>
-  bool send(Encoder& encoder, const Packet& packet, PacketInfo pi = {})
+  bool send(Region& region, const Packet& packet, PacketInfo pi = {})
   {
-    return m_face != nullptr && encoder.prepend(lp::encode(packet, pi.pitToken)) &&
-           m_face->getTransport().send(encoder.begin(), encoder.size(), pi.endpointId);
+    return m_face != nullptr && m_face->send(region, packet, pi);
   }
 
   /** @brief Set EndpointId of PacketInfo. */
@@ -93,16 +92,18 @@ protected:
 
   /**
    * @brief Synchronously transmit a packet.
+   * @tparam Packet Interest, Data, their signed variants, or Nack.
    * @tparam PacketInfoModifier WithEndpointId or WithPitToken
    */
   template<typename Packet, typename... PacketInfoModifier>
-  bool send(Encoder& encoder, const Packet& packet, const PacketInfoModifier&... pim)
+  bool send(Region& region, const Packet& packet, const PacketInfoModifier&... pim)
   {
-    return send(encoder, packet, PacketInfo(), pim...);
+    return send(region, packet, PacketInfo(), pim...);
   }
 
   /**
    * @brief Synchronously transmit a packet.
+   * @tparam Packet Interest, Data, their signed variants, or Nack.
    * @tparam Arg either a sequence of `PacketInfoModifier` or `PacketInfo`.
    *
    * @code
@@ -114,20 +115,16 @@ protected:
    */
   template<typename Packet, typename... Arg,
            typename = typename std::enable_if<
-             !std::is_same<Encoder, typename std::decay<Packet>::type>::value>::type>
+             !std::is_base_of<Region, typename std::decay<Packet>::type>::value>::type>
   bool send(const Packet& packet, Arg&&... arg)
   {
-    Region& region = regionOf(packet);
-    Encoder encoder(region);
-    bool ok = send(encoder, packet, std::forward<Arg>(arg)...);
-    encoder.discard();
-    return ok;
+    return send(regionOf(packet), packet, std::forward<Arg>(arg)...);
   }
 
   /**
    * @brief Synchronously transmit a packet in reply to current processing packet.
    * @pre one of processInterest, processData, or processNack is executing.
-   * @param arg either `Encoder&, const Packet&` or `const Packet&`.
+   * @param arg either `Region&, const Packet&` or `const Packet&`.
    *
    * This is most useful in processInterest, replying a Data or Nack carrying the PIT token of
    * current Interest to the endpointId of current Interest.
@@ -269,11 +266,11 @@ private:
   }
 
   template<typename Packet, typename PimFirst, typename... PimRest>
-  bool send(Encoder& encoder, const Packet& packet, PacketInfo pi, const PimFirst& pimFirst,
+  bool send(Region& region, const Packet& packet, PacketInfo pi, const PimFirst& pimFirst,
             const PimRest&... pimRest)
   {
     pimFirst(pi);
-    return send(encoder, packet, pi, pimRest...);
+    return send(region, packet, pi, pimRest...);
   }
 
 private:

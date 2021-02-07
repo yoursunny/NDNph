@@ -1,7 +1,7 @@
 #include "ndnph/face/face.hpp"
 #include "ndnph/keychain/null.hpp"
 
-#include "mock/mock-key.hpp"
+#include "mock/bridge-fixture.hpp"
 #include "mock/mock-packet-handler.hpp"
 #include "mock/mock-transport.hpp"
 
@@ -130,6 +130,77 @@ TEST(Face, Send)
   EXPECT_TRUE(transport.receive(region, lp::encode(h.request, 0xDE249BD0398EC80F), 3202));
 }
 
+class FaceFragmentationFixture : public BridgeFixture
+{
+public:
+  explicit FaceFragmentationFixture()
+    : fragRegionA(16384)
+    , fragRegionB(16384)
+    , fragmenterA(fragRegionA, 1200)
+    , fragmenterB(fragRegionB, 1200)
+    , reassemblerA(fragRegionA)
+    , reassemblerB(fragRegionB)
+  {
+    faceA.setFragmenter(fragmenterA);
+    faceA.setReassembler(reassemblerA);
+    faceB.setFragmenter(fragmenterB);
+    faceB.setReassembler(reassemblerB);
+  }
+
+protected:
+  DynamicRegion fragRegionA;
+  DynamicRegion fragRegionB;
+  lp::Fragmenter fragmenterA;
+  lp::Fragmenter fragmenterB;
+  lp::Reassembler reassemblerA;
+  lp::Reassembler reassemblerB;
+};
+
+TEST_F(FaceFragmentationFixture, Fragmentation)
+{
+  MockPacketHandler hA(faceA);
+  std::vector<size_t> recvSizes;
+  EXPECT_CALL(hA, processData).Times(20).WillRepeatedly([&](Data data) {
+    recvSizes.push_back(data.getContent().size());
+    return true;
+  });
+
+  MockPacketHandler hB(faceB);
+  int nSent = 0;
+  int sleepB = 0;
+  runInThreads([] {},
+               [&] {
+                 if (++sleepB % 10 != 0) {
+                   return true;
+                 }
+
+                 int contentL = nSent * 400;
+                 StaticRegion<10000> region;
+                 Data data = region.create<Data>();
+                 EXPECT_FALSE(!data);
+
+                 char name[32];
+                 snprintf(name, sizeof(name), "/L/%d", contentL);
+                 data.setName(Name::parse(region, name));
+
+                 uint8_t content[8000];
+                 // port::RandomSource::generate(content, sizeof(content));
+                 std::fill_n(content, sizeof(content), 0xBB);
+                 data.setContent(tlv::Value(content, contentL));
+
+                 EXPECT_TRUE(hB.send(data.sign(NullKey::get())));
+                 fprintf(stderr, "hB.send %d\n", contentL);
+                 ++nSent;
+                 return nSent < 20;
+               },
+               [] { port::Clock::sleep(100); });
+
+  EXPECT_THAT(recvSizes, g::SizeIs(20));
+  for (size_t i = 0; i < recvSizes.size(); ++i) {
+    EXPECT_EQ(recvSizes[i], 400 * i);
+  }
+}
+
 class FacePendingFixture : public g::Test
 {
 protected:
@@ -193,7 +264,7 @@ protected:
     EXPECT_CALL(transport, doSend).WillOnce([=](std::vector<uint8_t> wire, uint64_t) {
       lp::PacketClassify classify;
       EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
-      EXPECT_EQ(classify.getType(), lp::PacketClassify::Interest);
+      EXPECT_EQ(classify.getType(), lp::PacketClassify::Type::Interest);
 
       h.setupExpect();
       if (withPitToken) {

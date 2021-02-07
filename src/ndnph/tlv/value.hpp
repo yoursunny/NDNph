@@ -77,6 +77,21 @@ public:
     return Decoder(m_value, m_size);
   }
 
+  /**
+   * @brief Clone buffer into given region.
+   * @return new Value that does not reference memory of this Value,
+   *         or empty Value if allocation fails.
+   */
+  Value clone(Region& region) const
+  {
+    uint8_t* copyV = region.alloc(m_size);
+    if (copyV == nullptr) {
+      return Value();
+    }
+    std::copy(begin(), end(), copyV);
+    return Value(copyV, m_size);
+  }
+
 private:
   const uint8_t* m_value = nullptr;
   size_t m_size = 0;

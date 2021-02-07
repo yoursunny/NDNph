@@ -45,7 +45,7 @@ TEST_P(NackP, LpDecode)
 
   lp::PacketClassify classify;
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
-  ASSERT_EQ(classify.getType(), lp::PacketClassify::Nack);
+  ASSERT_EQ(classify.getType(), lp::PacketClassify::Type::Nack);
 
   StaticRegion<1024> region;
   Nack nack = region.create<Nack>();
