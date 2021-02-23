@@ -59,7 +59,7 @@ public:
    * @param signer private key corresponding to @c cert .
    * @return an Encodable object, or a falsy value upon failure.
    */
-  Data::Signed toData(Region& region, EcPrivateKey& signer) const
+  Data::Signed toData(Region& region, const EcPrivateKey& signer) const
   {
     Encoder encoder(region);
     encoder.prepend([this](Encoder& encoder) { encoder.prependTlv(TT::CaPrefix, prefix); },

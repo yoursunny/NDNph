@@ -569,7 +569,7 @@ public:
 class PossessionChallenge : public Challenge
 {
 public:
-  explicit PossessionChallenge(Data cert, PrivateKey& signer)
+  explicit PossessionChallenge(Data cert, const PrivateKey& signer)
     : m_cert(std::move(cert))
     , m_signer(signer)
   {}
@@ -615,7 +615,7 @@ public:
 
 private:
   Data m_cert;
-  PrivateKey& m_signer;
+  const PrivateKey& m_signer;
 };
 
 } // namespace client
