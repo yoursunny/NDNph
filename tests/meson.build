@@ -3,4 +3,3 @@ if not unittest_option.disabled()
   subdir('unit')
   subdir('unittest')
 endif
-subdir('header')
