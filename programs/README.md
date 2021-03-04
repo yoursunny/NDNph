@@ -39,3 +39,6 @@ The default is `127.0.0.1`, which connects to local NFD over UDP.
 `NDNPH_UPLINK_UDP_PORT` specifies UDP port.
 It is used as local port in listen mode, or remote port in tunnel mode.
 The default is `6363`.
+
+`NDNPH_UPLINK_MTU` enables fragmentation and reassembly.
+It should be set to a positive number that is the maximum NDNLPv2 frame size.

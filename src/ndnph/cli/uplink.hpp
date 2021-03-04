@@ -60,6 +60,27 @@ openUdp()
   return &face;
 }
 
+inline void
+enableFragReass(Face& face)
+{
+  const char* env = getenv("NDNPH_UPLINK_MTU");
+  if (env == nullptr) {
+    return;
+  }
+
+  int mtu = atoi(env);
+  if (mtu <= 0 || mtu >= 9000) {
+    fprintf(stderr, "ndnph::cli::openUplink invalid NDNPH_UPLINK_MTU\n");
+    exit(1);
+  }
+
+  static DynamicRegion region(9200);
+  static lp::Fragmenter fragmenter(region, mtu);
+  static lp::Reassembler reassembler(region);
+  face.setFragmenter(fragmenter);
+  face.setReassembler(reassembler);
+}
+
 } // namespace detail
 
 /** @brief Open uplink face. */
@@ -79,6 +100,8 @@ openUplink()
       fprintf(stderr, "ndnph::cli::openUplink error\n");
       exit(1);
     }
+
+    detail::enableFragReass(*face);
   }
   return *face;
 }
