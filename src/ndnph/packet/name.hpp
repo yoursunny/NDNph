@@ -74,10 +74,10 @@ public:
     return Name(value, length, nComps);
   }
 
-  /** @brief Return true if Name is valid. */
+  /** @brief Return true if Name is non-empty. */
   explicit operator bool() const
   {
-    return m_value != nullptr;
+    return m_nComps > 0;
   }
 
   size_t length() const
@@ -205,13 +205,16 @@ public:
       ++nComps;
       length += comp.size();
     }
+
     uint8_t* value = region.alloc(length);
-    if (value != nullptr) {
-      uint8_t* pos = value;
-      pos = std::copy_n(m_value, m_length, pos);
-      for (const auto& comp : comps) {
-        pos = std::copy_n(comp.tlv(), comp.size(), pos);
-      }
+    if (value == nullptr) {
+      return Name();
+    }
+
+    uint8_t* pos = value;
+    pos = std::copy_n(m_value, m_length, pos);
+    for (const auto& comp : comps) {
+      pos = std::copy_n(comp.tlv(), comp.size(), pos);
     }
     return Name(value, length, nComps);
   }

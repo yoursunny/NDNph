@@ -11,6 +11,8 @@ TEST(Name, Decode)
 {
   Name name;
   EXPECT_TRUE(!name);
+  EXPECT_EQ(name.size(), 0);
+  EXPECT_EQ(test::toString(name), "/");
 
   std::vector<uint8_t> wire({ 0x08, 0x01, 0x41 });
   name = Name(wire.data(), wire.size());
@@ -76,7 +78,7 @@ TEST(Name, Parse)
 
   {
     auto name = Name::parse(region, "/");
-    ASSERT_FALSE(!name);
+    EXPECT_TRUE(!name);
     EXPECT_EQ(name.size(), 0);
     EXPECT_EQ(test::toString(name), "/");
     region.reset();

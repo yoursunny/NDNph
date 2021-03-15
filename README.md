@@ -17,11 +17,11 @@ Packet encoding and decoding
 * Interest and Data
   * [v0.3](https://named-data.net/doc/NDN-packet-spec/0.3/) format only
   * TLV evolvability: yes
-  * forwarding hint: no
+  * forwarding hint: yes, limited to one delegation name
 * [NDNLPv2](https://redmine.named-data.net/projects/nfd/wiki/NDNLPv2)
   * fragmentation and reassembly: yes, requires in-order delivery
   * Nack: partial
-  * PIT token: yes
+  * PIT token: yes, limited to 8-octet
   * congestion mark: no
   * link layer reliability: no
 * Signed Interest: [v0.3 format](https://named-data.net/doc/NDN-packet-spec/0.3/signed-interest.html)

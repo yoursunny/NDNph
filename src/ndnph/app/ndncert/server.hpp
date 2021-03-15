@@ -247,7 +247,9 @@ public:
       case Status::FAILURE:
         break;
       case Status::SUCCESS:
-        encoder.prependTlv(TT::IssuedCertName, issuedCertName);
+        encoder.prepend(
+          [this](Encoder& encoder) { encoder.prependTlv(TT::IssuedCertName, issuedCertName); },
+          [this](Encoder& encoder) { detail::encodeFwHint(encoder, fwHint); });
         break;
       default:
         encoder.prepend(
@@ -375,6 +377,7 @@ public:
             m_region, m_newRequest.pub.getName(), validity, m_signer)) &&
           !!(m_challengeResponse.issuedCertName = m_issuedCert.getFullName(m_region))) {
         m_challengeResponse.status = Status::SUCCESS;
+        m_challengeResponse.fwHint = m_profile.prefix.append(m_region, getCaComponent());
       } else {
         m_challengeResponse.status = Status::PENDING;
       }

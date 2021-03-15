@@ -15,6 +15,7 @@ TEST(Interest, EncodeMinimal)
   EXPECT_THAT(interest.getName(), g::SizeIs(0));
   EXPECT_FALSE(interest.getCanBePrefix());
   EXPECT_FALSE(interest.getMustBeFresh());
+  EXPECT_FALSE(!!interest.getFwHint());
   {
     std::set<uint32_t> nonces({ interest.getNonce() });
     DynamicRegion region2(4096);
@@ -47,6 +48,7 @@ TEST(Interest, EncodeMinimal)
   EXPECT_EQ(decoded.getName(), interest.getName());
   EXPECT_EQ(decoded.getCanBePrefix(), false);
   EXPECT_EQ(decoded.getMustBeFresh(), false);
+  EXPECT_EQ(decoded.getFwHint(), interest.getFwHint());
   EXPECT_EQ(decoded.getNonce(), 0xA0A1A2A3);
 }
 
@@ -57,13 +59,15 @@ TEST(Interest, EncodeFull)
   ASSERT_FALSE(!interest);
 
   std::vector<uint8_t> wire({
-    0x64, 0x24,                                                 // LpPacket
+    0x64, 0x31,                                                 // LpPacket
     0x62, 0x08, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, // PitToken
-    0x50, 0x18,                                                 // LpPayload
-    0x05, 0x16,                                                 // Interest
+    0x50, 0x25,                                                 // LpPayload
+    0x05, 0x23,                                                 // Interest
     0x07, 0x03, 0x08, 0x01, 0x41,                               // Name
     0x21, 0x00,                                                 // CanBePrefix
     0x12, 0x00,                                                 // MustBeFresh
+    0x1E, 0x0B, 0x1F, 0x09, 0x1E, 0x01, 0x00,                   // ForwardingHint
+    0x07, 0x04, 0x08, 0x02, 0x66, 0x68,                         // ForwardingHint
     0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3,                         // Nonce
     0x0C, 0x02, 0x20, 0x06,                                     // InterestLifetime
     0x22, 0x01, 0x05,                                           // HopLimit
@@ -71,6 +75,7 @@ TEST(Interest, EncodeFull)
   interest.setName(Name::parse(region, "/A"));
   interest.setCanBePrefix(true);
   interest.setMustBeFresh(true);
+  interest.setFwHint(Name::parse(region, "/fh"));
   interest.setNonce(0xA0A1A2A3);
   interest.setLifetime(8198);
   interest.setHopLimit(5);
@@ -93,6 +98,7 @@ TEST(Interest, EncodeFull)
   EXPECT_EQ(decoded.getName(), interest.getName());
   EXPECT_EQ(decoded.getCanBePrefix(), true);
   EXPECT_EQ(decoded.getMustBeFresh(), true);
+  EXPECT_EQ(decoded.getFwHint(), interest.getFwHint());
   EXPECT_EQ(decoded.getNonce(), 0xA0A1A2A3);
   EXPECT_EQ(decoded.getLifetime(), 8198);
   EXPECT_EQ(decoded.getHopLimit(), 5);

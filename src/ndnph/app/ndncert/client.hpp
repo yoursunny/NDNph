@@ -239,7 +239,10 @@ public:
                        EvDecoder::def<TT::ParameterValue, true, 5>(
                          [&](const Decoder::Tlv& d) { return paramsParser.parseValue(d); }),
                        EvDecoder::def<TT::IssuedCertName, false, 6>(
-                         [this](const Decoder::Tlv& d) { return d.vd().decode(issuedCertName); }));
+                         [this](const Decoder::Tlv& d) { return d.vd().decode(issuedCertName); }),
+                       EvDecoder::def<TT::ForwardingHint, false, 7>([this](const Decoder::Tlv& d) {
+                         return detail::decodeFwHint(d, &fwHint);
+                       }));
     if (!ok) {
       return false;
     }
@@ -505,6 +508,7 @@ private:
       return;
     }
     interest.setName(m_challengeResponse.issuedCertName);
+    interest.setFwHint(m_challengeResponse.fwHint);
     m_pending.send(interest) && gotoState(State::WaitIssuedCert);
   }
 

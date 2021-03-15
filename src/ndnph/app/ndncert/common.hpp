@@ -221,6 +221,9 @@ struct ChallengeResponse
 
   /** @brief Issued certificate full name. */
   Name issuedCertName;
+
+  /** @brief Forwarding hint to retrieve issued certificate. */
+  Name fwHint;
 };
 
 } // namespace packet_struct

@@ -11,6 +11,29 @@
 namespace ndnph {
 namespace detail {
 
+inline bool
+encodeFwHint(Encoder& encoder, const Name& fwHint)
+{
+  if (!fwHint) {
+    return false;
+  }
+  return encoder.prependTlv(TT::ForwardingHint, [&fwHint](Encoder& encoder) {
+    return encoder.prependTlv(
+      TT::Delegation, [](Encoder& encoder) { encoder.prependTlv(TT::Preference, tlv::NNI(0)); },
+      fwHint);
+  });
+}
+
+inline bool
+decodeFwHint(const Decoder::Tlv& d, Name* target)
+{
+  return EvDecoder::decode(d, { TT::ForwardingHint },
+                           EvDecoder::def<TT::Delegation>([target](const Decoder::Tlv& d) {
+                             return EvDecoder::decode(d, {}, EvDecoder::defIgnore<TT::Preference>(),
+                                                      EvDecoder::def<TT::Name>(target));
+                           }));
+}
+
 /** @brief Fields in parameterized/signed Interest. */
 struct InterestParams
 {
@@ -43,6 +66,7 @@ public:
 public:
   InterestParams* params = nullptr; // only relevant on a decoded packet
   Name name;
+  Name fwHint;
   uint32_t nonce = 0;
   uint16_t lifetime = DefaultLifetime;
   uint8_t hopLimit = MaxHopLimit;
@@ -69,6 +93,11 @@ public:
   bool getMustBeFresh() const
   {
     return obj->mustBeFresh;
+  }
+
+  const Name& getFwHint() const
+  {
+    return obj->fwHint;
   }
 
   uint32_t getNonce() const
@@ -102,6 +131,7 @@ protected:
           encoder.prependTlv(TT::MustBeFresh);
         }
       },
+      [this](Encoder& encoder) { return encodeFwHint(encoder, obj->fwHint); },
       tlv::NniElement<tlv::NNI4>(TT::Nonce, obj->nonce),
       [this](Encoder& encoder) {
         if (obj->lifetime != InterestObj::DefaultLifetime) {
@@ -304,6 +334,11 @@ public:
     obj->mustBeFresh = v;
   }
 
+  void setFwHint(const Name& v)
+  {
+    obj->fwHint = v;
+  }
+
   void setNonce(uint32_t v)
   {
     obj->nonce = v;
@@ -412,6 +447,8 @@ public:
       input, { TT::Interest }, EvDecoder::def<TT::Name>(&obj->name),
       EvDecoder::def<TT::CanBePrefix>([this](const Decoder::Tlv&) { setCanBePrefix(true); }),
       EvDecoder::def<TT::MustBeFresh>([this](const Decoder::Tlv&) { setMustBeFresh(true); }),
+      EvDecoder::def<TT::ForwardingHint>(
+        [this](const Decoder::Tlv& d) { return detail::decodeFwHint(d, &obj->fwHint); }),
       EvDecoder::defNni<TT::Nonce, tlv::NNI4>(&obj->nonce),
       EvDecoder::defNni<TT::InterestLifetime>(&obj->lifetime),
       EvDecoder::defNni<TT::HopLimit, tlv::NNI1>(&obj->hopLimit),
