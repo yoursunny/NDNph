@@ -15,9 +15,10 @@ public:
    * @param prefix name prefix to serve. It should have 'ping' suffix.
    * @param face face for communication.
    */
-  explicit PingServer(Name prefix, Face& face)
+  explicit PingServer(Name prefix, Face& face, const PrivateKey& signer = DigestKey::get())
     : PacketHandler(face)
     , m_prefix(std::move(prefix))
+    , m_signer(signer)
   {}
 
 private:
@@ -32,12 +33,13 @@ private:
     assert(!!data);
     data.setName(interest.getName());
     data.setFreshnessPeriod(1);
-    reply(data.sign(DigestKey::get()));
+    reply(data.sign(m_signer));
     return true;
   }
 
 private:
   Name m_prefix;
+  const PrivateKey& m_signer;
 };
 
 } // namespace ndnph

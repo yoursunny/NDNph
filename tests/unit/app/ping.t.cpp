@@ -1,5 +1,6 @@
 #include "ndnph/app/ping-client.hpp"
 #include "ndnph/app/ping-server.hpp"
+#include "ndnph/keychain/ec.hpp"
 #include "ndnph/keychain/null.hpp"
 
 #include "mock/bridge-fixture.hpp"
@@ -60,15 +61,20 @@ TEST(Ping, Server)
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
-  StaticRegion<1024> region;
-  PingServer server(Name::parse(region, "/ping"), face);
+  StaticRegion<1024> sRegion;
+  EcPrivateKey pvt;
+  EcPublicKey pub;
+  ASSERT_TRUE(ec::generate(sRegion, Name::parse(sRegion, "/server"), pvt, pub));
+
+  PingServer server(Name::parse(sRegion, "/ping"), face, pvt);
 
   std::set<std::string> interestNames;
   std::set<std::string> dataNames;
   EXPECT_CALL(transport, doSend).Times(20).WillRepeatedly([&](std::vector<uint8_t> wire, uint64_t) {
-    StaticRegion<1024> region;
-    Data data = region.create<Data>();
+    StaticRegion<1024> tRegion;
+    Data data = tRegion.create<Data>();
     EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(data));
+    EXPECT_TRUE(data.verify(pub));
     std::string uri;
     boost::conversion::try_lexical_convert(data.getName(), uri);
     dataNames.insert(uri);
@@ -79,9 +85,9 @@ TEST(Ping, Server)
   for (int i = 0; i < 20; ++i) {
     std::string uri = "/8=ping/8=" + std::to_string(i);
     interestNames.insert(uri);
-    StaticRegion<1024> region2;
-    Interest interest = region2.create<Interest>();
-    interest.setName(Name::parse(region, uri.data()));
+    StaticRegion<1024> cRegion;
+    Interest interest = cRegion.create<Interest>();
+    interest.setName(Name::parse(cRegion, uri.data()));
     interest.setMustBeFresh(true);
     transport.receive(interest);
     face.loop();
