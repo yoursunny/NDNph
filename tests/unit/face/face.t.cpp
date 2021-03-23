@@ -189,7 +189,6 @@ TEST_F(FaceFragmentationFixture, Fragmentation)
                  data.setContent(tlv::Value(content, contentL));
 
                  EXPECT_TRUE(hB.send(data.sign(NullKey::get())));
-                 fprintf(stderr, "hB.send %d\n", contentL);
                  ++nSent;
                  return nSent < 20;
                },

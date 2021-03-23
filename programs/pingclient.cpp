@@ -3,7 +3,6 @@
 #define NDNPH_SOCKET_DEBUG
 #include <NDNph-config.h>
 #include <NDNph.h>
-#include <cinttypes>
 
 ndnph::Face& face = ndnph::cli::openUplink();
 

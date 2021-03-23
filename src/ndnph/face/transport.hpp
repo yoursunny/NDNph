@@ -13,13 +13,13 @@ public:
   virtual ~Transport() = default;
 
   /** @brief Determine whether transport is connected. */
-  virtual bool isUp() const
+  bool isUp() const
   {
     return doIsUp();
   }
 
   /** @brief Process periodical events, such as receiving packets. */
-  virtual void loop()
+  void loop()
   {
     doLoop();
   }
@@ -56,6 +56,51 @@ private:
 private:
   RxCallback m_rxCb = nullptr;
   void* m_rxCtx = nullptr;
+};
+
+/**
+ * @brief Wrap another transport.
+ *
+ * This class passes every call to the inner Transport. It should be inherited, and some functions
+ * can be overridden to achieve custom behavior.
+ */
+class TransportWrap : public virtual Transport
+{
+protected:
+  explicit TransportWrap(Transport& inner)
+    : inner(inner)
+  {
+    inner.setRxCallback(&TransportWrap::innerRx, this);
+  }
+
+private:
+  static void innerRx(void* self, const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
+  {
+    reinterpret_cast<TransportWrap*>(self)->handleRx(pkt, pktLen, endpointId);
+  }
+
+  virtual void handleRx(const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
+  {
+    invokeRxCallback(pkt, pktLen, endpointId);
+  }
+
+  bool doIsUp() const override
+  {
+    return inner.isUp();
+  }
+
+  void doLoop() override
+  {
+    inner.loop();
+  }
+
+  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) override
+  {
+    return inner.send(pkt, pktLen, endpointId);
+  }
+
+protected:
+  Transport& inner;
 };
 
 } // namespace transport

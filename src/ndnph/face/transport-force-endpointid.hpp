@@ -7,46 +7,27 @@ namespace ndnph {
 namespace transport {
 
 /**
- * @brief Wrap another transport, overwriting endpointId of outgoing packets.
+ * @brief Overwrite endpointId of outgoing packets.
  *
  * One use case is to wrap a transport that is capable of both multicast and unicast,
- * and force every outgoing packets to be sent over multicast.
+ * and force every outgoing packet to be sent over multicast.
  */
-class ForceEndpointId : public virtual Transport
+class ForceEndpointId : public TransportWrap
 {
 public:
   explicit ForceEndpointId(Transport& inner, uint64_t endpointId = 0)
-    : m_inner(inner)
+    : TransportWrap(inner)
     , m_endpointId(endpointId)
-  {
-    inner.setRxCallback(&ForceEndpointId::innerRx, this);
-  }
+  {}
 
 private:
-  static void innerRx(void* self0, const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
-  {
-    ForceEndpointId& self = *reinterpret_cast<ForceEndpointId*>(self0);
-    self.invokeRxCallback(pkt, pktLen, endpointId);
-  }
-
-  bool doIsUp() const final
-  {
-    return m_inner.isUp();
-  }
-
-  void doLoop() final
-  {
-    m_inner.loop();
-  }
-
   bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t) final
   {
-    return m_inner.send(pkt, pktLen, m_endpointId);
+    return inner.send(pkt, pktLen, m_endpointId);
   }
 
 private:
-  Transport& m_inner;
-  uint64_t m_endpointId = 0;
+  uint64_t m_endpointId;
 };
 
 } // namespace transport

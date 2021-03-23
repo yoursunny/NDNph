@@ -2,6 +2,10 @@
 #include "ndnph/face/transport-force-endpointid.hpp"
 #include "ndnph/port/transport/port.hpp"
 
+static FILE* tracerFile = nullptr;
+#define NDNPH_LOG_FILE tracerFile
+#include "ndnph/face/transport-tracer.hpp"
+
 #include "mock/mock-transport.hpp"
 #include "transport-common.hpp"
 
@@ -21,13 +25,33 @@ TEST(Transport, Bridge)
   EXPECT_TRUE(transportB.isUp());
   EXPECT_FALSE(transportC.isUp());
 
-  Face faceA(transportA);
+  tracerFile = tmpfile();
+  transport::Tracer tracerA(transportA, "A");
+  EXPECT_TRUE(tracerA.isUp());
+
+  Face faceA(tracerA);
   Face faceB(transportB);
-  TransportTest(faceA, faceB).run().check();
-  TransportTest(faceB, faceA).run().check();
+  size_t nPktsAB = 100, nPktsBA = 80;
+  TransportTest(faceA, faceB, nPktsAB).run().check();
+  TransportTest(faceB, faceA, nPktsBA).run().check();
 
   EXPECT_TRUE(transportB.end());
   EXPECT_FALSE(transportB.end());
+
+  rewind(tracerFile);
+  char traceLine[1024];
+  size_t nTraceTx = 0, nTraceRx = 0;
+  while (fgets(traceLine, sizeof(traceLine), tracerFile) != nullptr) {
+    if (strstr(traceLine, " [A] < ") != nullptr) {
+      ++nTraceTx;
+    }
+    if (strstr(traceLine, " [A] > ") != nullptr) {
+      ++nTraceRx;
+    }
+  }
+  EXPECT_EQ(nTraceTx, nPktsAB);
+  EXPECT_EQ(nTraceRx, nPktsBA);
+  fclose(tracerFile);
 }
 
 TEST(Transport, ForceEndpointId)

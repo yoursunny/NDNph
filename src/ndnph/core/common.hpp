@@ -7,8 +7,8 @@
 #include <array>
 #include <bitset>
 #include <cassert>
+#include <cinttypes>
 #include <cstddef>
-#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <ctime>

@@ -4,7 +4,6 @@
 #include "../../../face/transport-rxqueue.hpp"
 
 #include <arpa/inet.h>
-#include <cinttypes>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
