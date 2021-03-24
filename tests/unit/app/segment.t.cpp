@@ -21,16 +21,15 @@ TEST(Segment, Consumer)
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
-  StaticRegion<1024> encodingRegion;
   std::vector<uint8_t> content = makeRandomContent(900);
   SegmentConsumer::Options optsA;
   optsA.retxLimit = 2;
   optsA.retxDelay = 5;
-  SegmentConsumer consumerA(face, encodingRegion, optsA);
+  SegmentConsumer consumerA(face, optsA);
   SegmentConsumer::Options optsB;
   optsB.retxLimit = 1;
   optsB.retxDelay = 5;
-  BasicSegmentConsumer<convention::SequenceNum> consumerB(face, encodingRegion, optsB);
+  BasicSegmentConsumer<convention::SequenceNum> consumerB(face, optsB);
 
   StaticRegion<1024> prefixRegion;
   Name prefixA = Name::parse(prefixRegion, "/A");
@@ -45,9 +44,12 @@ TEST(Segment, Consumer)
 
   EXPECT_CALL(transport, doSend).WillRepeatedly([&](std::vector<uint8_t> wire, uint64_t) {
     StaticRegion<1024> region;
+    lp::PacketClassify classify;
+    EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
+    EXPECT_EQ(classify.getType(), lp::PacketClassify::Type::Interest);
     Interest interest = region.create<Interest>();
     assert(!!interest);
-    EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(interest));
+    EXPECT_TRUE(classify.decodeInterest(interest));
 
     const Name& interestName = interest.getName();
     if (interestName == nameA0) {
@@ -65,7 +67,7 @@ TEST(Segment, Consumer)
           data.setName(nameA1);
           std::vector<uint8_t> content({ 0xA0, 0xA1 });
           data.setContent(tlv::Value(content.data(), content.size()));
-          transport.receive(data.sign(DigestKey::get()));
+          transport.receive(lp::encode(data.sign(DigestKey::get()), classify.getPitToken()));
           break;
         }
         case 3: { // reply OK
@@ -78,7 +80,7 @@ TEST(Segment, Consumer)
           data.setName(nameA0);
           std::vector<uint8_t> content({ 0xA2, 0xA3 });
           data.setContent(tlv::Value(content.data(), content.size()));
-          transport.receive(data.sign(DigestKey::get()));
+          transport.receive(lp::encode(data.sign(DigestKey::get()), classify.getPitToken()));
           break;
         }
         default:
@@ -94,7 +96,7 @@ TEST(Segment, Consumer)
           std::vector<uint8_t> content({ 0xA4, 0xA5 });
           data.setContent(tlv::Value(content.data(), content.size()));
           data.setIsFinalBlock(true);
-          transport.receive(data.sign(DigestKey::get()));
+          transport.receive(lp::encode(data.sign(DigestKey::get()), classify.getPitToken()));
           break;
         }
         default:
@@ -144,16 +146,15 @@ TEST(Segment, Producer)
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
-  StaticRegion<1024> encodingRegion;
   std::vector<uint8_t> content = makeRandomContent(900);
   SegmentProducer::Options optsA;
   optsA.contentLen = 300; // ContentL=[300,300,300]
   optsA.discovery = 2;
-  SegmentProducer producerA(face, encodingRegion, optsA);
+  SegmentProducer producerA(face, optsA);
   SegmentProducer::Options optsB;
   optsB.contentLen = 200; // ContentL=[200,200,200,200,100]
   optsB.discovery = 0;
-  BasicSegmentProducer<convention::SequenceNum> producerB(face, encodingRegion, optsB);
+  BasicSegmentProducer<convention::SequenceNum> producerB(face, optsB);
 
   auto testOneInterest = [&](const char* interestName, bool canBePrefix, const char* dataName,
                              ssize_t contentL, bool isFinalBlock = false) {
@@ -217,7 +218,7 @@ protected:
   {
     SegmentProducer::Options optsA;
     optsA.contentLen = 256;
-    producerA.reset(new SegmentProducer(faceA, regionA, optsA));
+    producerA.reset(new SegmentProducer(faceA, optsA));
 
     prefix = Name::parse(prefixRegion, "/P");
     contentA = makeRandomContent(4096);
@@ -225,13 +226,11 @@ protected:
 
     SegmentConsumer::Options optsB;
     optsB.retxLimit = 2;
-    consumerB.reset(new SegmentConsumer(faceB, regionB, optsB));
+    consumerB.reset(new SegmentConsumer(faceB, optsB));
   }
 
 protected:
-  StaticRegion<1024> regionA;
   std::unique_ptr<SegmentProducer> producerA;
-  StaticRegion<1024> regionB;
   std::unique_ptr<SegmentConsumer> consumerB;
 
   StaticRegion<1024> prefixRegion;

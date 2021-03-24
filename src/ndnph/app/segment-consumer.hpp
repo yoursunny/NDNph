@@ -24,17 +24,24 @@ public:
   /**
    * @brief Constructor.
    * @param face face for communication.
-   * @param region region for Interest encoding; may be shared.
    * @param opts options.
    */
-  explicit SegmentConsumerBase(Face& face, Region& region, Options opts)
+  explicit SegmentConsumerBase(Face& face, Options opts)
     : PacketHandler(face)
-    , m_region(region)
     , m_opts(std::move(opts))
+    , m_pending(this)
   {}
 
-  explicit SegmentConsumerBase(Face& face, Region& region)
-    : SegmentConsumerBase(face, region, Options())
+  explicit SegmentConsumerBase(Face& face)
+    : SegmentConsumerBase(face, Options())
+  {}
+
+  [[deprecated]] explicit SegmentConsumerBase(Face& face, Region&, Options opts)
+    : SegmentConsumerBase(face, opts)
+  {}
+
+  [[deprecated]] explicit SegmentConsumerBase(Face& face, Region&)
+    : SegmentConsumerBase(face)
   {}
 
   /**
@@ -122,8 +129,8 @@ public:
     m_prefix = prefix;
     m_running = true;
     m_segment = 0;
+    m_pending.expireNow();
     m_retxRemain = m_opts.retxLimit;
-    m_nextSend = port::Clock::now();
   }
 
   /**
@@ -151,19 +158,22 @@ protected:
   }
 
 protected:
-  Region& m_region;
   Options m_opts;
   SegmentCallback m_cb = nullptr;
   void* m_cbCtx = nullptr;
   Name m_prefix;
   uint64_t m_segment = 0;
-  port::Clock::Time m_nextSend;
+  OutgoingPendingInterest m_pending;
   int m_retxRemain = 0;
   bool m_running = false;
 };
 
-/** @brief Consumer of segmented object, using a stop-and-wait algorithm. */
-template<typename SegmentConvention = convention::Segment>
+/**
+ * @brief Consumer of segmented object, using a stop-and-wait algorithm.
+ * @tparam SegmentConvention segment component convention.
+ * @tparam regionCap encoding region capacity.
+ */
+template<typename SegmentConvention = convention::Segment, size_t regionCap = 1024>
 class BasicSegmentConsumer : public SegmentConsumerBase
 {
 public:
@@ -172,8 +182,7 @@ public:
 private:
   void loop() final
   {
-    auto now = port::Clock::now();
-    if (!m_running || port::Clock::isBefore(now, m_nextSend)) {
+    if (!m_running || !m_pending.expired()) {
       return;
     }
 
@@ -183,25 +192,18 @@ private:
       return;
     }
 
-    m_region.reset();
-    Interest interest = m_region.create<Interest>();
+    StaticRegion<regionCap> region;
+    Interest interest = region.template create<Interest>();
     assert(!!interest);
-    interest.setName(m_prefix.append<SegmentConvention>(m_region, m_segment));
-    send(interest);
-
-    m_nextSend = port::Clock::add(now, m_opts.retxDelay);
+    interest.setName(m_prefix.append<SegmentConvention>(region, m_segment));
+    m_pending.send(interest, m_opts.retxDelay);
   }
 
   bool processData(Data data) final
   {
-    const Name& dataName = data.getName();
-    auto lastComp = dataName[-1];
-    if (!m_prefix || dataName.size() != m_prefix.size() + 1 || !m_prefix.isPrefixOf(dataName) ||
-        !lastComp.is<SegmentConvention>() || !data.verify(m_opts.verifier)) {
-      return false;
-    }
-    uint64_t segment = lastComp.as<SegmentConvention>();
-    if (segment != m_segment) {
+    StaticRegion<regionCap> region;
+    Name interestName = m_prefix.append<SegmentConvention>(region, m_segment);
+    if (!m_pending.match(data, interestName, false) || !data.verify(m_opts.verifier)) {
       return false;
     }
 
@@ -211,8 +213,8 @@ private:
       m_running = false;
     } else {
       ++m_segment;
+      m_pending.expireNow();
       m_retxRemain = m_opts.retxLimit;
-      m_nextSend = port::Clock::now();
     }
     return true;
   }

@@ -35,17 +35,23 @@ public:
   /**
    * @brief Constructor.
    * @param face face for communication.
-   * @param region region for Data encoding; may be shared.
    * @param opts options.
    */
-  explicit SegmentProducerBase(Face& face, Region& region, Options opts)
+  explicit SegmentProducerBase(Face& face, Options opts)
     : PacketHandler(face)
-    , m_region(region)
     , m_opts(std::move(opts))
   {}
 
-  explicit SegmentProducerBase(Face& face, Region& region)
-    : SegmentProducerBase(face, region, Options())
+  explicit SegmentProducerBase(Face& face)
+    : SegmentProducerBase(face, Options())
+  {}
+
+  [[deprecated]] explicit SegmentProducerBase(Face& face, Region&, Options opts)
+    : SegmentProducerBase(face, opts)
+  {}
+
+  [[deprecated]] explicit SegmentProducerBase(Face& face, Region&)
+    : SegmentProducerBase(face)
   {}
 
   /**
@@ -66,7 +72,6 @@ public:
   }
 
 protected:
-  Region& m_region;
   Options m_opts;
   Name m_prefix;
   uint64_t m_lastSegment = 0;
@@ -74,8 +79,12 @@ protected:
   size_t m_size = 0;
 };
 
-/** @brief Producer of segmented object. */
-template<typename SegmentConvention = convention::Segment>
+/**
+ * @brief Producer of segmented object.
+ * @tparam SegmentConvention segment component convention.
+ * @tparam regionCap encoding region capacity.
+ */
+template<typename SegmentConvention = convention::Segment, size_t regionCap = 2048>
 class BasicSegmentProducer : public SegmentProducerBase
 {
 public:
@@ -108,13 +117,13 @@ private:
   bool replySegment(uint64_t segment)
   {
     if (segment > m_lastSegment) {
-      return false;
+      return true;
     }
 
-    m_region.reset();
-    Data data = m_region.create<Data>();
+    StaticRegion<regionCap> region;
+    Data data = region.template create<Data>();
     assert(!!data);
-    data.setName(m_prefix.append<SegmentConvention>(m_region, segment));
+    data.setName(m_prefix.append<SegmentConvention>(region, segment));
     data.setFreshnessPeriod(m_opts.freshnessPeriod);
     data.setIsFinalBlock(segment == m_lastSegment);
     data.setContent(

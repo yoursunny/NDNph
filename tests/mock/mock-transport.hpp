@@ -29,8 +29,9 @@ public:
   }
 
   template<typename Packet>
-  bool receive(Region& region, Packet packet, uint64_t endpointId = 0)
+  bool receive(Packet packet, uint64_t endpointId = 0)
   {
+    StaticRegion<2048> region;
     Encoder encoder(region);
     if (!encoder.prepend(packet)) {
       return false;
@@ -38,12 +39,6 @@ public:
     encoder.trim();
     invokeRxCallback(encoder.begin(), encoder.size(), endpointId);
     return true;
-  }
-
-  template<typename Packet>
-  bool receive(Packet packet, uint64_t endpointId = 0)
-  {
-    return receive(regionOf(packet), packet, endpointId);
   }
 };
 

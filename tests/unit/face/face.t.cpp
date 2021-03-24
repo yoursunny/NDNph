@@ -59,7 +59,7 @@ TEST(Face, Receive)
                          g::Return(true)));
     EXPECT_CALL(hB, processNack).Times(0);
   }
-  ASSERT_TRUE(transport.receive(region, lp::encode(nack, 0xDE249BD0398EC80F)));
+  ASSERT_TRUE(transport.receive(lp::encode(nack, 0xDE249BD0398EC80F)));
 }
 
 class TestSendHandler : public MockPacketHandler
@@ -127,7 +127,7 @@ TEST(Face, Send)
     EXPECT_CALL(transport, doSend(g::ElementsAreArray(encoderI.begin(), encoderI.end()), 2035))
       .WillOnce(g::Return(true));
   }
-  EXPECT_TRUE(transport.receive(region, lp::encode(h.request, 0xDE249BD0398EC80F), 3202));
+  EXPECT_TRUE(transport.receive(lp::encode(h.request, 0xDE249BD0398EC80F), 3202));
 }
 
 class FaceFragmentationFixture : public BridgeFixture
@@ -267,9 +267,9 @@ protected:
 
       h.setupExpect();
       if (withPitToken) {
-        transport.receive(pRegion, lp::encode(data.sign(NullKey::get()), classify.getPitToken()));
+        transport.receive(lp::encode(data.sign(NullKey::get()), classify.getPitToken()));
       } else {
-        transport.receive(pRegion, data.sign(NullKey::get()));
+        transport.receive(data.sign(NullKey::get()));
       }
       return true;
     });

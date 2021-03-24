@@ -144,7 +144,7 @@ protected:
       : m_ph(*ph)
     {
       port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_pitToken), sizeof(m_pitToken));
-      m_expire = port::Clock::now();
+      expireNow();
     }
 
     /**
@@ -209,14 +209,18 @@ protected:
      */
     bool match(const Data& data, const Name& name, bool canBePrefix = true) const
     {
-      StaticRegion<512> region;
+      StaticRegion<128> region;
       auto interest = region.create<Interest>();
-      if (!interest) {
-        return false;
-      }
+      assert(!!interest);
       interest.setName(name);
       interest.setCanBePrefix(canBePrefix);
       return match(data, interest);
+    }
+
+    /** @brief Set expire time to now. */
+    void expireNow()
+    {
+      m_expire = port::Clock::now();
     }
 
     /** @brief Determine if the pending Interest has expired / timed out. */
