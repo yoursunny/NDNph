@@ -60,30 +60,156 @@ private:
 };
 
 /** @brief Multi-Precision Integer. */
-class Mpi : public mbedtls_mpi
+class Mpi
 {
 public:
-  explicit Mpi(const mbedtls_mpi* src = nullptr)
+  /** @brief Construct zero. */
+  explicit Mpi()
   {
-    mbedtls_mpi_init(this);
-    if (src != nullptr) {
-      mbedtls_mpi_copy(this, src);
-    }
+    mbedtls_mpi_init(&m_value);
   }
 
-  explicit Mpi(const Mpi& src)
-    : Mpi(&src)
-  {}
+  /** @brief Construct from MPI. */
+  explicit Mpi(const mbedtls_mpi* src)
+    : Mpi()
+  {
+    mbedtls_mpi_copy(&m_value, src);
+  }
+
+  /** @brief Construct from integer. */
+  explicit Mpi(mbedtls_mpi_sint src)
+    : Mpi()
+  {
+    mbedtls_mpi_lset(&m_value, src);
+  }
 
   ~Mpi()
   {
-    mbedtls_mpi_free(this);
+    mbedtls_mpi_free(&m_value);
   }
 
-  Mpi& operator=(const Mpi& src)
+  operator mbedtls_mpi*()
   {
-    mbedtls_mpi_copy(this, &src);
+    return &m_value;
+  }
+
+  operator const mbedtls_mpi*() const
+  {
+    return &m_value;
+  }
+
+  /** @brief Copy assignment is disallowed due to lack of error handling. */
+  Mpi& operator==(const Mpi&) = delete;
+
+  /**
+   * @brief x = y
+   * @post @p y is cleared
+   */
+  Mpi& operator==(Mpi&& y)
+  {
+    mbedtls_mpi_swap(&m_value, &y.m_value);
     return *this;
+  }
+
+private:
+  mbedtls_mpi m_value;
+};
+
+/** @brief EC point. */
+class EcPoint
+{
+public:
+  /** @brief Construct zero. */
+  explicit EcPoint()
+  {
+    mbedtls_ecp_point_init(&m_value);
+  }
+
+  /** @brief Construct from EC point. */
+  explicit EcPoint(const mbedtls_ecp_point* q)
+    : EcPoint()
+  {
+    if (q != nullptr) {
+      mbedtls_ecp_copy(&m_value, q);
+    }
+  }
+
+  ~EcPoint()
+  {
+    mbedtls_ecp_point_free(&m_value);
+  }
+
+  operator mbedtls_ecp_point*()
+  {
+    return &m_value;
+  }
+
+  operator const mbedtls_ecp_point*() const
+  {
+    return &m_value;
+  }
+
+  /** @brief Copy assignment is disallowed due to lack of error handling. */
+  EcPoint& operator=(const EcPoint&) = delete;
+
+  bool writeBinary(mbedtls_ecp_group* group, uint8_t* room, size_t length) const
+  {
+    size_t actualLength = 0;
+    return mbedtls_ecp_point_write_binary(group, *this, MBEDTLS_ECP_PF_UNCOMPRESSED, &actualLength,
+                                          room, length) == 0 &&
+           actualLength == length;
+  }
+
+  void encodeTo(mbedtls_ecp_group* group, Encoder& encoder, size_t length) const
+  {
+    uint8_t* room = encoder.prependRoom(length);
+    if (room == nullptr) {
+      return;
+    }
+
+    if (!writeBinary(group, room, length)) {
+      encoder.setError();
+    }
+  }
+
+  bool readBinary(mbedtls_ecp_group* group, const uint8_t* value, size_t length)
+  {
+    return mbedtls_ecp_point_read_binary(group, *this, value, length) == 0 &&
+           mbedtls_ecp_check_pubkey(group, *this) == 0;
+  }
+
+  bool decodeFrom(mbedtls_ecp_group* group, const Decoder::Tlv& d)
+  {
+    return readBinary(group, d.value, d.length);
+  }
+
+private:
+  mbedtls_ecp_point m_value;
+};
+
+/** @brief EC point associated with a curve. */
+template<typename Curve>
+class EcCurvePoint : public EcPoint
+{
+public:
+  bool writeBinary(uint8_t room[Curve::PubLen::value]) const
+  {
+    return EcPoint::writeBinary(Curve::group(), room, Curve::PubLen::value);
+  }
+
+  void encodeTo(Encoder& encoder) const
+  {
+    return EcPoint::encodeTo(Curve::group(), encoder, Curve::PubLen::value);
+  }
+
+  bool readBinary(const uint8_t* value, size_t length)
+  {
+    return EcPoint::readBinary(Curve::group(), value, length);
+  }
+
+  bool decodeFrom(const Decoder::Tlv& d)
+  {
+    return EcPoint::decodeFrom(Curve::group(), d);
   }
 };
 
@@ -94,6 +220,7 @@ public:
   using PvtLen = std::integral_constant<size_t, 32>;
   using PubLen = std::integral_constant<size_t, 65>;
   using MaxSigLen = std::integral_constant<size_t, 74>;
+  using Point = EcCurvePoint<P256>;
 
   static mbedtls_ecp_group* group()
   {
@@ -113,62 +240,11 @@ public:
   using SharedSecret = std::array<uint8_t, PvtLen::value>;
 
   /** @brief Compute ECDH shared secret. */
-  static bool ecdh(const mbedtls_mpi& pvt, const mbedtls_ecp_point& pub, SharedSecret& shared)
+  static bool ecdh(const mbedtls_mpi* pvt, const mbedtls_ecp_point* pub, SharedSecret& shared)
   {
     Mpi z;
-    return mbedtls_ecdh_compute_shared(group(), &z, &pub, &pvt, rng, nullptr) == 0 &&
-           mbedtls_mpi_write_binary(&z, shared.data(), shared.size()) == 0;
-  }
-};
-
-/** @brief EC point. */
-class EcPoint : public mbedtls_ecp_point
-{
-public:
-  explicit EcPoint(const mbedtls_ecp_point* src = nullptr)
-  {
-    mbedtls_ecp_point_init(this);
-    if (src != nullptr) {
-      mbedtls_ecp_copy(this, src);
-    }
-  }
-
-  EcPoint(const EcPoint& src)
-    : EcPoint(&src)
-  {}
-
-  ~EcPoint()
-  {
-    mbedtls_ecp_point_free(this);
-  }
-
-  EcPoint& operator=(const EcPoint& src)
-  {
-    mbedtls_ecp_copy(this, &src);
-    return *this;
-  }
-
-  void encodeTo(Encoder& encoder) const
-  {
-    constexpr size_t expectedLength = 65;
-    uint8_t* room = encoder.prependRoom(expectedLength);
-    if (room == nullptr) {
-      encoder.setError();
-      return;
-    }
-
-    size_t length = 0;
-    int res = mbedtls_ecp_point_write_binary(P256::group(), this, MBEDTLS_ECP_PF_UNCOMPRESSED,
-                                             &length, room, expectedLength);
-    if (res != 0 || length != expectedLength) {
-      encoder.setError();
-    }
-  }
-
-  bool decodeFrom(const Decoder::Tlv& d)
-  {
-    return mbedtls_ecp_point_read_binary(P256::group(), this, d.value, d.length) == 0 &&
-           mbedtls_ecp_check_pubkey(P256::group(), this) == 0;
+    return mbedtls_ecdh_compute_shared(group(), z, pub, pvt, rng, nullptr) == 0 &&
+           mbedtls_mpi_write_binary(z, shared.data(), shared.size()) == 0;
   }
 };
 

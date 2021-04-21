@@ -328,7 +328,7 @@ public:
     // TODO check ValidityPeriod
 
     mbedtls::Mpi ecdhPvt;
-    if (mbedtls_ecdh_gen_public(mbedtls::P256::group(), &ecdhPvt, &m_newResponse.ecdhPub,
+    if (mbedtls_ecdh_gen_public(mbedtls::P256::group(), ecdhPvt, m_newResponse.ecdhPub,
                                 mbedtls::rng, nullptr) != 0 ||
         !port::RandomSource::generate(m_newResponse.salt, sizeof(m_newResponse.salt)) ||
         !port::RandomSource::generate(m_newResponse.requestId, sizeof(m_newResponse.requestId)) ||

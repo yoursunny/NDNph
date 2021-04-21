@@ -403,7 +403,7 @@ private:
   {
     StaticRegion<2048> region;
     GotoState gotoState(this);
-    int res = mbedtls_ecdh_gen_public(mbedtls::P256::group(), &m_ecdhPvt, &m_newRequest.ecdhPub,
+    int res = mbedtls_ecdh_gen_public(mbedtls::P256::group(), m_ecdhPvt, m_newRequest.ecdhPub,
                                       mbedtls::rng, nullptr);
     if (res != 0) {
       return;

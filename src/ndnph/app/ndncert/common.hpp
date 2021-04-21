@@ -25,8 +25,8 @@ class SessionKey
 {
 public:
   /** @brief Derive the key. */
-  bool makeKey(const mbedtls::Mpi& ecdhPvt, const mbedtls::EcPoint& ecdhPub, const uint8_t* salt,
-               const uint8_t* requestId)
+  bool makeKey(const mbedtls::Mpi& ecdhPvt, const mbedtls::P256::Point& ecdhPub,
+               const uint8_t* salt, const uint8_t* requestId)
   {
     mbedtls::P256::SharedSecret ikm;
     AesGcm::Key okm;
@@ -174,7 +174,7 @@ struct CaProfile
 struct NewRequest
 {
   /** @brief Client ECDH public key. */
-  mbedtls::EcPoint ecdhPub;
+  mbedtls::P256::Point ecdhPub;
 
   /** @brief Certificate request. */
   Data certRequest;
@@ -183,7 +183,7 @@ struct NewRequest
 struct NewResponse
 {
   /** @brief Server ECDH public key. */
-  mbedtls::EcPoint ecdhPub;
+  mbedtls::P256::Point ecdhPub;
 
   /** @brief ECDH salt. */
   uint8_t salt[detail::SaltLen::value];

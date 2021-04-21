@@ -1,5 +1,8 @@
 name: build
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -10,7 +13,7 @@ jobs:
           python-version: '3.8'
       - name: install dependencies
         run: |
-          sudo apt-get install lcov libboost-dev
+          sudo apt-get install --no-install-recommends clang-8 clang-format-8 lcov libboost-dev lld-8 llvm-8
           python -m pip install --upgrade pip
           pip install cmake meson ninja
       - name: install Google Test
@@ -78,7 +81,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: build.coverage/coverage.lcov
   arduino:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: arduino/setup-arduino-cli@v1.1.1
       - name: install Arduino cores and libraries
