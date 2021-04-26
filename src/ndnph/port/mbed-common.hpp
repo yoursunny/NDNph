@@ -99,13 +99,13 @@ public:
   }
 
   /** @brief Copy assignment is disallowed due to lack of error handling. */
-  Mpi& operator==(const Mpi&) = delete;
+  Mpi& operator=(const Mpi&) = delete;
 
   /**
-   * @brief x = y
+   * @brief Move assignment.
    * @post @p y is cleared
    */
-  Mpi& operator==(Mpi&& y)
+  Mpi& operator=(Mpi&& y)
   {
     mbedtls_mpi_swap(&m_value, &y.m_value);
     return *this;
