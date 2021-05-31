@@ -20,6 +20,19 @@
 #include <type_traits>
 #include <utility>
 
+/** @brief SHA256 digest length. */
 #define NDNPH_SHA256_LEN 32
+
+#ifndef NDNPH_PITTOKEN_MAX
+/**
+ * @brief Maximum length of PIT token.
+ *
+ * You may override this setting by declaring the macro before including NDNph.
+ * This must be between 4 (NDNph requirement) and 32 (protocol limit).
+ * Setting a lower limit reduces memory usage, but is non-interoperable with downstream
+ * nodes that require a longer PIT token.
+ */
+#define NDNPH_PITTOKEN_MAX 10
+#endif
 
 #endif // NDNPH_CORE_COMMON_HPP

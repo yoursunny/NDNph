@@ -59,18 +59,18 @@ TEST(Interest, EncodeFull)
   ASSERT_FALSE(!interest);
 
   std::vector<uint8_t> wire({
-    0x64, 0x31,                                                 // LpPacket
-    0x62, 0x08, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, // PitToken
-    0x50, 0x25,                                                 // LpPayload
-    0x05, 0x23,                                                 // Interest
-    0x07, 0x03, 0x08, 0x01, 0x41,                               // Name
-    0x21, 0x00,                                                 // CanBePrefix
-    0x12, 0x00,                                                 // MustBeFresh
-    0x1E, 0x0B, 0x1F, 0x09, 0x1E, 0x01, 0x00,                   // ForwardingHint
-    0x07, 0x04, 0x08, 0x02, 0x66, 0x68,                         // ForwardingHint
-    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3,                         // Nonce
-    0x0C, 0x02, 0x20, 0x06,                                     // InterestLifetime
-    0x22, 0x01, 0x05,                                           // HopLimit
+    0x64, 0x2D,                               // LpPacket
+    0x62, 0x04, 0xB0, 0xB1, 0xB2, 0xB3,       // PitToken
+    0x50, 0x25,                               // LpPayload
+    0x05, 0x23,                               // Interest
+    0x07, 0x03, 0x08, 0x01, 0x41,             // Name
+    0x21, 0x00,                               // CanBePrefix
+    0x12, 0x00,                               // MustBeFresh
+    0x1E, 0x0B, 0x1F, 0x09, 0x1E, 0x01, 0x00, // ForwardingHint
+    0x07, 0x04, 0x08, 0x02, 0x66, 0x68,       // ForwardingHint
+    0x0A, 0x04, 0xA0, 0xA1, 0xA2, 0xA3,       // Nonce
+    0x0C, 0x02, 0x20, 0x06,                   // InterestLifetime
+    0x22, 0x01, 0x05,                         // HopLimit
   });
   interest.setName(Name::parse(region, "/A"));
   interest.setCanBePrefix(true);
@@ -82,7 +82,7 @@ TEST(Interest, EncodeFull)
   EXPECT_EQ(test::toString(interest), "/8=A[P][F]");
 
   Encoder encoder(region);
-  bool ok = encoder.prepend(lp::encode(interest, 0xB0B1B2B3B4B5B6B7));
+  bool ok = encoder.prepend(lp::encode(interest, lp::PitToken::from4(0xB0B1B2B3)));
   ASSERT_TRUE(ok);
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
@@ -90,7 +90,7 @@ TEST(Interest, EncodeFull)
   lp::PacketClassify classify;
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
   ASSERT_EQ(classify.getType(), lp::PacketClassify::Type::Interest);
-  EXPECT_EQ(classify.getPitToken(), 0xB0B1B2B3B4B5B6B7);
+  EXPECT_EQ(classify.getPitToken().to4(), 0xB0B1B2B3);
 
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);

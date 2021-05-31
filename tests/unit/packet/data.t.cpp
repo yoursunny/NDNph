@@ -44,7 +44,7 @@ TEST(Data, EncodeFull)
   ASSERT_FALSE(!data);
 
   auto wire =
-    test::fromHex("lppacket=643A pittoken=6208B0B1B2B3B4B5B6B7 lppayload=502E data=062C"
+    test::fromHex("lppacket=6436 pittoken=6204B0B1B2B3 lppayload=502E data=062C"
                   "name=0706080141080142 metainfo=140C contenttype=180101 freshness=190201F4 "
                   "finalblock=1A03080142"
                   "content=1502C0C1"
@@ -53,7 +53,7 @@ TEST(Data, EncodeFull)
   data.setContentType(0x01);
   data.setFreshnessPeriod(500);
   data.setIsFinalBlock(true);
-  data.setContent(tlv::Value(&wire[40], 2));
+  data.setContent(tlv::Value(&wire[36], 2));
   auto keyLocatorName = Name::parse(region, "/K");
 
   Encoder encoder(region);
@@ -64,9 +64,9 @@ TEST(Data, EncodeFull)
       sigInfo.sigType = 0x10;
       sigInfo.name = keyLocatorName;
     });
-    EXPECT_CALL(key, doSign(g::ElementsAreArray(&wire[16], &wire[54]), g::_))
-      .WillOnce(g::DoAll(g::SetArrayArgument<1>(&wire[56], &wire[60]), g::Return(4)));
-    ASSERT_TRUE(encoder.prepend(lp::encode(data.sign(key), 0xB0B1B2B3B4B5B6B7)));
+    EXPECT_CALL(key, doSign(g::ElementsAreArray(&wire[12], &wire[50]), g::_))
+      .WillOnce(g::DoAll(g::SetArrayArgument<1>(&wire[52], &wire[56]), g::Return(4)));
+    ASSERT_TRUE(encoder.prepend(lp::encode(data.sign(key), lp::PitToken::from4(0xB0B1B2B3))));
   }
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   encoder.discard();
@@ -74,7 +74,7 @@ TEST(Data, EncodeFull)
   lp::PacketClassify classify;
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
   ASSERT_EQ(classify.getType(), lp::PacketClassify::Type::Data);
-  EXPECT_EQ(classify.getPitToken(), 0xB0B1B2B3B4B5B6B7);
+  EXPECT_EQ(classify.getPitToken().to4(), 0xB0B1B2B3);
   Data decoded = region.create<Data>();
   ASSERT_FALSE(!decoded);
   ASSERT_TRUE(classify.decodeData(decoded));
@@ -87,8 +87,8 @@ TEST(Data, EncodeFull)
 
   {
     MockPublicKey key;
-    EXPECT_CALL(key, doVerify(g::ElementsAreArray(&wire[16], &wire[54]),
-                              g::ElementsAreArray(&wire[56], &wire[60])))
+    EXPECT_CALL(key, doVerify(g::ElementsAreArray(&wire[12], &wire[50]),
+                              g::ElementsAreArray(&wire[52], &wire[56])))
       .WillOnce(g::Return(true));
     EXPECT_TRUE(decoded.verify(key));
   }

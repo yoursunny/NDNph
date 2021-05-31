@@ -77,7 +77,7 @@ protected:
   class WithPitToken
   {
   public:
-    explicit WithPitToken(uint64_t pitToken)
+    explicit WithPitToken(const lp::PitToken& pitToken)
       : pitToken(pitToken)
     {}
 
@@ -87,7 +87,7 @@ protected:
     }
 
   public:
-    uint64_t pitToken = 0;
+    lp::PitToken pitToken;
   };
 
   /**
@@ -158,7 +158,12 @@ protected:
     bool send(const Packet& interest, int timeout, Arg&&... arg)
     {
       m_expire = ndnph::port::Clock::add(ndnph::port::Clock::now(), timeout);
-      return m_ph.send(interest, WithPitToken(++m_pitToken), std::forward<Arg>(arg)...);
+
+      do {
+        ++m_pitToken;
+      } while (m_pitToken == 0);
+      auto token = lp::PitToken::from4(m_pitToken);
+      return m_ph.send(interest, WithPitToken(token), std::forward<Arg>(arg)...);
     }
 
     template<typename Packet>
@@ -186,7 +191,7 @@ protected:
     bool matchPitToken() const
     {
       auto pi = m_ph.getCurrentPacketInfo();
-      return pi != nullptr && pi->pitToken == m_pitToken;
+      return pi != nullptr && pi->pitToken.to4() == m_pitToken;
     }
 
     /**
@@ -231,7 +236,7 @@ protected:
 
   private:
     PacketHandler& m_ph;
-    uint64_t m_pitToken = 0;
+    uint32_t m_pitToken = 0;
     port::Clock::Time m_expire;
   };
 

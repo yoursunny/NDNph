@@ -21,7 +21,7 @@ Packet encoding and decoding
 * [NDNLPv2](https://redmine.named-data.net/projects/nfd/wiki/NDNLPv2)
   * fragmentation and reassembly: yes, requires in-order delivery
   * Nack: partial
-  * PIT token: yes, limited to 8-octet
+  * PIT token: yes
   * congestion mark: no
   * link layer reliability: no
 * Signed Interest: [v0.3 format](https://named-data.net/doc/NDN-packet-spec/0.3/signed-interest.html)

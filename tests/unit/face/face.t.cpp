@@ -54,12 +54,12 @@ TEST(Face, Receive)
       .WillOnce(g::DoAll(g::WithoutArgs([&h] {
                            auto pi = h.getCurrentPacketInfo();
                            ASSERT_THAT(pi, g::NotNull());
-                           EXPECT_EQ(pi->pitToken, 0xDE249BD0398EC80F);
+                           EXPECT_EQ(pi->pitToken.to4(), 0xDE249BD0);
                          }),
                          g::Return(true)));
     EXPECT_CALL(hB, processNack).Times(0);
   }
-  ASSERT_TRUE(transport.receive(lp::encode(nack, 0xDE249BD0398EC80F)));
+  ASSERT_TRUE(transport.receive(lp::encode(nack, lp::PitToken::from4(0xDE249BD0))));
 }
 
 class TestSendHandler : public MockPacketHandler
@@ -73,7 +73,7 @@ public:
       .WillOnce([this](Interest) {
         send(data.sign(NullKey::get()));
         reply(nack);
-        send(interest, WithEndpointId(2035), WithPitToken(0xA31A71CE4C365FF4));
+        send(interest, WithEndpointId(2035), WithPitToken(lp::PitToken::from4(0xA31A71CE)));
         return true;
       });
   }
@@ -107,14 +107,14 @@ TEST(Face, Send)
   h.nack = Nack::create(h.request, NackReason::NoRoute);
   ASSERT_FALSE(!h.nack);
   Encoder encoderN(region);
-  encoderN.prepend(lp::encode(h.nack, 0xDE249BD0398EC80F));
+  encoderN.prepend(lp::encode(h.nack, lp::PitToken::from4(0xDE249BD0)));
   encoderN.trim();
 
   h.interest = region.create<Interest>();
   ASSERT_FALSE(!h.interest);
   h.interest.setName(Name::parse(region, "/B"));
   Encoder encoderI(region);
-  encoderI.prepend(lp::encode(h.interest, 0xA31A71CE4C365FF4));
+  encoderI.prepend(lp::encode(h.interest, lp::PitToken::from4(0xA31A71CE)));
   encoderI.trim();
 
   h.setupExpect();
@@ -127,7 +127,7 @@ TEST(Face, Send)
     EXPECT_CALL(transport, doSend(g::ElementsAreArray(encoderI.begin(), encoderI.end()), 2035))
       .WillOnce(g::Return(true));
   }
-  EXPECT_TRUE(transport.receive(lp::encode(h.request, 0xDE249BD0398EC80F), 3202));
+  EXPECT_TRUE(transport.receive(lp::encode(h.request, lp::PitToken::from4(0xDE249BD0)), 3202));
 }
 
 class FaceFragmentationFixture : public BridgeFixture

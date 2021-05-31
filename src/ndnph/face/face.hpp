@@ -15,7 +15,7 @@ public:
   struct PacketInfo
   {
     uint64_t endpointId = 0;
-    uint64_t pitToken = 0;
+    lp::PitToken pitToken;
   };
 
   /**

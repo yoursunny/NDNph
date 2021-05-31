@@ -34,19 +34,98 @@ public:
   uint8_t fragCount = 1;
 };
 
+/** @brief PIT token field. */
+class PitToken
+{
+public:
+  /** @brief Construct 4-octet PIT token from uint32. */
+  static PitToken from4(uint32_t n)
+  {
+    uint8_t room[4];
+    tlv::NNI4::writeValue(room, n);
+    PitToken token;
+    token.set(4, room);
+    return token;
+  }
+
+  /** @brief Determine whether PIT token exists. */
+  explicit operator bool() const
+  {
+    return m_length > 0;
+  }
+
+  size_t length() const
+  {
+    return m_length;
+  }
+
+  const uint8_t* value() const
+  {
+    return m_value.begin();
+  }
+
+  /** @brief Interpret 4-octet PIT token as uint32. */
+  uint32_t to4() const
+  {
+    return m_length == 4 ? tlv::NNI4::readValue(m_value.begin()) : 0;
+  }
+
+  /** @brief Assign PIT token length and value. */
+  bool set(size_t length, const uint8_t* value)
+  {
+    if (length > m_value.size()) {
+      return false;
+    }
+    m_length = length;
+    std::copy_n(value, length, m_value.begin());
+    return true;
+  }
+
+  void encodeTo(Encoder& encoder) const
+  {
+    uint8_t* room = encoder.prependRoom(m_length);
+    if (room == nullptr) {
+      return;
+    }
+    std::copy_n(m_value.begin(), m_length, room);
+    encoder.prependTypeLength(TT::PitToken, m_length);
+  }
+
+  bool decodeFrom(const Decoder::Tlv& d)
+  {
+    return set(d.length, d.value);
+  }
+
+  friend bool operator==(const PitToken& lhs, const PitToken& rhs)
+  {
+    return lhs.m_length == rhs.m_length &&
+           std::equal(lhs.m_value.begin(), lhs.m_value.begin() + lhs.m_length, rhs.m_value.begin());
+  }
+
+  NDNPH_DECLARE_NE(PitToken, friend)
+
+private:
+  std::array<uint8_t, NDNPH_PITTOKEN_MAX> m_value;
+  uint8_t m_length = 0;
+
+  static_assert(NDNPH_PITTOKEN_MAX >= 4, "");
+  static_assert(NDNPH_PITTOKEN_MAX <= 32, "");
+};
+
 /** @brief Common fields during encoding. */
 class EncodableBase
 {
 public:
   /** @brief Maximum encoded size of L3 headers. */
-  using L3MaxSize = std::integral_constant<size_t, 1 + 1 + 8 + NackHeader::MaxSize::value>;
+  using L3MaxSize =
+    std::integral_constant<size_t, 1 + 1 + NDNPH_PITTOKEN_MAX + NackHeader::MaxSize::value>;
 
   void encodeL3Header(Encoder& encoder) const
   {
     encoder.prepend(
       [this](Encoder& encoder) {
-        if (pitToken != 0) {
-          encoder.prependTlv(TT::PitToken, tlv::NNI8(pitToken));
+        if (pitToken) {
+          encoder.prepend(pitToken);
         }
       },
       [this](Encoder& encoder) {
@@ -64,7 +143,7 @@ public:
 
 public:
   FragmentHeader frag;
-  uint64_t pitToken = 0;
+  PitToken pitToken;
   NackHeader nack;
 };
 
@@ -115,7 +194,7 @@ public:
  */
 template<typename L3, typename R = Encodable<L3>>
 R
-encode(L3 l3, uint64_t pitToken = 0)
+encode(L3 l3, PitToken pitToken = {})
 {
   R encodable(l3);
   encodable.pitToken = pitToken;
@@ -127,7 +206,7 @@ encode(L3 l3, uint64_t pitToken = 0)
  * @return an Encodable object.
  */
 inline Encodable<Interest>
-encode(Nack nack, uint64_t pitToken = 0)
+encode(Nack nack, PitToken pitToken = {})
 {
   auto encodable = encode(nack.getInterest(), pitToken);
   encodable.nack = nack.getHeader();
@@ -274,7 +353,7 @@ public:
   }
 
 public:
-  uint64_t pitToken;
+  PitToken pitToken;
   tlv::Value nack;
 };
 
@@ -332,7 +411,7 @@ public:
       EvDecoder::defNni<TT::LpSeqNum, tlv::NNI8>(&m_frag.seqNum),
       EvDecoder::defNni<TT::FragIndex>(&m_frag.fragIndex),
       EvDecoder::defNni<TT::FragCount>(&m_frag.fragCount),
-      EvDecoder::defNni<TT::PitToken, tlv::NNI8>(&m_l3header.pitToken),
+      EvDecoder::def<TT::PitToken>(&m_l3header.pitToken),
       EvDecoder::def<TT::Nack>([this](const Decoder::Tlv& d) {
         m_type = Type::Nack;
         m_l3header.nack = tlv::Value(d.tlv, d.size);
@@ -353,7 +432,7 @@ public:
   }
 
   /** @brief Retrieve PIT token. */
-  uint64_t getPitToken() const
+  const PitToken& getPitToken() const
   {
     return m_l3header.pitToken;
   }
