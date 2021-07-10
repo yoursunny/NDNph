@@ -37,7 +37,7 @@ KeyChain
 * Crypto: using [Mbed TLS](https://github.com/ARMmbed/mbedtls) library
   * SHA256: yes
   * ECDSA: P-256 curve only
-  * HMAC-SHA256: no
+  * HMAC-SHA256: yes
   * RSA: no
   * Null: yes
 * [NDN certificates](https://named-data.net/doc/ndn-cxx/0.7.1/specs/certificate-format.html): basic support

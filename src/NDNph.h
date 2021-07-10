@@ -36,6 +36,7 @@
 #include "ndnph/keychain/digest.hpp"
 #include "ndnph/keychain/ec.hpp"
 #include "ndnph/keychain/helper.hpp"
+#include "ndnph/keychain/hmac.hpp"
 #include "ndnph/keychain/keychain.hpp"
 #include "ndnph/keychain/null.hpp"
 #include "ndnph/keychain/private-key.hpp"

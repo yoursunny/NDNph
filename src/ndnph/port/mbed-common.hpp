@@ -59,6 +59,51 @@ private:
   bool m_ok = false;
 };
 
+/**
+ * @brief HMAC algorithm.
+ * @tparam mdType message digest type identifier.
+ * @tparam mdSize checksum size.
+ */
+template<mbedtls_md_type_t mdType, size_t mdSize>
+class Hmac
+{
+public:
+  /** @brief Start HMAC operation and set key. */
+  explicit Hmac(const uint8_t* key, size_t keyLen)
+  {
+    mbedtls_md_init(&m_ctx);
+    m_ok = mbedtls_md_setup(&m_ctx, mbedtls_md_info_from_type(mdType), 1) == 0 &&
+           mbedtls_md_hmac_starts(&m_ctx, key, keyLen) == 0;
+  }
+
+  ~Hmac()
+  {
+    mbedtls_md_free(&m_ctx);
+  }
+
+  /** @brief Append bytes into hash state. */
+  void update(const uint8_t* chunk, size_t size)
+  {
+    m_ok = m_ok && mbedtls_md_hmac_update(&m_ctx, chunk, size) == 0;
+  }
+
+  /**
+   * @brief Finalize HMAC operation and obtain HMAC result.
+   * @return whether success.
+   * @post this object is ready for new HMAC operation with same key.
+   */
+  bool final(uint8_t result[mdSize])
+  {
+    m_ok =
+      m_ok && mbedtls_md_hmac_finish(&m_ctx, result) == 0 && mbedtls_md_hmac_reset(&m_ctx) == 0;
+    return m_ok;
+  }
+
+private:
+  mbedtls_md_context_t m_ctx;
+  bool m_ok = false;
+};
+
 /** @brief Multi-Precision Integer. */
 class Mpi
 {

@@ -4,8 +4,6 @@
 #include "../port/ec/port.hpp"
 #include "certificate.hpp"
 #include "keychain.hpp"
-#include "private-key.hpp"
-#include "public-key.hpp"
 
 namespace ndnph {
 namespace ec {
@@ -67,7 +65,7 @@ findPublicKeyInCertificate(const Data& data)
 } // namespace detail
 
 /** @brief EC public key. */
-class EcPublicKey : public PublicKey
+class EcPublicKey : public detail::NamedPublicKey<SigType::Sha256WithEcdsa>
 {
 public:
   using KeyLen = detail::PubLen;
@@ -76,16 +74,6 @@ public:
   explicit operator bool() const
   {
     return m_key != nullptr;
-  }
-
-  const Name& getName() const
-  {
-    return m_name;
-  }
-
-  void setName(const Name& v)
-  {
-    m_name = v;
   }
 
   /**
@@ -106,7 +94,7 @@ public:
       return false;
     }
 
-    m_name = name;
+    setName(name);
     std::copy_n(raw, sizeof(m_raw), m_raw);
     return true;
   }
@@ -177,12 +165,6 @@ public:
     return buildCertificate(region, certName, validity, signer);
   }
 
-  /** @brief Determine whether packet was signed by corresponding private key. */
-  bool matchSigInfo(const SigInfo& sigInfo) const final
-  {
-    return sigInfo.sigType == SigType::Sha256WithEcdsa && sigInfo.name.isPrefixOf(m_name);
-  }
-
   /**
    * @brief Perform verification.
    * @retval true signature is correct.
@@ -199,13 +181,12 @@ public:
   }
 
 private:
-  Name m_name;
   std::unique_ptr<port::Ec::PublicKey> m_key;
   uint8_t m_raw[KeyLen::value];
 };
 
 /** @brief EC private key. */
-class EcPrivateKey : public PrivateKey
+class EcPrivateKey : public detail::NamedPrivateKey<SigType::Sha256WithEcdsa>
 {
 public:
   using KeyLen = detail::PvtLen;
@@ -215,16 +196,6 @@ public:
   explicit operator bool() const
   {
     return m_key != nullptr;
-  }
-
-  const Name& getName() const
-  {
-    return m_name;
-  }
-
-  void setName(const Name& v)
-  {
-    m_name = v;
   }
 
   /**
@@ -243,19 +214,13 @@ public:
       return false;
     }
 
-    m_name = name;
+    setName(name);
     return true;
   }
 
   size_t getMaxSigLen() const final
   {
     return MaxSigLen::value;
-  }
-
-  void updateSigInfo(SigInfo& sigInfo) const final
-  {
-    sigInfo.sigType = SigType::Sha256WithEcdsa;
-    sigInfo.name = m_name;
   }
 
   ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final
@@ -271,7 +236,6 @@ public:
   }
 
 private:
-  Name m_name;
   std::unique_ptr<port::Ec::PrivateKey> m_key;
 };
 

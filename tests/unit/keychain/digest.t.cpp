@@ -24,6 +24,7 @@ TEST(DigestKey, Minimal)
   // echo -ne '\xA0\xA1\xB0\xB1\xB2\xB3' | openssl sha256 -binary | xxd -i -u | tr 'X' 'x'
 
   EXPECT_TRUE(key.verify({ chunk0, chunk1 }, sig, sizeof(sig)));
+  EXPECT_TRUE(key.verify({ tlv::Value(wire.data(), wire.size()) }, sig, sizeof(sig)));
 
   EXPECT_FALSE(key.verify({ chunk0, chunk1 }, sig, sizeof(sig) - 1));
 
