@@ -13,37 +13,51 @@ jobs:
           python-version: '3.9'
       - name: install dependencies
         run: |
-          sudo apt-get install --no-install-recommends clang-8 clang-format-8 lcov libboost-dev lld-8 llvm-8
+          sudo apt-get install --no-install-recommends clang-8 clang-format-8 lcov libboost-dev lld-8 llvm-8 ninja-build
           python -m pip install --upgrade pip
-          pip install cmake meson ninja
+          pip install cmake meson
+      - name: download Google Test
+        uses: actions/checkout@v2
+        with:
+          repository: google/googletest
+          ref: 2d924d7a971e9667d76ad09727fb2402b4f8a1e3
+          path: googletest
       - name: install Google Test
         run: |
           cd $HOME
-          curl -sfL https://github.com/google/googletest/archive/release-${GTESTVER}.tar.gz | tar -xz
+          mv $GITHUB_WORKSPACE/googletest $HOME/
           mkdir gtest-build && cd gtest-build
-          cmake -G Ninja ../googletest-release-${GTESTVER}
+          cmake -G Ninja ../googletest
           ninja
-          sudo $(which ninja) install
-        env:
-          GTESTVER: '1.10.0'
+          sudo ninja install
+      - name: download Mbed TLS
+        uses: actions/checkout@v2
+        with:
+          repository: ARMmbed/mbedtls
+          ref: v2.16.11
+          path: mbedtls
       - name: install Mbed TLS
         run: |
           cd $HOME
-          curl -sfL https://github.com/ARMmbed/mbedtls/archive/v${MBEDTLSVER}.tar.gz | tar -xz
+          mv $GITHUB_WORKSPACE/mbedtls $HOME/
           mkdir mbedtls-build && cd mbedtls-build
-          cmake -G Ninja ../mbedtls-${MBEDTLSVER} -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
+          cmake -G Ninja ../mbedtls -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
           ninja
-          sudo $(which ninja) install
-        env:
-          MBEDTLSVER: '2.16.9'
+          sudo ninja install
+      - name: download VPP
+        uses: actions/checkout@v2
+        with:
+          repository: FDio/vpp
+          ref: v21.01.1
+          path: vpp
       - name: install libmemif
         run: |
           cd $HOME
-          git clone https://github.com/FDio/vpp.git --single-branch --branch v20.09 --depth=1
+          mv $GITHUB_WORKSPACE/vpp $HOME/
           mkdir libmemif-build && cd libmemif-build
           cmake -G Ninja ../vpp/extras/libmemif
           ninja
-          sudo $(which ninja) install
+          sudo ninja install
       - uses: actions/checkout@v2
       - name: check meson.build lists and code style
         run: |
