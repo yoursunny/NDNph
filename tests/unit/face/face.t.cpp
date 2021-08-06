@@ -130,6 +130,19 @@ TEST(Face, Send)
   EXPECT_TRUE(transport.receive(lp::encode(h.request, lp::PitToken::from4(0xDE249BD0)), 3202));
 }
 
+TEST(Face, DetachedPacketHandler)
+{
+  MockPacketHandler ph;
+  EXPECT_THAT(ph.getCurrentPacketInfo(), g::IsNull());
+
+  StaticRegion<1024> region;
+  auto data = region.create<Data>();
+  ASSERT_FALSE(!data);
+  data.setName(Name::parse(region, "/A"));
+  EXPECT_FALSE(ph.send(region, data));
+  EXPECT_FALSE(ph.reply(region, data));
+}
+
 class FaceFragmentationFixture : public BridgeFixture
 {
 public:
@@ -184,7 +197,6 @@ TEST_F(FaceFragmentationFixture, Fragmentation)
                  data.setName(Name::parse(region, name));
 
                  uint8_t content[8000];
-                 // port::RandomSource::generate(content, sizeof(content));
                  std::fill_n(content, sizeof(content), 0xBB);
                  data.setContent(tlv::Value(content, contentL));
 

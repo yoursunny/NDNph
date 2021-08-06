@@ -36,14 +36,6 @@ public:
     : SegmentConsumerBase(face, Options())
   {}
 
-  [[deprecated]] explicit SegmentConsumerBase(Face& face, Region&, Options opts)
-    : SegmentConsumerBase(face, opts)
-  {}
-
-  [[deprecated]] explicit SegmentConsumerBase(Face& face, Region&)
-    : SegmentConsumerBase(face)
-  {}
-
   /**
    * @brief Callback upon segment arrival.
    * @param ctx user specified context.

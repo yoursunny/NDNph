@@ -53,7 +53,7 @@ findPublicKeyInCertificate(const Data& data)
     return nullptr;
   }
 
-  auto oid = detail::getOid();
+  auto oid = getOid();
   auto found = std::search(content.begin(), content.end(), oid.begin(), oid.end());
   if (found == content.end()) {
     return nullptr;

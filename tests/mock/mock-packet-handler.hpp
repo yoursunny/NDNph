@@ -12,6 +12,7 @@ class MockPacketHandler : public PacketHandler
 public:
   using PacketHandler::getCurrentPacketInfo;
   using PacketHandler::PacketHandler;
+  using PacketHandler::reply;
 
   template<typename... Arg>
   bool send(Arg&&... arg)

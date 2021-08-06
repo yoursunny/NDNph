@@ -46,14 +46,6 @@ public:
     : SegmentProducerBase(face, Options())
   {}
 
-  [[deprecated]] explicit SegmentProducerBase(Face& face, Region&, Options opts)
-    : SegmentProducerBase(face, opts)
-  {}
-
-  [[deprecated]] explicit SegmentProducerBase(Face& face, Region&)
-    : SegmentProducerBase(face)
-  {}
-
   /**
    * @brief Set or change served content.
    * @param prefix name prefix.
