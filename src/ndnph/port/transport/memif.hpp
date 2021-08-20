@@ -15,19 +15,6 @@ extern "C"
 namespace ndnph {
 namespace port_transport_memif {
 
-using EtherHdr = std::array<uint8_t, 14>;
-
-inline const EtherHdr&
-getEtherHdr()
-{
-  static EtherHdr hdr = {
-    0xF2, 0x6C, 0xE6, 0x8D, 0x9E, 0x34, // dst
-    0xF2, 0x71, 0x7E, 0x76, 0x5D, 0x1C, // src
-    0x86, 0x24,                         // ethertype
-  };
-  return hdr;
-}
-
 #ifdef NDNPH_MEMIF_DEBUG
 #define NDNPH_MEMIF_PRINT_ERR(func)                                                                \
   do {                                                                                             \
@@ -49,13 +36,12 @@ getEtherHdr()
 class MemifTransport : public virtual Transport
 {
 public:
-  explicit MemifTransport(uint16_t maxPktLen = 8800)
-    : m_maxPktLen(maxPktLen)
-  {}
+  using DefaultDataroom = std::integral_constant<uint16_t, 2048>;
 
-  bool begin(const char* socketName, uint32_t id)
+  bool begin(const char* socketName, uint32_t id, uint16_t maxPktLen = DefaultDataroom::value)
   {
     end();
+    m_maxPktLen = maxPktLen;
 
     int err = memif_init(nullptr, const_cast<char*>("NDNph"), nullptr, nullptr, nullptr);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -73,7 +59,11 @@ public:
     memif_conn_args_t args = {};
     args.socket = m_sock;
     args.interface_id = id;
-    args.buffer_size = getEtherHdr().size() + m_maxPktLen;
+    for (args.buffer_size = 64; args.buffer_size < m_maxPktLen;) {
+      args.buffer_size <<= 1;
+      // libmemif internally assumes buffer_size to be power of two
+      // https://github.com/FDio/vpp/blob/v21.06/extras/libmemif/src/main.c#L2406
+    }
     err = memif_create(&m_conn, &args, MemifTransport::handleConnect,
                        MemifTransport::handleDisconnect, MemifTransport::handleInterrupt, this);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -155,10 +145,10 @@ private:
       return false;
     }
 
-    uint8_t* p =
-      std::copy(getEtherHdr().begin(), getEtherHdr().end(), static_cast<uint8_t*>(b.data));
-    p = std::copy_n(pkt, pktLen, p);
-    b.len = std::distance(static_cast<uint8_t*>(b.data), p);
+    assert(b.len >= pktLen);
+    assert((b.flags & MEMIF_BUFFER_FLAG_NEXT) == 0);
+    std::copy_n(pkt, pktLen, static_cast<uint8_t*>(b.data));
+    b.len = pktLen;
 
     uint16_t nTx = 0;
     err = memif_tx_burst(m_conn, 0, &b, 1, &nTx);
@@ -211,11 +201,7 @@ private:
 
     for (uint16_t i = 0; i < nRx; ++i) {
       const memif_buffer_t& b = burst[i];
-      if (b.len <= getEtherHdr().size()) {
-        continue;
-      }
-      self->invokeRxCallback(std::next(static_cast<const uint8_t*>(b.data), getEtherHdr().size()),
-                             b.len - getEtherHdr().size());
+      self->invokeRxCallback(static_cast<const uint8_t*>(b.data), b.len);
     }
 
     err = memif_refill_queue(conn, qid, nRx, 0);
@@ -228,7 +214,7 @@ private:
 private:
   memif_socket_handle_t m_sock = nullptr;
   memif_conn_handle_t m_conn = nullptr;
-  uint16_t m_maxPktLen;
+  uint16_t m_maxPktLen = 0;
   bool m_init = false;
   bool m_isUp = false;
 };

@@ -9,11 +9,12 @@ namespace cli {
 namespace detail {
 
 inline Face*
-openMemif(const char* socketName)
+openMemif(const char* socketName, int mtu)
 {
 #ifdef NDNPH_PORT_TRANSPORT_MEMIF
   static MemifTransport transport;
-  if (!transport.begin(socketName, 0)) {
+  uint16_t dataroom = mtu > 0 ? static_cast<uint16_t>(mtu) : MemifTransport::DefaultDataroom::value;
+  if (!transport.begin(socketName, 0, dataroom)) {
     return nullptr;
   }
   static Face face(transport);
@@ -61,19 +62,8 @@ openUdp()
 }
 
 inline void
-enableFragReass(Face& face)
+enableFragReass(Face& face, int mtu)
 {
-  const char* env = getenv("NDNPH_UPLINK_MTU");
-  if (env == nullptr) {
-    return;
-  }
-
-  int mtu = atoi(env);
-  if (mtu <= 0 || mtu >= 9000) {
-    fprintf(stderr, "ndnph::cli::openUplink invalid NDNPH_UPLINK_MTU\n");
-    exit(1);
-  }
-
   static DynamicRegion region(9200);
   static lp::Fragmenter fragmenter(region, mtu);
   static lp::Reassembler reassembler(region);
@@ -89,11 +79,21 @@ openUplink()
 {
   static Face* face = nullptr;
   if (face == nullptr) {
+    int mtu = -1;
+    const char* envMtu = getenv("NDNPH_UPLINK_MTU");
+    if (envMtu != nullptr) {
+      mtu = atoi(envMtu);
+      if (mtu <= 64 || mtu >= 9000) {
+        fprintf(stderr, "ndnph::cli::openUplink invalid or out-of-range NDNPH_UPLINK_MTU\n");
+        exit(1);
+      }
+    }
+
     const char* envMemif = getenv("NDNPH_UPLINK_MEMIF");
     if (envMemif == nullptr) {
       face = detail::openUdp();
     } else {
-      face = detail::openMemif(envMemif);
+      face = detail::openMemif(envMemif, mtu);
     }
 
     if (face == nullptr) {
@@ -101,7 +101,9 @@ openUplink()
       exit(1);
     }
 
-    detail::enableFragReass(*face);
+    if (mtu >= 0) {
+      detail::enableFragReass(*face, mtu);
+    }
   }
   return *face;
 }

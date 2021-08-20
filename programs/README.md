@@ -23,11 +23,12 @@ It should be set to the socket name of libmemif transport.
 Note that libmemif generally requires sudo privilege.
 You can create a memif face in NDN-DPDK with this locator:
 
-```json
+```jsonc
 {
   "scheme": "memif",
   "socketName": "same value as NDNPH_UPLINK_MEMIF environ",
-  "id": 0
+  "id": 0,
+  "dataroom": /* same value as NDNPH_UPLINK_MTU environ */
 }
 ```
 
@@ -41,4 +42,4 @@ It is used as local port in listen mode, or remote port in tunnel mode.
 The default is `6363`.
 
 `NDNPH_UPLINK_MTU` enables fragmentation and reassembly.
-It should be set to a positive number that is the maximum NDNLPv2 frame size.
+It should be set to a positive number between 64 and 9000 that is the maximum NDNLPv2 frame size.
