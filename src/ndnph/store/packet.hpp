@@ -45,16 +45,11 @@ public:
   template<typename Encodable>
   bool set(const char* key, Encodable value, Region& region)
   {
-    Encoder encoder(region);
+    ScopedEncoder encoder(region);
     if (!encoder.prepend(value)) {
-      encoder.discard();
       return false;
     }
-
-    tlv::Value wire(encoder);
-    bool ok = KvStore::set(key, wire);
-    encoder.discard();
-    return ok;
+    return KvStore::set(key, tlv::Value(encoder));
   }
 };
 

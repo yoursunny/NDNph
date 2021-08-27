@@ -35,12 +35,12 @@ TEST(Interest, EncodeMinimal)
   interest.setName(Name(&wire[4], 3));
   interest.setNonce(0xA0A1A2A3);
   EXPECT_EQ(test::toString(interest), "/8=A");
-
-  Encoder encoder(region);
-  bool ok = encoder.prepend(interest);
-  ASSERT_TRUE(ok);
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
-  encoder.discard();
+  {
+    ScopedEncoder encoder(region);
+    bool ok = encoder.prepend(interest);
+    ASSERT_TRUE(ok);
+    EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
+  }
 
   Interest decoded = region.create<Interest>();
   ASSERT_FALSE(!decoded);
@@ -80,12 +80,12 @@ TEST(Interest, EncodeFull)
   interest.setLifetime(8198);
   interest.setHopLimit(5);
   EXPECT_EQ(test::toString(interest), "/8=A[P][F]");
-
-  Encoder encoder(region);
-  bool ok = encoder.prepend(lp::encode(interest, lp::PitToken::from4(0xB0B1B2B3)));
-  ASSERT_TRUE(ok);
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
-  encoder.discard();
+  {
+    ScopedEncoder encoder(region);
+    bool ok = encoder.prepend(lp::encode(interest, lp::PitToken::from4(0xB0B1B2B3)));
+    ASSERT_TRUE(ok);
+    EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
+  }
 
   lp::PacketClassify classify;
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));

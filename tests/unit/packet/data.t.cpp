@@ -21,11 +21,11 @@ TEST(Data, EncodeMinimal)
 
   auto wire = test::fromHex("060C name=0703080141 siginfo=16031B01C8 sigvalue=1700");
   data.setName(Name(&wire[4], 3));
-
-  Encoder encoder(region);
-  ASSERT_TRUE(encoder.prepend(data.sign(NullKey::get())));
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
-  encoder.discard();
+  {
+    ScopedEncoder encoder(region);
+    ASSERT_TRUE(encoder.prepend(data.sign(NullKey::get())));
+    EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
+  }
 
   Data decoded = region.create<Data>();
   ASSERT_FALSE(!decoded);
@@ -55,21 +55,21 @@ TEST(Data, EncodeFull)
   data.setIsFinalBlock(true);
   data.setContent(tlv::Value(&wire[36], 2));
   auto keyLocatorName = Name::parse(region, "/K");
-
-  Encoder encoder(region);
   {
-    g::InSequence seq;
-    MockPrivateKey<32> key;
-    EXPECT_CALL(key, updateSigInfo).WillOnce([keyLocatorName](SigInfo& sigInfo) {
-      sigInfo.sigType = 0x10;
-      sigInfo.name = keyLocatorName;
-    });
-    EXPECT_CALL(key, doSign(g::ElementsAreArray(&wire[12], &wire[50]), g::_))
-      .WillOnce(g::DoAll(g::SetArrayArgument<1>(&wire[52], &wire[56]), g::Return(4)));
-    ASSERT_TRUE(encoder.prepend(lp::encode(data.sign(key), lp::PitToken::from4(0xB0B1B2B3))));
+    ScopedEncoder encoder(region);
+    {
+      g::InSequence seq;
+      MockPrivateKey<32> key;
+      EXPECT_CALL(key, updateSigInfo).WillOnce([keyLocatorName](SigInfo& sigInfo) {
+        sigInfo.sigType = 0x10;
+        sigInfo.name = keyLocatorName;
+      });
+      EXPECT_CALL(key, doSign(g::ElementsAreArray(&wire[12], &wire[50]), g::_))
+        .WillOnce(g::DoAll(g::SetArrayArgument<1>(&wire[52], &wire[56]), g::Return(4)));
+      ASSERT_TRUE(encoder.prepend(lp::encode(data.sign(key), lp::PitToken::from4(0xB0B1B2B3))));
+    }
+    EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
   }
-  EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
-  encoder.discard();
 
   lp::PacketClassify classify;
   ASSERT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));

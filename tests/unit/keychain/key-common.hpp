@@ -48,7 +48,7 @@ testSignVerify(const PrivateKey& pvtA, const PublicKey& pubA, const PrivateKey& 
 
   {
     Pkt pktAr = makePacket<Pkt>(region, nameA);
-    Encoder encoderAr(region);
+    ScopedEncoder encoderAr(region);
     ASSERT_TRUE(encoderAr.prepend(pktAr.sign(pvtA)));
     if (deterministic) {
       EXPECT_THAT(std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
@@ -57,7 +57,6 @@ testSignVerify(const PrivateKey& pvtA, const PublicKey& pubA, const PrivateKey& 
       EXPECT_THAT(std::vector<uint8_t>(encoderAr.begin(), encoderAr.end()),
                   g::Not(g::ElementsAreArray(encoderA.begin(), encoderA.end())));
     }
-    encoderAr.discard();
   }
 
   using SigInfoT = typename std::remove_cv<

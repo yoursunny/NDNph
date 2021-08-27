@@ -267,7 +267,7 @@ generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, 
     return false;
   }
 
-  Encoder encoder(region);
+  ScopedEncoder encoder(region);
   encoder.prepend(keyName);
   auto stored = reinterpret_cast<StoredKeyPair*>(encoder.prependRoom(sizeof(StoredKeyPair)));
   bool ok = stored != nullptr && generateRaw(stored->pvt, stored->pub) &&
@@ -276,7 +276,6 @@ generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, 
   if (keyChain != nullptr) {
     ok = ok && keyChain->keys.set(id, tlv::Value(encoder));
   }
-  encoder.discard();
   return ok;
 }
 

@@ -257,18 +257,18 @@ public:
     region.reset();
     size_t sizeofHeader = 0;
     {
-      Encoder l3h(region);
+      ScopedEncoder l3h(region);
       packet.encodeL3Header(l3h);
       if (!l3h) {
         return nullptr;
       }
       sizeofHeader = l3h.size();
-      l3h.discard();
     }
 
     Encoder payload(region);
     packet.payload.encodeTo(payload);
     if (!payload) {
+      payload.discard();
       return nullptr;
     }
     payload.trim();

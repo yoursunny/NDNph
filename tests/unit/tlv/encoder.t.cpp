@@ -56,6 +56,15 @@ TEST(Encoder, TrimDiscard)
   EXPECT_TRUE(!encoder);
   EXPECT_EQ(region.available(), 60);
   encoder.discard();
+
+  {
+    ScopedEncoder scopedEncoder(region);
+    EXPECT_EQ(region.available(), 0);
+    scopedEncoder.prependRoom(20);
+    scopedEncoder.trim();
+    EXPECT_EQ(region.available(), 40);
+  }
+  EXPECT_EQ(region.available(), 60);
 }
 
 TEST(Encoder, TrimErrorDiscard)
