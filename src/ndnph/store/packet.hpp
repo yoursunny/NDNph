@@ -51,7 +51,7 @@ public:
       return false;
     }
 
-    tlv::Value wire(encoder.begin(), encoder.end());
+    tlv::Value wire(encoder);
     bool ok = KvStore::set(key, wire);
     encoder.discard();
     return ok;

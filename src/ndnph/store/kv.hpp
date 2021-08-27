@@ -20,7 +20,7 @@ public:
 
   /**
    * @brief Open the FileStore backend.
-   * @tparam Arg arguments passed to port::FileStore::open() function.
+   * @tparam Arg arguments passed to @c port::FileStore::open() function.
    */
   template<typename... Arg>
   bool open(Arg&&... arg)

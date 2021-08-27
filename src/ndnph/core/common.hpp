@@ -1,6 +1,10 @@
 #ifndef NDNPH_CORE_COMMON_HPP
 #define NDNPH_CORE_COMMON_HPP
 
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <sys/types.h>
 
 #include <algorithm>
