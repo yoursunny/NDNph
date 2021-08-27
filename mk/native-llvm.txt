@@ -1,5 +1,5 @@
 [binaries]
-c = '/usr/bin/clang-8'
-cpp = '/usr/bin/clang++-8'
-ld = 'lld'
-ar = '/usr/bin/llvm-ar-8'
+c = '/usr/bin/clang-11'
+cpp = '/usr/bin/clang++-11'
+ld = '/usr/bin/lld-11'
+ar = '/usr/bin/llvm-ar-11'
