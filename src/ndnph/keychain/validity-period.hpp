@@ -148,7 +148,8 @@ private:
     std::copy_n(d.value, TIMESTAMP_LEN, buf);
     buf[TIMESTAMP_LEN] = '\0';
 
-    struct tm m = {};
+    struct tm m
+    {};
     if (sscanf(buf, getTimestampFormat(), &m.tm_year, &m.tm_mon, &m.tm_mday, &m.tm_hour, &m.tm_min,
                &m.tm_sec) != 6) {
       return false;

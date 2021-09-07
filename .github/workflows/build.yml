@@ -64,9 +64,7 @@ jobs:
         run: |
           mk/update-list.sh
           mk/format-code.sh
-          if [[ $(git status --porcelain | tee /dev/stderr | wc -l) -ne 0 ]]; then
-            git diff && false
-          fi
+          git diff --exit-code
       - name: build and test with coverage
         run: |
           meson build.coverage -Db_coverage=true -Dwerror=true -Dunittest=enabled -Dprograms=disabled

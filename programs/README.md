@@ -20,15 +20,15 @@ This is required in programs that access the persistent KeyChain.
 
 `NDNPH_UPLINK_MEMIF` enables libmemif transport.
 It should be set to the socket name of libmemif transport.
-Note that libmemif generally requires sudo privilege.
 You can create a memif face in NDN-DPDK with this locator:
 
 ```jsonc
 {
   "scheme": "memif",
-  "socketName": "same value as NDNPH_UPLINK_MEMIF environ",
+  "socketName": "/run/ndn/memif.sock", // NDNPH_UPLINK_MEMIF
   "id": 0,
-  "dataroom": /* same value as NDNPH_UPLINK_MTU environ */
+  "dataroom": 2048, // NDNPH_UPLINK_MTU
+  "socketOwner": [0, 0] // uid:gid of account running the program
 }
 ```
 

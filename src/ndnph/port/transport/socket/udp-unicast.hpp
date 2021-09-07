@@ -31,7 +31,7 @@ public:
   /** @brief Start listening on given local port. */
   bool beginListen(uint16_t localPort = 6363)
   {
-    sockaddr_in laddr = {};
+    sockaddr_in laddr{};
     laddr.sin_family = AF_INET;
     laddr.sin_addr.s_addr = INADDR_ANY;
     laddr.sin_port = htons(localPort);
@@ -51,7 +51,7 @@ public:
    */
   bool beginTunnel(std::initializer_list<uint8_t> remoteHost, uint16_t remotePort = 6363)
   {
-    sockaddr_in raddr = {};
+    sockaddr_in raddr{};
     if (remoteHost.size() != sizeof(raddr.sin_addr)) {
       return false;
     }

@@ -9,7 +9,7 @@ extern "C"
 
 #ifndef NDNPH_MEMIF_RXBURST
 /** @brief Receive burst size. */
-#define NDNPH_MEMIF_RXBURST 256
+#define NDNPH_MEMIF_RXBURST 64
 #endif
 
 namespace ndnph {
@@ -30,39 +30,84 @@ namespace port_transport_memif {
 /**
  * @brief A transport that communicates via libmemif.
  *
- * Current implementation only allows one memif transport per process.
+ * Current implementation only allows one memif transport per control socket name.
  * It is compatible with NDN-DPDK dataplane, but has no management integration.
  */
 class MemifTransport : public virtual Transport
 {
 public:
+  enum class Role
+  {
+    CLIENT = 0,
+    SERVER = 1,
+  };
+
   using DefaultDataroom = std::integral_constant<uint16_t, 2048>;
 
-  bool begin(const char* socketName, uint32_t id, uint16_t maxPktLen = DefaultDataroom::value)
+  struct Options
+  {
+    Role role;
+    const char* socketName;
+    uint32_t id;
+    uint16_t dataroom;
+    uint16_t ringCapacity;
+  };
+
+  /**
+   * @brief Start transport.
+   * @param socketName control socket name.
+   * @param id interface ID.
+   * @param dataroom maximum dataroom; 0 means library default.
+   */
+  bool begin(const char* socketName, uint32_t id, uint16_t dataroom = 0)
+  {
+    Options opts{};
+    opts.socketName = socketName;
+    opts.id = id;
+    opts.dataroom = dataroom;
+    return begin(opts);
+  }
+
+  /** @brief Start transport with advanced options. */
+  bool begin(Options opts)
   {
     end();
-    m_maxPktLen = maxPktLen;
-
-    int err = memif_init(nullptr, const_cast<char*>("NDNph"), nullptr, nullptr, nullptr);
-    if (err != MEMIF_ERR_SUCCESS) {
-      NDNPH_MEMIF_PRINT_ERR(memif_init);
+    if (opts.socketName == nullptr || opts.dataroom > 0x8000) {
       return false;
     }
-    m_init = true;
+    if (opts.dataroom == 0) {
+      opts.dataroom = 2048;
+    }
+    if (opts.ringCapacity == 0) {
+      opts.ringCapacity = 1024;
+    }
 
-    err = memif_create_socket(&m_sock, socketName, nullptr);
+    int err = memif_per_thread_init(&m_main, this, nullptr, const_cast<char*>("NDNph"), nullptr,
+                                    nullptr, nullptr);
     if (err != MEMIF_ERR_SUCCESS) {
-      NDNPH_MEMIF_PRINT_ERR(memif_create_socket);
+      NDNPH_MEMIF_PRINT_ERR(memif_per_thread_init);
       return false;
     }
 
-    memif_conn_args_t args = {};
+    err = memif_per_thread_create_socket(m_main, &m_sock, opts.socketName, this);
+    if (err != MEMIF_ERR_SUCCESS) {
+      NDNPH_MEMIF_PRINT_ERR(memif_per_thread_create_socket);
+      return false;
+    }
+
+    memif_conn_args_t args{};
+    args.is_master = static_cast<uint8_t>(opts.role == Role::SERVER);
     args.socket = m_sock;
-    args.interface_id = id;
-    for (args.buffer_size = 64; args.buffer_size < m_maxPktLen;) {
+    args.interface_id = opts.id;
+    for (args.buffer_size = 64; args.buffer_size < opts.dataroom;) {
       args.buffer_size <<= 1;
       // libmemif internally assumes buffer_size to be power of two
       // https://github.com/FDio/vpp/blob/v21.06/extras/libmemif/src/main.c#L2406
+    }
+    m_dataroom = args.buffer_size;
+    for (args.log2_ring_size = 4;
+         args.log2_ring_size < 14 && (1 << args.log2_ring_size) < opts.ringCapacity;) {
+      ++args.log2_ring_size;
     }
     err = memif_create(&m_conn, &args, MemifTransport::handleConnect,
                        MemifTransport::handleDisconnect, MemifTransport::handleInterrupt, this);
@@ -74,6 +119,7 @@ public:
     return true;
   }
 
+  /** @brief Stop transport. */
   bool end()
   {
     if (m_conn != nullptr) {
@@ -92,15 +138,22 @@ public:
       }
     }
 
-    if (m_init) {
-      int err = memif_cleanup();
+    if (m_main != nullptr) {
+      int err = memif_per_thread_cleanup(&m_main);
       if (err != MEMIF_ERR_SUCCESS) {
-        NDNPH_MEMIF_PRINT_ERR(memif_cleanup);
+        NDNPH_MEMIF_PRINT_ERR(memif_per_thread_cleanup);
         return false;
       }
-      m_init = false;
     }
+
+    m_dataroom = 0;
     return true;
+  }
+
+  /** @brief Return actual dataroom. */
+  uint16_t getDataroom() const
+  {
+    return m_dataroom;
   }
 
 private:
@@ -111,11 +164,11 @@ private:
 
   void doLoop() final
   {
-    if (!m_init) {
+    if (m_main == nullptr) {
       return;
     }
 
-    int err = memif_poll_event(0);
+    int err = memif_per_thread_poll_event(m_main, 0);
     if (err != MEMIF_ERR_SUCCESS) {
       NDNPH_MEMIF_PRINT_ERR(memif_poll_event);
     }
@@ -130,14 +183,14 @@ private:
       return false;
     }
 
-    if (pktLen > m_maxPktLen) {
+    if (pktLen > m_dataroom) {
 #ifdef NDNPH_MEMIF_DEBUG
       fprintf(stderr, "MemifTransport send drop=pkt-too-long len=%zu\n", pktLen);
 #endif
       return false;
     }
 
-    memif_buffer_t b = {};
+    memif_buffer_t b{};
     uint16_t nAlloc = 0;
     int err = memif_buffer_alloc(m_conn, 0, &b, 1, &nAlloc, pktLen);
     if (err != MEMIF_ERR_SUCCESS || nAlloc != 1) {
@@ -212,10 +265,10 @@ private:
   }
 
 private:
+  memif_per_thread_main_handle_t m_main = nullptr;
   memif_socket_handle_t m_sock = nullptr;
   memif_conn_handle_t m_conn = nullptr;
-  uint16_t m_maxPktLen = 0;
-  bool m_init = false;
+  uint16_t m_dataroom = 0;
   bool m_isUp = false;
 };
 

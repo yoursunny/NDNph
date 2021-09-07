@@ -9,14 +9,15 @@ namespace cli {
 namespace detail {
 
 inline Face*
-openMemif(const char* socketName, int mtu)
+openMemif(const char* socketName, int* mtu)
 {
 #ifdef NDNPH_PORT_TRANSPORT_MEMIF
   static MemifTransport transport;
-  uint16_t dataroom = mtu > 0 ? static_cast<uint16_t>(mtu) : MemifTransport::DefaultDataroom::value;
+  uint16_t dataroom = static_cast<uint16_t>(std::max(0, *mtu));
   if (!transport.begin(socketName, 0, dataroom)) {
     return nullptr;
   }
+  *mtu = static_cast<int>(transport.getDataroom());
   static Face face(transport);
   return &face;
 #else
@@ -42,7 +43,7 @@ openUdp()
   if (env != nullptr && env[0] == '1') {
     transport.beginListen(port);
   } else {
-    sockaddr_in raddr = {};
+    sockaddr_in raddr{};
     raddr.sin_family = AF_INET;
     raddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     raddr.sin_port = htons(port);
@@ -93,7 +94,7 @@ openUplink()
     if (envMemif == nullptr) {
       face = detail::openUdp();
     } else {
-      face = detail::openMemif(envMemif, mtu);
+      face = detail::openMemif(envMemif, &mtu);
     }
 
     if (face == nullptr) {
