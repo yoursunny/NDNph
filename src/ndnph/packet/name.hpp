@@ -43,7 +43,7 @@ public:
 
   /**
    * @brief Parse from URI.
-   * @param region memory region; must have 2*strlen(uri) available room
+   * @param region memory region; must have @c 2*strlen(uri) available room.
    * @param uri URI in canonical format; scheme and authority must be omitted;
    *            `8=` prefix of GenericNameComponent may be omitted.
    * @return name; it's valid if !name is false.
@@ -186,20 +186,17 @@ public:
 
   /**
    * @brief Append a sequence of components.
-   * @param errorOnEmptyComponent if true, appending an empty component results in an error, such
-   *                              that `!name` becomes true. This is useful in detecting a failed
-   *                              `convention::Version::create(region, convention::RandomValue())`.
    * @return new Name that copies TLV-VALUE of this name and all components.
+   * @retval Name() any Component is invalid or allocation error.
    *
    * If you need to append multiple components, it's recommended to append them all at once,
    * so that memory allocation and copying occur only once.
    */
-  Name append(Region& region, std::initializer_list<Component> comps,
-              bool errorOnEmptyComponent = false) const
+  Name append(Region& region, std::initializer_list<Component> comps) const
   {
     size_t nComps = m_nComps, length = m_length;
     for (const auto& comp : comps) {
-      if (errorOnEmptyComponent && !comp) {
+      if (!comp) {
         return Name();
       }
       ++nComps;
@@ -222,23 +219,25 @@ public:
   /**
    * @brief Append a component.
    * @return new Name that copies TLV-VALUE of this name and the new component.
+   * @retval Name() any Component is invalid or allocation error.
    */
-  Name append(Region& region, const Component& comp, bool errorOnEmptyComponent = false) const
+  Name append(Region& region, const Component& comp) const
   {
-    return append(region, { comp }, errorOnEmptyComponent);
+    return append(region, { comp });
   }
 
   /**
    * @brief Append a component from naming convention.
-   * @tparam Convention the naming convention; it should not create an empty component.
+   * @tparam Convention the naming convention.
    * @return new Name that copies TLV-VALUE of this name and the new component.
+   * @retval Name() any Component is invalid or allocation error.
    */
-  template<typename Convention, typename... Arg>
-  Name append(Region& region, Arg&&... arg) const
+  template<typename Convention, typename Arg>
+  Name append(Region& region, Arg&& arg) const
   {
     // XXX comp is allocated in Region, then copied again
-    Component comp = Convention::create(region, std::forward<Arg>(arg)...);
-    return append(region, { comp }, true);
+    Component comp = Convention::create(region, std::forward<Arg>(arg));
+    return append(region, { comp });
   }
 
   /**

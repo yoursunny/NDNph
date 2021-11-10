@@ -2,7 +2,9 @@
 
 [![GitHub Workflow status](https://img.shields.io/github/workflow/status/yoursunny/NDNph/build?style=flat)](https://github.com/yoursunny/NDNph/actions) [![Coveralls code coverage](https://img.shields.io/coveralls/github/yoursunny/NDNph?style=flat)](https://coveralls.io/github/yoursunny/NDNph) [![GitHub code size](https://img.shields.io/github/languages/code-size/yoursunny/NDNph?style=flat)](https://github.com/yoursunny/NDNph)
 
-**NDNph** provides [Named Data Networking](https://named-data.net/) packet encoding and more in a header-only C++11 library. It is part of [esp8266ndn](https://github.com/yoursunny/esp8266ndn) that supports microcontroller programming in Arduino IDE. NDNph can also work independently on Linux and other platforms.
+**NDNph** provides [Named Data Networking](https://named-data.net/) packet encoding and more in a header-only C++11 library.
+It is part of [esp8266ndn](https://github.com/yoursunny/esp8266ndn) that supports microcontroller programming in Arduino IDE.
+NDNph can also work independently on Linux and other platforms.
 
 * [Doxygen documentation](https://esp8266ndn.ndn.today/) together with esp8266ndn
 * [#NDNph on Twitter](https://twitter.com/hashtag/NDNph) for announcements

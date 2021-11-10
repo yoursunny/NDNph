@@ -93,10 +93,8 @@ toKeyName(Region& region, const Name& input, bool mustCopy = false)
   } else if (isCertName(input)) {
     result = input.getPrefix(-2);
   } else {
-    return input.append(
-      region,
-      { getKeyComponent(), convention::GenericNumber::create(region, convention::RandomValue()) },
-      true);
+    return input.append(region, { getKeyComponent(), convention::GenericNumber::create(
+                                                       region, convention::RandomValue()) });
   }
 
   if (mustCopy) {
@@ -128,15 +126,13 @@ toCertName(Region& region, const Name& input, bool mustCopy = false)
 
   if (isKeyName(input)) {
     return input.append(
-      region, { getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) },
-      true);
+      region, { getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) });
   }
 
   return input.append(
     region,
     { getKeyComponent(), convention::GenericNumber::create(region, convention::RandomValue()),
-      getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) },
-    true);
+      getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) });
 }
 
 /**

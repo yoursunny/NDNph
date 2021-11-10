@@ -140,7 +140,7 @@ public:
   }
 
   /**
-   * @brief Decode input TLV with a sequence of element definitions.
+   * @brief Decode input TLV-VALUE with a sequence of element definitions.
    *
    * Compare to decodeValueEx(), decodeValue() does not allow customizing unknownCb and isCritical.
    */

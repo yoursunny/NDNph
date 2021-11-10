@@ -140,8 +140,9 @@ public:
   /**
    * @brief Create with RandomValue or TimeValue.
    * @tparam G RandomValue or TimeValue.
-   * @warning In case the value generator fails, returns an empty component. This would usually
-   *          encode an invalid packet, but it rarely occurs on a correctly integrated system.
+   *
+   * In case the value generator fails, returns an invalid component, which would cause packet
+   * encoding error. This condition rarely occurs on a correctly integrated system.
    */
   template<typename G>
   static Component create(Region& region, const G& gen, decltype(&G::toNumber) = nullptr)
@@ -150,7 +151,7 @@ public:
     uint64_t value = 0;
     std::tie(ok, value) = gen.toNumber();
     if (!ok) {
-      return Component(region, 0, nullptr);
+      return Component();
     }
     return create(region, value);
   }

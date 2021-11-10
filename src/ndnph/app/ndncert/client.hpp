@@ -195,10 +195,9 @@ public:
     }
     auto encrypted = sessionKey.encrypt(region, tlv::Value(encoder), requestId);
 
-    Name name = profile.prefix.append(region,
-                                      { getCaComponent(), getChallengeComponent(),
-                                        Component(region, detail::RequestIdLen::value, requestId) },
-                                      true);
+    Name name =
+      profile.prefix.append(region, { getCaComponent(), getChallengeComponent(),
+                                      Component(region, detail::RequestIdLen::value, requestId) });
     Interest interest = region.create<Interest>();
     if (!encrypted || !name || !interest) {
       return Interest::Signed();

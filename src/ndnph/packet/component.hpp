@@ -176,6 +176,10 @@ public:
 
   void encodeTo(Encoder& encoder) const
   {
+    if (m_type == 0) {
+      encoder.setError();
+      return;
+    }
     encoder.prepend(tlv::Value(m_tlv, size()));
   }
 
