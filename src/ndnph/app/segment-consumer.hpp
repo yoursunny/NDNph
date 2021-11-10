@@ -187,14 +187,14 @@ private:
     StaticRegion<regionCap> region;
     Interest interest = region.template create<Interest>();
     assert(!!interest);
-    interest.setName(m_prefix.append<SegmentConvention>(region, m_segment));
+    interest.setName(m_prefix.append(region, SegmentConvention(), m_segment));
     m_pending.send(interest, m_opts.retxDelay);
   }
 
   bool processData(Data data) final
   {
     StaticRegion<regionCap> region;
-    Name interestName = m_prefix.append<SegmentConvention>(region, m_segment);
+    Name interestName = m_prefix.append(region, SegmentConvention(), m_segment);
     if (!m_pending.match(data, interestName, false) || !data.verify(m_opts.verifier)) {
       return false;
     }

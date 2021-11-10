@@ -15,7 +15,7 @@ TEST(Convention, ImplicitDigest)
 
   std::vector<uint8_t> value(NDNPH_SHA256_LEN);
   std::fill(value.begin(), value.end(), 0xA0);
-  name = name.append<convention::ImplicitDigest>(region, value.data());
+  name = name.append(region, convention::ImplicitDigest(), value.data());
   EXPECT_EQ(test::toString(name[-1]), "1=%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0"
                                       "%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0%A0");
   EXPECT_TRUE(name[-1].is<convention::ImplicitDigest>());
@@ -32,11 +32,13 @@ TEST(Convention, Keyword)
   EXPECT_FALSE(name[0].is<convention::Keyword>());
   EXPECT_TRUE(name[1].is<convention::Keyword>());
 
-  name = name.append<convention::Keyword>(region, "hello");
-  EXPECT_EQ(test::toString(name[-1]), "32=hello");
+  name = name.append(region, convention::Keyword(), "hello", convention::Keyword(), "world");
+  EXPECT_EQ(test::toString(name[-2]), "32=hello");
+  EXPECT_TRUE(name[-2].is<convention::Keyword>());
+  EXPECT_EQ(test::toString(name[-1]), "32=world");
   EXPECT_TRUE(name[-1].is<convention::Keyword>());
 
-  const char* keyword = name[-1].as<convention::Keyword>(region);
+  const char* keyword = name[-2].as<convention::Keyword>(region);
   EXPECT_EQ(keyword, std::string("hello"));
 }
 
@@ -47,12 +49,19 @@ TEST(Convention, Segment)
   EXPECT_FALSE(name[0].is<convention::Segment>());
   EXPECT_FALSE(name[1].is<convention::Segment>());
 
-  name = name.append<convention::Segment>(region, 700);
+  name = name.append(region, convention::Segment(), 700);
   EXPECT_EQ(test::toString(name[-1]), "33=%02%BC");
   EXPECT_TRUE(name[-1].is<convention::Segment>());
 
   uint64_t segment = name[-1].as<convention::Segment>();
   EXPECT_EQ(segment, 700);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  name = name.append<convention::Segment>(region, 701);
+#pragma GCC diagnostic pop
+  EXPECT_EQ(test::toString(name[-1]), "33=%02%BD");
+  EXPECT_TRUE(name[-1].is<convention::Segment>());
 }
 
 } // namespace

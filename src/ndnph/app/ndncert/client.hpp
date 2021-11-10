@@ -109,7 +109,7 @@ public:
                     [this](Encoder& encoder) { encoder.prependTlv(TT::CertRequest, certRequest); });
     encoder.trim();
 
-    Name name = profile.prefix.append(region, { getCaComponent(), getNewComponent() });
+    Name name = profile.prefix.append(region, getCaComponent(), getNewComponent());
     Interest interest = region.create<Interest>();
     if (!encoder || !name || !interest) {
       return Interest::Signed();
@@ -195,9 +195,8 @@ public:
     }
     auto encrypted = sessionKey.encrypt(region, tlv::Value(encoder), requestId);
 
-    Name name =
-      profile.prefix.append(region, { getCaComponent(), getChallengeComponent(),
-                                      Component(region, detail::RequestIdLen::value, requestId) });
+    Name name = profile.prefix.append(region, getCaComponent(), getChallengeComponent(),
+                                      Component(region, detail::RequestIdLen::value, requestId));
     Interest interest = region.create<Interest>();
     if (!encrypted || !name || !interest) {
       return Interest::Signed();

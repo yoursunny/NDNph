@@ -186,13 +186,44 @@ public:
 
   /**
    * @brief Append a sequence of components.
+   * @param comps a mix of Components and Convention+argument pairs.
+   * @return new Name that copies TLV-VALUE of this name and all components.
+   * @retval Name() any Component is invalid or allocation error.
+   *
+   * If you need to append multiple components, it's recommended to append them all at once,
+   * so that memory allocation and copying occur only once.
+   *
+   * @code
+   * Name segmentName = prefix.append(filename, convention::Segment(), 5);
+   * @endcode
+   */
+  template<typename... C>
+  Name append(Region& region, const C&... comps) const
+  {
+    Encoder encoder(region);
+    size_t nComps = prependComps(encoder, comps...);
+    uint8_t* room = encoder.prependRoom(m_length);
+    if (room != nullptr) {
+      std::copy_n(m_value, m_length, room);
+    }
+    if (!encoder) {
+      encoder.discard();
+      return Name();
+    }
+    encoder.trim();
+    return Name(encoder.begin(), encoder.size(), m_nComps + nComps);
+  }
+
+  /**
+   * @brief Append a sequence of components.
    * @return new Name that copies TLV-VALUE of this name and all components.
    * @retval Name() any Component is invalid or allocation error.
    *
    * If you need to append multiple components, it's recommended to append them all at once,
    * so that memory allocation and copying occur only once.
    */
-  Name append(Region& region, std::initializer_list<Component> comps) const
+  [[deprecated("append(region, comp, comp, ...)")]] Name append(
+    Region& region, std::initializer_list<Component> comps) const
   {
     size_t nComps = m_nComps, length = m_length;
     for (const auto& comp : comps) {
@@ -217,27 +248,16 @@ public:
   }
 
   /**
-   * @brief Append a component.
-   * @return new Name that copies TLV-VALUE of this name and the new component.
-   * @retval Name() any Component is invalid or allocation error.
-   */
-  Name append(Region& region, const Component& comp) const
-  {
-    return append(region, { comp });
-  }
-
-  /**
    * @brief Append a component from naming convention.
    * @tparam Convention the naming convention.
    * @return new Name that copies TLV-VALUE of this name and the new component.
    * @retval Name() any Component is invalid or allocation error.
    */
   template<typename Convention, typename Arg>
-  Name append(Region& region, Arg&& arg) const
+  [[deprecated("append(region, Convention(), arg)")]] Name append(Region& region,
+                                                                  const Arg& arg) const
   {
-    // XXX comp is allocated in Region, then copied again
-    Component comp = Convention::create(region, std::forward<Arg>(arg));
-    return append(region, { comp });
+    return append(region, Convention(), arg);
   }
 
   /**
@@ -247,7 +267,7 @@ public:
    */
   Name clone(Region& region) const
   {
-    return append(region, {});
+    return append(region);
   }
 
   /** @brief Name compare result. */
@@ -382,6 +402,38 @@ private:
       uri = compEnd;
     }
     return length;
+  }
+
+  template<typename... C>
+  static size_t prependComps(Encoder& encoder, const Component& comp, const C&... rest)
+  {
+    size_t nComps = prependComps(encoder, rest...);
+    encoder.prepend(comp);
+    return 1 + nComps;
+  }
+
+  template<typename Convention, typename Arg, typename... C>
+  static typename std::enable_if<!std::is_base_of<Component, Convention>::value, size_t>::type
+  prependComps(Encoder& encoder, const Convention&, const Arg& arg, const C&... rest)
+  {
+    size_t nComps = prependComps(encoder, rest...);
+
+    size_t headroom = encoder.availableHeadroom();
+    Region overlay(const_cast<uint8_t*>(encoder.begin() - headroom), headroom);
+    auto comp = Convention::create(overlay, arg);
+
+    uint8_t* room = encoder.prependRoom(comp.size());
+    if (!comp || room == nullptr) {
+      encoder.setError();
+      return 0;
+    }
+    std::memmove(room, comp.tlv(), comp.size());
+    return 1 + nComps;
+  }
+
+  static size_t prependComps(Encoder&)
+  {
+    return 0;
   }
 
 private:

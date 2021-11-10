@@ -162,19 +162,26 @@ TEST(Name, Append)
     { 0x81, 0x01, 0x41, 0x82, 0x01, 0x42, 0x83, 0x01, 0x43, 0x82, 0x01, 0x42, 0x08, 0x01, 0x44 });
   Name name(wire.data(), 3);
 
-  Name name2 = name.append(region, {});
-  EXPECT_THAT(name2, g::SizeIs(1));
-
   Component comp1;
   Decoder(&wire[3], 3).decode(comp1);
-  name2 = name.append(region, comp1);
+  Name name2 = name.append(region, comp1);
   EXPECT_THAT(name2, g::SizeIs(2));
 
   Component comp2(region, wire[6], wire[7], &wire[8]);
   Component comp3(region, wire[13], &wire[14]);
-  name2 = name.append(region, { comp1, comp2, comp1, comp3 });
+  name2 = name.append(region, comp1, comp2, comp1, comp3);
   EXPECT_THAT(std::vector<uint8_t>(name2.value(), name2.value() + name2.length()),
               g::ElementsAreArray(wire));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  name2 = name.append(region, { comp1, comp2, comp1, comp3 });
+#pragma GCC diagnostic pop
+  EXPECT_THAT(std::vector<uint8_t>(name2.value(), name2.value() + name2.length()),
+              g::ElementsAreArray(wire));
+
+  name2 = name.append(region, comp1, Component(), comp2); // invalid component
+  EXPECT_FALSE(!!name2);
 }
 
 TEST(Name, Clone)

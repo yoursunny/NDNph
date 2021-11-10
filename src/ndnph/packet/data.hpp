@@ -314,7 +314,7 @@ public:
     if (!computeImplicitDigest(digest)) {
       return Name();
     }
-    return getName().append<convention::ImplicitDigest>(region, digest);
+    return getName().append(region, convention::ImplicitDigest(), digest);
   }
 
 #ifdef NDNPH_PRINT_ARDUINO

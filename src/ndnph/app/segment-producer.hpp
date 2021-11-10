@@ -48,7 +48,7 @@ public:
 
   /**
    * @brief Set or change served content.
-   * @param prefix name prefix.
+   * @param prefix name prefix. This should end with version component, if desired.
    * @param content content pointer.
    * @param size content size.
    * @note All arguments must be kept alive until setContent() is called again.
@@ -115,7 +115,7 @@ private:
     StaticRegion<regionCap> region;
     Data data = region.template create<Data>();
     assert(!!data);
-    data.setName(m_prefix.append<SegmentConvention>(region, segment));
+    data.setName(m_prefix.append(region, SegmentConvention(), segment));
     data.setFreshnessPeriod(m_opts.freshnessPeriod);
     data.setIsFinalBlock(segment == m_lastSegment);
     data.setContent(

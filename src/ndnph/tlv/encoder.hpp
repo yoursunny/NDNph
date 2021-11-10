@@ -39,15 +39,23 @@ public:
   {
     return m_pos;
   }
+
   /** @brief Get output end. */
   const uint8_t* end() const
   {
     return m_pos == nullptr ? nullptr : m_end;
   }
+
   /** @brief Get output size. */
   size_t size() const
   {
     return m_pos == nullptr ? 0 : m_end - m_pos;
+  }
+
+  /** @brief Get available headroom. */
+  size_t availableHeadroom() const
+  {
+    return m_pos == nullptr ? 0 : m_pos - m_buf;
   }
 
   /**

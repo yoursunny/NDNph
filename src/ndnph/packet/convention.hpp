@@ -94,9 +94,6 @@ public:
   {
     return comp.value();
   }
-
-private:
-  TypedDigest() = delete;
 };
 
 template<uint16_t tlvType>
@@ -122,9 +119,6 @@ public:
     std::copy_n(comp.value(), comp.length(), room)[0] = 0;
     return reinterpret_cast<const char*>(room);
   }
-
-private:
-  TypedString() = delete;
 };
 
 template<uint16_t tlvType>
@@ -167,8 +161,6 @@ public:
   }
 
 private:
-  TypedNumber() = delete;
-
   static std::pair<bool, uint64_t> parseImpl(const Component& comp)
   {
     Decoder::Tlv d;
@@ -187,7 +179,7 @@ private:
  * Supported operations:
  * @code
  * uint8_t digest[NDNPH_SHA256_LEN];
- * name.append<convention::ImplicitDigest>(region, digest);
+ * name.append(region, convention::ImplicitDigest(), digest);
  * bool isDigest = component.is<convention::ImplicitDigest>();
  * uint8_t* digest2 = component.as<convention::ImplicitDigest>();
  * @endcode
@@ -206,7 +198,7 @@ using ParamsDigest = detail::TypedDigest<TT::ParametersSha256DigestComponent>;
  *
  * Supported operations:
  * @code
- * name.append<convention::Keyword>(region, "hello");
+ * name.append(region, convention::Keyword(), "hello");
  * bool isKeyword = component.is<convention::Keyword>();
  * const char* keyword = component.as<convention::Keyword>(region);
  * @endcode
@@ -229,7 +221,7 @@ using GenericNumber = detail::TypedNumber<TT::GenericNameComponent>;
  *
  * Supported operations:
  * @code
- * name.append<convention::Segment>(region, 700);
+ * name.append(region, convention::Segment(), 700);
  * bool isSegment = component.is<convention::Segment>();
  * uint64_t segment = component.as<convention::Segment>();
  * @endcode
@@ -255,8 +247,8 @@ using Version = detail::TypedNumber<TT::VersionNameComponent>;
  *
  * Supported operations include those in convention::Segment, and:
  * @code
- * name.append<convention::Timestamp>(region, convention::RandomValue());
- * name.append<convention::Timestamp>(region, convention::TimeValue(port::UnixTime::now()));
+ * name.append(region, convention::Timestamp(), convention::RandomValue());
+ * name.append(region, convention::Timestamp(), convention::TimeValue(port::UnixTime::now()));
  * @endcode
  */
 using Timestamp = detail::TypedNumber<TT::TimestampNameComponent>;

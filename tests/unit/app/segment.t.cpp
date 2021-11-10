@@ -33,10 +33,10 @@ TEST(Segment, Consumer)
 
   StaticRegion<1024> prefixRegion;
   Name prefixA = Name::parse(prefixRegion, "/A");
-  Name nameA0 = prefixA.append<convention::Segment>(prefixRegion, 0);
-  Name nameA1 = prefixA.append<convention::Segment>(prefixRegion, 1);
+  Name nameA0 = prefixA.append(prefixRegion, convention::Segment(), 0);
+  Name nameA1 = prefixA.append(prefixRegion, convention::Segment(), 1);
   Name prefixB = Name::parse(prefixRegion, "/B");
-  Name nameB0 = prefixB.append<convention::SequenceNum>(prefixRegion, 0);
+  Name nameB0 = prefixB.append(prefixRegion, convention::SequenceNum(), 0);
   port::Clock::Time timeA0;
   int countA0 = 0;
   int countA1 = 0;

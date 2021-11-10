@@ -58,7 +58,7 @@ private:
     StaticRegion<1024> region;
     Component seqNumComp = Component::from(region, TT::GenericNameComponent, tlv::NNI8(++m_seqNum));
     assert(!!seqNumComp);
-    Name name = m_prefix.append(region, { seqNumComp });
+    Name name = m_prefix.append(region, seqNumComp);
     assert(!!name);
 
     Interest interest = region.create<Interest>();

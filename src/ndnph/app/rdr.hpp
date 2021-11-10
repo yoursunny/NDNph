@@ -128,9 +128,8 @@ private:
     StaticRegion<1024> region;
     Data data = region.create<Data>();
     assert(!!data);
-    data.setName(m_rdrPrefix.append(region, { getMetadataComponent(),
-                                              convention::Version::create(region, m_version),
-                                              convention::Segment::create(region, 0) }));
+    data.setName(m_rdrPrefix.append(region, getMetadataComponent(), convention::Version(),
+                                    m_version, convention::Segment(), 0));
     data.setFreshnessPeriod(m_freshness);
     data.setIsFinalBlock(true);
 

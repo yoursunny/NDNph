@@ -93,8 +93,8 @@ toKeyName(Region& region, const Name& input, bool mustCopy = false)
   } else if (isCertName(input)) {
     result = input.getPrefix(-2);
   } else {
-    return input.append(region, { getKeyComponent(), convention::GenericNumber::create(
-                                                       region, convention::RandomValue()) });
+    return input.append(region, getKeyComponent(), convention::GenericNumber(),
+                        convention::RandomValue());
   }
 
   if (mustCopy) {
@@ -125,14 +125,12 @@ toCertName(Region& region, const Name& input, bool mustCopy = false)
   }
 
   if (isKeyName(input)) {
-    return input.append(
-      region, { getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) });
+    return input.append(region, getIssuerDefault(), convention::Version(), convention::TimeValue());
   }
 
-  return input.append(
-    region,
-    { getKeyComponent(), convention::GenericNumber::create(region, convention::RandomValue()),
-      getIssuerDefault(), convention::Version::create(region, convention::TimeValue()) });
+  return input.append(region, getKeyComponent(), convention::GenericNumber(),
+                      convention::RandomValue(), getIssuerDefault(), convention::Version(),
+                      convention::TimeValue());
 }
 
 /**
@@ -145,7 +143,7 @@ toCertName(Region& region, const Name& input, bool mustCopy = false)
 inline Name
 makeKeyName(Region& region, const Name& input, const Component& keyId)
 {
-  return toSubjectName(region, input).append(region, { getKeyComponent(), keyId });
+  return toSubjectName(region, input).append(region, getKeyComponent(), keyId);
 }
 
 /**
@@ -159,7 +157,7 @@ makeKeyName(Region& region, const Name& input, const Component& keyId)
 inline Name
 makeCertName(Region& region, const Name& input, const Component& issuerId, const Component& version)
 {
-  return toKeyName(region, input).append(region, { issuerId, version });
+  return toKeyName(region, input).append(region, issuerId, version);
 }
 
 /**
@@ -174,8 +172,7 @@ inline Name
 makeCertName(Region& region, const Name& input, const Component& issuerId, uint64_t version = 0)
 {
   return toKeyName(region, input)
-    .append(region,
-            { issuerId, convention::Version::create(region, convention::TimeValue(version)) });
+    .append(region, issuerId, convention::Version(), convention::TimeValue(version));
 }
 
 /** @brief Determine if the Data packet is a certificate. */

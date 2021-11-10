@@ -258,10 +258,11 @@ TEST(Interest, MatchImplicitDigest)
 
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(data.getName().append<convention::ImplicitDigest>(region, digest));
+  interest.setName(data.getName().append(region, convention::ImplicitDigest(), digest));
   EXPECT_TRUE(interest.match(data));
 
-  interest.setName(Name::parse(region, "/A/B").append<convention::ImplicitDigest>(region, digest));
+  interest.setName(
+    Name::parse(region, "/A/B").append(region, convention::ImplicitDigest(), digest));
   EXPECT_FALSE(interest.match(data));
 }
 

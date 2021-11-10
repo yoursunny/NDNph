@@ -70,12 +70,11 @@ public:
                     [this](Encoder& encoder) { encoder.prependTlv(TT::CaCertificate, cert); });
     encoder.trim();
 
-    Component version = convention::Version::create(region, convention::TimeValue());
-    Component segment = convention::Segment::create(region, 0);
-    Name name = prefix.append(region, { getCaComponent(), getInfoComponent(), version, segment });
+    Name name = prefix.append(region, getCaComponent(), getInfoComponent(), convention::Version(),
+                              convention::TimeValue(), convention::Segment(), 0);
 
     Data data = region.create<Data>();
-    if (!encoder || !version || !segment || !name || !data) {
+    if (!encoder || !name || !data) {
       return Data::Signed();
     }
     data.setName(name);
