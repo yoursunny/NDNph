@@ -1,7 +1,7 @@
 #ifndef NDNPH_KEYCHAIN_VALIDITY_PERIOD_HPP
 #define NDNPH_KEYCHAIN_VALIDITY_PERIOD_HPP
 
-#include "../an.hpp"
+#include "../packet/an.hpp"
 #include "../port/unixtime/port.hpp"
 #include "../tlv/ev-decoder.hpp"
 #include "../tlv/value.hpp"
@@ -15,7 +15,7 @@ public:
   UtcTimezone()
   {
     const char* tz = getenv("TZ");
-    if (tz == nullptr) {
+    if (tz == nullptr || strlen(tz) >= sizeof(m_tz)) {
       m_tz[0] = '\0';
     } else {
       strncpy(m_tz, tz, sizeof(m_tz));
@@ -46,14 +46,14 @@ public:
     return ValidityPeriod(540109800, MAX_TIME);
   }
 
-  /** @brief Get a ValidityPeriod from now until @c seconds later. */
+  /** @brief Get a ValidityPeriod from now until @p seconds later. */
   static ValidityPeriod secondsFromNow(uint64_t seconds)
   {
     time_t now = port::UnixTime::now() / 1000000;
     return ValidityPeriod(now, now + seconds);
   }
 
-  /** @brief Get a ValidityPeriod from now until @c days later. */
+  /** @brief Get a ValidityPeriod from now until @p days later. */
   static ValidityPeriod daysFromNow(uint64_t days)
   {
     return secondsFromNow(86400 * days);
@@ -116,16 +116,12 @@ public:
 private:
   static constexpr time_t MAX_TIME =
     sizeof(time_t) <= 4 ? std::numeric_limits<time_t>::max() : 253402300799;
+  static constexpr const char* const TIMESTAMP_FMT = "%04d%02d%02dT%02d%02d%02d";
   static constexpr size_t TIMESTAMP_LEN = 15;
   static constexpr size_t TIMESTAMP_BUFLEN = TIMESTAMP_LEN + 1;
   static constexpr size_t ENCODE_LENGTH =
     tlv::sizeofVarNum(TT::NotBefore) + tlv::sizeofVarNum(TIMESTAMP_LEN) + TIMESTAMP_LEN +
     tlv::sizeofVarNum(TT::NotAfter) + tlv::sizeofVarNum(TIMESTAMP_LEN) + TIMESTAMP_LEN;
-
-  static const char* getTimestampFormat()
-  {
-    return "%04d%02d%02dT%02d%02d%02d";
-  }
 
   static void printTimestamp(char buf[TIMESTAMP_BUFLEN], time_t t)
   {
@@ -134,8 +130,8 @@ private:
       memset(buf, 0, TIMESTAMP_BUFLEN);
       return;
     }
-    snprintf(buf, TIMESTAMP_BUFLEN, getTimestampFormat(), 1900 + m->tm_year, 1 + m->tm_mon,
-             m->tm_mday, m->tm_hour, m->tm_min, m->tm_sec);
+    snprintf(buf, TIMESTAMP_BUFLEN, TIMESTAMP_FMT, 1900 + m->tm_year, 1 + m->tm_mon, m->tm_mday,
+             m->tm_hour, m->tm_min, m->tm_sec);
   }
 
   static bool decodeTimestamp(const Decoder::Tlv& d, time_t* v)
@@ -149,7 +145,7 @@ private:
     buf[TIMESTAMP_LEN] = '\0';
 
     tm m{};
-    if (sscanf(buf, getTimestampFormat(), &m.tm_year, &m.tm_mon, &m.tm_mday, &m.tm_hour, &m.tm_min,
+    if (sscanf(buf, TIMESTAMP_FMT, &m.tm_year, &m.tm_mon, &m.tm_mday, &m.tm_hour, &m.tm_min,
                &m.tm_sec) != 6) {
       return false;
     }

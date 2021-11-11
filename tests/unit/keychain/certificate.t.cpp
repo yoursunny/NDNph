@@ -10,7 +10,7 @@ TEST(Certificate, Naming)
   StaticRegion<1024> region;
   Name subjectName = Name::parse(region, "/s");
   Name keyName = Name::parse(region, "/s/KEY/k");
-  Name certName = Name::parse(region, "/s/KEY/k/i/35=%00");
+  Name certName = Name::parse(region, "/s/KEY/k/i/54=%00");
   Component keyId = keyName[-1];
   Component issuerId = certName[-2];
   Component version = certName[-1];

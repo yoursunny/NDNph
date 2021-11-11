@@ -62,18 +62,18 @@ TEST(Rdr, Producer)
   };
 
   testOneInterest("/dataset/32=metadata", true, true, nullptr);
-  producer.setDatasetPrefix(Name::parse(prefixRegion, "/dataset/35=%07"));
-  testOneInterest("/dataset/32=metadata", true, true, "/dataset/35=%07");
+  producer.setDatasetPrefix(Name::parse(prefixRegion, "/dataset/54=%07"));
+  testOneInterest("/dataset/32=metadata", true, true, "/dataset/54=%07");
 
   testOneInterest("/dataset", true, true, nullptr);
   testOneInterest("/dataset/32=metadata", false, true, nullptr);
   testOneInterest("/dataset/32=metadata", true, false, nullptr);
   testOneInterest("/dataset/8=metadata", true, true, nullptr);
-  testOneInterest("/dataset/32=metadata/35=%01", true, true, nullptr);
-  testOneInterest("/dataset/32=metadata/35=%01/33=%00", true, true, nullptr);
+  testOneInterest("/dataset/32=metadata/54=%01", true, true, nullptr);
+  testOneInterest("/dataset/32=metadata/54=%01/50=%00", true, true, nullptr);
 
-  producer.setDatasetPrefix(Name::parse(prefixRegion, "/dataset/35=%1A"));
-  testOneInterest("/dataset/32=metadata", true, true, "/dataset/35=%1A");
+  producer.setDatasetPrefix(Name::parse(prefixRegion, "/dataset/54=%1A"));
+  testOneInterest("/dataset/32=metadata", true, true, "/dataset/54=%1A");
 }
 
 class RdrEndToEndFixture : public BridgeFixture
@@ -121,7 +121,7 @@ TEST_F(RdrEndToEndFixture, Consumer)
   runInThreads([] {}, [&] { return !hasCallback; });
 
   hasCallback = false;
-  expectedName = Name::parse(prefixRegion, "/dataset/35=%02");
+  expectedName = Name::parse(prefixRegion, "/dataset/54=%02");
   producer.setDatasetPrefix(expectedName);
   consumer.start(rdrPrefix2, consumerCallback, this);
   runInThreads([] {}, [&] { return !hasCallback; });

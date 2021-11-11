@@ -1,10 +1,10 @@
 #ifndef NDNPH_PACKET_COMPONENT_HPP
 #define NDNPH_PACKET_COMPONENT_HPP
 
-#include "../an.hpp"
 #include "../core/printing.hpp"
 #include "../core/region.hpp"
 #include "../tlv/value.hpp"
+#include "an.hpp"
 
 namespace ndnph {
 

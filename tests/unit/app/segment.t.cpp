@@ -189,26 +189,26 @@ TEST(Segment, Producer)
   StaticRegion<1024> prefixRegion;
   producerA.setContent(Name::parse(prefixRegion, "/A/AA/AAA"), content.data(), content.size());
 
-  testOneInterest("/A/AA/AAA/33=%00", false, nullptr, 300);
-  testOneInterest("/A/AA/AAA/33=%00/X", false, nullptr, -1);
+  testOneInterest("/A/AA/AAA/50=%00", false, nullptr, 300);
+  testOneInterest("/A/AA/AAA/50=%00/X", false, nullptr, -1);
   testOneInterest("/A/AA/AAA/X", false, nullptr, -1);
   testOneInterest("/A/AA/AAA", false, nullptr, -1);
-  testOneInterest("/A/AA/AAA", true, "/A/AA/AAA/33=%00", 300);
-  testOneInterest("/A/AA", true, "/A/AA/AAA/33=%00", 300);
+  testOneInterest("/A/AA/AAA", true, "/A/AA/AAA/50=%00", 300);
+  testOneInterest("/A/AA", true, "/A/AA/AAA/50=%00", 300);
   testOneInterest("/A", true, nullptr, -1);
-  testOneInterest("/B/BB/BBB/37=%00", false, nullptr, -1);
+  testOneInterest("/B/BB/BBB/58=%00", false, nullptr, -1);
 
   producerB.setContent(Name::parse(prefixRegion, "/B/BB/BBB"), content.data(), content.size());
-  testOneInterest("/B/BB/BBB/37=%00", false, nullptr, 200);
-  testOneInterest("/B/BB/BBB/37=%01", false, nullptr, 200);
-  testOneInterest("/B/BB/BBB/37=%02", false, nullptr, 200);
-  testOneInterest("/B/BB/BBB/37=%03", false, nullptr, 200);
-  testOneInterest("/B/BB/BBB/37=%04", false, nullptr, 100, true);
-  testOneInterest("/B/BB/BBB/37=%05", false, nullptr, -1);
+  testOneInterest("/B/BB/BBB/58=%00", false, nullptr, 200);
+  testOneInterest("/B/BB/BBB/58=%01", false, nullptr, 200);
+  testOneInterest("/B/BB/BBB/58=%02", false, nullptr, 200);
+  testOneInterest("/B/BB/BBB/58=%03", false, nullptr, 200);
+  testOneInterest("/B/BB/BBB/58=%04", false, nullptr, 100, true);
+  testOneInterest("/B/BB/BBB/58=%05", false, nullptr, -1);
   testOneInterest("/B/BB/BBB", true, nullptr, -1);
-  testOneInterest("/A/AA/AAA/33=%01", false, nullptr, 300);
-  testOneInterest("/A/AA/AAA/33=%02", false, nullptr, 300, true);
-  testOneInterest("/A/AA/AAA/33=%03", false, nullptr, -1);
+  testOneInterest("/A/AA/AAA/50=%01", false, nullptr, 300);
+  testOneInterest("/A/AA/AAA/50=%02", false, nullptr, 300, true);
+  testOneInterest("/A/AA/AAA/50=%03", false, nullptr, -1);
 }
 
 class SegmentEndToEndFixture : public BridgeFixture

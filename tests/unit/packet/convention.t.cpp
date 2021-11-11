@@ -45,12 +45,12 @@ TEST(Convention, Keyword)
 TEST(Convention, Segment)
 {
   StaticRegion<1024> region;
-  Name name(region, { 0x08, 0x01, 0x41, 0x21, 0x00 });
+  Name name(region, { 0x08, 0x01, 0x41, TT::SegmentNameComponent, 0x00 });
   EXPECT_FALSE(name[0].is<convention::Segment>());
   EXPECT_FALSE(name[1].is<convention::Segment>());
 
   name = name.append(region, convention::Segment(), 700);
-  EXPECT_EQ(test::toString(name[-1]), "33=%02%BC");
+  EXPECT_EQ(test::toString(name[-1]), "50=%02%BC");
   EXPECT_TRUE(name[-1].is<convention::Segment>());
 
   uint64_t segment = name[-1].as<convention::Segment>();
@@ -60,7 +60,7 @@ TEST(Convention, Segment)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   name = name.append<convention::Segment>(region, 701);
 #pragma GCC diagnostic pop
-  EXPECT_EQ(test::toString(name[-1]), "33=%02%BD");
+  EXPECT_EQ(test::toString(name[-1]), "50=%02%BD");
   EXPECT_TRUE(name[-1].is<convention::Segment>());
 }
 
