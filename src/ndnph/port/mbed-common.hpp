@@ -2,8 +2,7 @@
 #define NDNPH_PORT_MBED_COMMON_HPP
 #ifdef NDNPH_HAVE_MBED
 
-#include "../tlv/ev-decoder.hpp"
-#include "../tlv/value.hpp"
+#include "../keychain/iv.hpp"
 #include "random/port.hpp"
 #include <mbedtls/bignum.h>
 #include <mbedtls/ecdh.h>
@@ -293,69 +292,11 @@ public:
   }
 };
 
-namespace detail {
-
-class IvHelper
-{
-public:
-  using BlockSize = std::integral_constant<size_t, 16>;
-
-  bool randomize()
-  {
-    m_ok = port::RandomSource::generate(reinterpret_cast<uint8_t*>(&random), sizeof(random));
-    return m_ok;
-  }
-
-  bool write(uint8_t room[12])
-  {
-    tlv::NNI8::writeValue(room, random);
-    tlv::NNI4::writeValue(room + 8, counter);
-    return true;
-  }
-
-  bool advance(size_t size)
-  {
-    uint64_t nBlocks = (size / BlockSize::value) + static_cast<int>(size % BlockSize::value != 0);
-    uint64_t cnt = static_cast<uint64_t>(counter) + nBlocks;
-    if (counter > std::numeric_limits<uint32_t>::max()) {
-      m_ok = false;
-    }
-    counter = static_cast<uint32_t>(cnt);
-    return m_ok;
-  }
-
-  bool check(const uint8_t* iv, size_t size)
-  {
-    uint64_t rand = tlv::NNI8::readValue(iv);
-    uint32_t cnt = tlv::NNI4::readValue(iv + sizeof(rand));
-
-    if (counter == 0) {
-      random = rand;
-    } else if (random != rand) {
-      return false;
-    }
-
-    if (cnt < counter) {
-      return false;
-    }
-    counter = cnt;
-    return advance(size);
-  }
-
-public:
-  uint64_t random = 0;
-  uint32_t counter = 0;
-  bool m_ok = true;
-};
-
-} // namespace detail
-
 /**
  * @brief AES-GCM secret key.
  * @tparam keyBits AES key size in bits, either 128 or 256.
  *
- * InitializationVector is 12 octets. Other sizes are not supported. IV is constructed from an
- * 8-octet random number and a 4-octet counter, incremented for every encrypted block.
+ * InitializationVector requirements are enforced by @c AesGcmIvHelper .
  * AuthenticationTag is 16 octets. Other sizes are not supported.
  */
 template<int keyBits>
@@ -364,7 +305,7 @@ class AesGcm
 public:
   static_assert(keyBits == 128 || keyBits == 256, "");
   using Key = std::array<uint8_t, keyBits / 8>;
-  using IvLen = std::integral_constant<size_t, 12>;
+  using IvLen = AesGcmIvHelper::IvLen;
   using TagLen = std::integral_constant<size_t, 16>;
 
   explicit AesGcm()
@@ -458,7 +399,7 @@ public:
 
   void clearDecryptIvChecker()
   {
-    m_ivDecrypt = detail::IvHelper();
+    m_ivDecrypt = AesGcmIvHelper();
   }
 
 private:
@@ -471,8 +412,8 @@ private:
 
 private:
   mbedtls_gcm_context m_ctx;
-  detail::IvHelper m_ivEncrypt;
-  detail::IvHelper m_ivDecrypt;
+  AesGcmIvHelper m_ivEncrypt;
+  AesGcmIvHelper m_ivDecrypt;
   bool m_ok = false;
 };
 

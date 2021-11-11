@@ -10,11 +10,11 @@ namespace ndnph {
 namespace {
 
 template<typename Pkt>
-static Pkt
+inline Pkt
 makePacket(Region& region, const Name& name);
 
 template<>
-Interest
+inline Interest
 makePacket<Interest>(Region& region, const Name& name)
 {
   Interest interest = region.create<Interest>();
@@ -24,7 +24,7 @@ makePacket<Interest>(Region& region, const Name& name)
 }
 
 template<>
-Data
+inline Data
 makePacket<Data>(Region& region, const Name& name)
 {
   Data data = region.create<Data>();
@@ -33,7 +33,7 @@ makePacket<Data>(Region& region, const Name& name)
 }
 
 template<typename Pkt>
-static void
+inline void
 testSignVerify(const PrivateKey& pvtA, const PublicKey& pubA, const PrivateKey& pvtB,
                const PublicKey& pubB, bool deterministic = false, bool sameAB = false)
 {

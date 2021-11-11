@@ -58,9 +58,7 @@ public:
     m_prefix = prefix;
     m_content = content;
     m_size = size;
-
-    auto d = std::ldiv(size, m_opts.contentLen);
-    m_lastSegment = d.quot - static_cast<int>(size > 0 && d.rem == 0);
+    m_lastSegment = divCeil(std::max(size, static_cast<size_t>(1)), m_opts.contentLen) - 1;
   }
 
 protected:
