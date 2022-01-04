@@ -215,52 +215,6 @@ public:
   }
 
   /**
-   * @brief Append a sequence of components.
-   * @return new Name that copies TLV-VALUE of this name and all components.
-   * @retval Name() any Component is invalid or allocation error.
-   *
-   * If you need to append multiple components, it's recommended to append them all at once,
-   * so that memory allocation and copying occur only once.
-   */
-  [[deprecated("append(region, comp, comp, ...)")]] Name append(
-    Region& region, std::initializer_list<Component> comps) const
-  {
-    size_t nComps = m_nComps, length = m_length;
-    for (const auto& comp : comps) {
-      if (!comp) {
-        return Name();
-      }
-      ++nComps;
-      length += comp.size();
-    }
-
-    uint8_t* value = region.alloc(length);
-    if (value == nullptr) {
-      return Name();
-    }
-
-    uint8_t* pos = value;
-    pos = std::copy_n(m_value, m_length, pos);
-    for (const auto& comp : comps) {
-      pos = std::copy_n(comp.tlv(), comp.size(), pos);
-    }
-    return Name(value, length, nComps);
-  }
-
-  /**
-   * @brief Append a component from naming convention.
-   * @tparam Convention the naming convention.
-   * @return new Name that copies TLV-VALUE of this name and the new component.
-   * @retval Name() any Component is invalid or allocation error.
-   */
-  template<typename Convention, typename Arg>
-  [[deprecated("append(region, Convention(), arg)")]] Name append(Region& region,
-                                                                  const Arg& arg) const
-  {
-    return append(region, Convention(), arg);
-  }
-
-  /**
    * @brief Clone TLV-VALUE into given region.
    * @return new Name that does not reference memory of this Name,
    *         or invalid Name if allocation fails.

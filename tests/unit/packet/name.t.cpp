@@ -173,13 +173,6 @@ TEST(Name, Append)
   EXPECT_THAT(std::vector<uint8_t>(name2.value(), name2.value() + name2.length()),
               g::ElementsAreArray(wire));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  name2 = name.append(region, { comp1, comp2, comp1, comp3 });
-#pragma GCC diagnostic pop
-  EXPECT_THAT(std::vector<uint8_t>(name2.value(), name2.value() + name2.length()),
-              g::ElementsAreArray(wire));
-
   name2 = name.append(region, comp1, Component(), comp2); // invalid component
   EXPECT_FALSE(!!name2);
 }

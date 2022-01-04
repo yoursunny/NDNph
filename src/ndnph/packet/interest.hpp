@@ -17,21 +17,13 @@ encodeFwHint(Encoder& encoder, const Name& fwHint)
   if (!fwHint) {
     return false;
   }
-  return encoder.prependTlv(TT::ForwardingHint, [&fwHint](Encoder& encoder) {
-    return encoder.prependTlv(
-      TT::Delegation, [](Encoder& encoder) { encoder.prependTlv(TT::Preference, tlv::NNI(0)); },
-      fwHint);
-  });
+  return encoder.prependTlv(TT::ForwardingHint, fwHint);
 }
 
 inline bool
 decodeFwHint(const Decoder::Tlv& d, Name* target)
 {
-  return EvDecoder::decode(d, { TT::ForwardingHint },
-                           EvDecoder::def<TT::Delegation>([target](const Decoder::Tlv& d) {
-                             return EvDecoder::decode(d, {}, EvDecoder::defIgnore<TT::Preference>(),
-                                                      EvDecoder::def<TT::Name>(target));
-                           }));
+  return EvDecoder::decode(d, { TT::ForwardingHint }, EvDecoder::def<TT::Name>(target));
 }
 
 /** @brief Fields in parameterized/signed Interest. */

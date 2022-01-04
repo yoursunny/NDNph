@@ -55,13 +55,6 @@ TEST(Convention, Segment)
 
   uint64_t segment = name[-1].as<convention::Segment>();
   EXPECT_EQ(segment, 700);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  name = name.append<convention::Segment>(region, 701);
-#pragma GCC diagnostic pop
-  EXPECT_EQ(test::toString(name[-1]), "50=%02%BD");
-  EXPECT_TRUE(name[-1].is<convention::Segment>());
 }
 
 } // namespace
