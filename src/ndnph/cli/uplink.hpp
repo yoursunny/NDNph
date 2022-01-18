@@ -22,6 +22,7 @@ openMemif(const char* socketName, int* mtu)
   return &face;
 #else
   (void)socketName;
+  (void)mtu;
   return nullptr;
 #endif // NDNPH_PORT_TRANSPORT_MEMIF
 }

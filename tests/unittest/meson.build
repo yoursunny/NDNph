@@ -1,6 +1,8 @@
-gmock = dependency('gmock', required: false)
-gtest = dependency('gtest', main: true, required: false)
-if gmock.found() and gtest.found() and has_all_linux_deps
+if has_all_linux_deps
+  subproject('gtest')
+  gmock = dependency('gmock')
+  gtest = dependency('gtest_main')
+
   unittest_exe = executable('unittest',
     unittest_files,
     dependencies: [lib_dep, gmock, gtest],

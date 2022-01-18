@@ -17,25 +17,11 @@ jobs:
           sudo bash ./llvm.sh 11
           sudo apt-get install --no-install-recommends clang-11 clang-format-11 lcov libboost-dev lld-11 llvm-11 ninja-build
           pip install --user meson
-      - name: download Google Test
-        uses: actions/checkout@v2
-        with:
-          repository: google/googletest
-          ref: 2d924d7a971e9667d76ad09727fb2402b4f8a1e3
-          path: googletest
-      - name: install Google Test
-        run: |
-          cd $HOME
-          mv $GITHUB_WORKSPACE/googletest $HOME/
-          mkdir gtest-build && cd gtest-build
-          cmake -G Ninja ../googletest
-          ninja
-          sudo ninja install
       - name: download Mbed TLS
         uses: actions/checkout@v2
         with:
           repository: ARMmbed/mbedtls
-          ref: v2.16.11
+          ref: v2.16.12
           path: mbedtls
       - name: install Mbed TLS
         run: |

@@ -1,3 +1,7 @@
+cmake = import('cmake')
+fs = import('fs')
+cpp = meson.get_compiler('cpp')
+
 conf = configuration_data()
 
 boost = dependency('boost', required: false)
@@ -7,27 +11,27 @@ endif
 
 conf.set('NDNPH_PORT_FS_LINUX', '')
 
-mbedcrypto = meson.get_compiler('cpp').find_library('mbedcrypto', required: false)
+mbedcrypto = cpp.find_library('mbedcrypto', has_headers: ['mbedtls/ecdh.h'])
 if mbedcrypto.found()
   conf.set('NDNPH_HAVE_MBED', '')
 endif
 
-have_urandom = not meson.is_cross_build() and run_command('test', '-r', '/dev/urandom').returncode() == 0
+have_urandom = not meson.is_cross_build() and fs.exists('/dev/urandom')
 if have_urandom
   conf.set('NDNPH_PORT_RANDOM_URANDOM', '')
 endif
 
-have_socket_h = meson.get_compiler('cpp').has_header('sys/socket.h')
+have_socket_h = cpp.has_header('sys/socket.h')
 if have_socket_h
   conf.set('NDNPH_PORT_TRANSPORT_SOCKET', '')
 endif
 
-libmemif = meson.get_compiler('cpp').find_library('memif', required: false)
-if libmemif.found() and meson.get_compiler('cpp').has_header('libmemif.h')
+libmemif = cpp.find_library('memif', has_headers: ['libmemif.h'], required: false)
+if libmemif.found()
   conf.set('NDNPH_PORT_TRANSPORT_MEMIF', '')
 endif
 
-have_this_thread = meson.get_compiler('cpp').compiles('''
+have_this_thread = cpp.compiles('''
 #include <chrono>
 #include <thread>
 int main()
