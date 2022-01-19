@@ -19,7 +19,7 @@ Packet encoding and decoding
 * Interest and Data
   * [v0.3](https://named-data.net/doc/NDN-packet-spec/0.3/) format only
   * TLV evolvability: yes
-  * forwarding hint: yes, limited to one delegation name
+  * forwarding hint: yes, limited to one name
 * [NDNLPv2](https://redmine.named-data.net/projects/nfd/wiki/NDNLPv2)
   * fragmentation and reassembly: yes, requires in-order delivery
   * Nack: partial
@@ -66,9 +66,8 @@ For Linux,
    * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
    * [Mbed TLS](https://github.com/ARMmbed/mbedtls) 2.16+, install from source or Ubuntu 20.04 package `libmbedtls-dev`
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
-   * [libmemif](https://docs.fd.io/vpp/21.01.1/dc/db3/libmemif_build_doc.html), install from source
-   * [Google Test](https://github.com/google/googletest), install from source (only needed by unit tests)
-   * Note: all dependencies are optional, but omitting a dependency would necessitate extra porting work
+   * [libmemif](https://docs.fd.io/vpp/21.10/dc/db3/libmemif_build_doc.html), install from source
+   * Note: all dependencies are optional, but omitting a dependency may necessitate extra porting work
 2. Create build directory: `meson build`
 3. Enter build directory and execute build: `cd build && ninja`
 4. Run unit test (optional): `ninja test`
