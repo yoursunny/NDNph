@@ -48,7 +48,7 @@ TEST(Segment, Consumer)
     EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
     EXPECT_EQ(classify.getType(), lp::PacketClassify::Type::Interest);
     Interest interest = region.create<Interest>();
-    assert(!!interest);
+    NDNPH_ASSERT(!!interest);
     EXPECT_TRUE(classify.decodeInterest(interest));
 
     const Name& interestName = interest.getName();
@@ -63,7 +63,7 @@ TEST(Segment, Consumer)
           timeA0 = now;
 
           Data data = region.create<Data>();
-          assert(!!data);
+          NDNPH_ASSERT(!!data);
           data.setName(nameA1);
           std::vector<uint8_t> content({ 0xA0, 0xA1 });
           data.setContent(tlv::Value(content.data(), content.size()));
@@ -76,7 +76,7 @@ TEST(Segment, Consumer)
           timeA0 = now;
 
           Data data = region.create<Data>();
-          assert(!!data);
+          NDNPH_ASSERT(!!data);
           data.setName(nameA0);
           std::vector<uint8_t> content({ 0xA2, 0xA3 });
           data.setContent(tlv::Value(content.data(), content.size()));
@@ -91,7 +91,7 @@ TEST(Segment, Consumer)
       switch (++countA1) {
         case 1: { // reply OK
           Data data = region.create<Data>();
-          assert(!!data);
+          NDNPH_ASSERT(!!data);
           data.setName(nameA1);
           std::vector<uint8_t> content({ 0xA4, 0xA5 });
           data.setContent(tlv::Value(content.data(), content.size()));
@@ -164,7 +164,7 @@ TEST(Segment, Producer)
     } else {
       EXPECT_CALL(transport, doSend).WillOnce([&](std::vector<uint8_t> wire, uint64_t) {
         Data data = region.create<Data>();
-        assert(!!data);
+        NDNPH_ASSERT(!!data);
         EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(data));
         EXPECT_EQ(data.getName(),
                   Name::parse(region, dataName == nullptr ? interestName : dataName));
@@ -174,7 +174,7 @@ TEST(Segment, Producer)
       });
     }
     Interest interest = region.create<Interest>();
-    assert(!!interest);
+    NDNPH_ASSERT(!!interest);
     interest.setName(Name::parse(region, interestName));
     interest.setCanBePrefix(canBePrefix);
     transport.receive(interest);

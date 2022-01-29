@@ -195,7 +195,7 @@ private:
 
   void append(const Value& value)
   {
-    assert(value.valid);
+    NDNPH_ASSERT(value.valid);
     m_nonces[m_pos] = value;
     if (++m_pos == m_nonces.size()) {
       m_pos = 0;

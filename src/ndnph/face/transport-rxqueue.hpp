@@ -67,7 +67,7 @@ protected:
       } else {
         ok = m_transport.m_rxQ.push(m_item);
       }
-      assert(ok);
+      NDNPH_ASSERT(ok);
     }
 
     operator bool() const

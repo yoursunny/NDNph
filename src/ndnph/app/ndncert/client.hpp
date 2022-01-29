@@ -184,7 +184,7 @@ public:
                               detail::SessionKey& sessionKey, detail::ISigPolicy& signingPolicy,
                               const EcPrivateKey& signer) const
   {
-    assert(challenge != nullptr);
+    NDNPH_ASSERT(challenge != nullptr);
     Encoder encoder(region);
     encoder.prepend(
       [=](Encoder& encoder) { encoder.prependTlv(TT::SelectedChallenge, challenge->getId()); },

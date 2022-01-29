@@ -127,7 +127,7 @@ public:
   /** @brief Set a parameter. */
   bool set(tlv::Value key, tlv::Value value)
   {
-    assert(!!key);
+    NDNPH_ASSERT(!!key);
     for (auto& p : m_kv) {
       if (!p.first) {
         p = std::make_pair(key, value);

@@ -26,7 +26,7 @@ TEST(Rdr, Producer)
     } else {
       EXPECT_CALL(transport, doSend).WillOnce([&](std::vector<uint8_t> wire, uint64_t) {
         Data data = region.create<Data>();
-        assert(!!data);
+        NDNPH_ASSERT(!!data);
         EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(data));
 
         const Name& name = data.getName();
@@ -48,7 +48,7 @@ TEST(Rdr, Producer)
       });
     }
     Interest interest = region.create<Interest>();
-    assert(!!interest);
+    NDNPH_ASSERT(!!interest);
     interest.setName(Name::parse(region, interestName));
     interest.setCanBePrefix(canBePrefix);
     interest.setMustBeFresh(mustBeFresh);

@@ -273,7 +273,7 @@ public:
       S()
       {
         int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
-        assert(res == 0);
+        NDNPH_ASSERT(res == 0);
       }
       mbedtls_ecp_group grp;
     } s;

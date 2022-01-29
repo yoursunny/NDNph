@@ -55,7 +55,7 @@ jobs:
           fi
       - name: build and test with LLVM
         run: |
-          LDFLAGS='-fuse-ld=lld-11 -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.txt --buildtype debugoptimized -Dwerror=true -Dunittest=enabled -Dprograms=enabled
+          LDFLAGS='-fuse-ld=lld-11 -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.txt --buildtype debugoptimized -Db_ndebug=true -Dwerror=true -Dunittest=enabled -Dprograms=enabled
           cd build.llvm
           if ! ninja test; then
             cat meson-logs/testlog.txt && false

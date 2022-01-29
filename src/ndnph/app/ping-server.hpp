@@ -30,7 +30,7 @@ private:
 
     StaticRegion<1024> region;
     Data data = region.create<Data>();
-    assert(!!data);
+    NDNPH_ASSERT(!!data);
     data.setName(interest.getName());
     data.setFreshnessPeriod(1);
     reply(data.sign(m_signer));

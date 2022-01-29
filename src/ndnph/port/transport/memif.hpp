@@ -198,8 +198,8 @@ private:
       return false;
     }
 
-    assert(b.len >= pktLen);
-    assert((b.flags & MEMIF_BUFFER_FLAG_NEXT) == 0);
+    NDNPH_ASSERT(b.len >= pktLen);
+    NDNPH_ASSERT((b.flags & MEMIF_BUFFER_FLAG_NEXT) == 0);
     std::copy_n(pkt, pktLen, static_cast<uint8_t*>(b.data));
     b.len = pktLen;
 
@@ -215,7 +215,7 @@ private:
   static int handleConnect(memif_conn_handle_t conn, void* self0)
   {
     MemifTransport* self = reinterpret_cast<MemifTransport*>(self0);
-    assert(self->m_conn == conn);
+    NDNPH_ASSERT(self->m_conn == conn);
     self->m_isUp = true;
 #ifdef NDNPH_MEMIF_DEBUG
     fprintf(stderr, "MemifTransport connected\n");
@@ -231,7 +231,7 @@ private:
   static int handleDisconnect(memif_conn_handle_t conn, void* self0)
   {
     MemifTransport* self = reinterpret_cast<MemifTransport*>(self0);
-    assert(self->m_conn == conn);
+    NDNPH_ASSERT(self->m_conn == conn);
     self->m_isUp = false;
 #ifdef NDNPH_MEMIF_DEBUG
     fprintf(stderr, "MemifTransport disconnected\n");
@@ -242,7 +242,7 @@ private:
   static int handleInterrupt(memif_conn_handle_t conn, void* self0, uint16_t qid)
   {
     MemifTransport* self = reinterpret_cast<MemifTransport*>(self0);
-    assert(self->m_conn == conn);
+    NDNPH_ASSERT(self->m_conn == conn);
 
     std::array<memif_buffer_t, NDNPH_MEMIF_RXBURST> burst;
     uint16_t nRx = 0;

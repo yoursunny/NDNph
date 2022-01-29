@@ -24,6 +24,12 @@
 #include <type_traits>
 #include <utility>
 
+#ifdef NDEBUG
+#define NDNPH_ASSERT(x) (void)(x)
+#else
+#define NDNPH_ASSERT(x) assert(x)
+#endif
+
 /** @brief SHA256 digest length. */
 #define NDNPH_SHA256_LEN 32
 

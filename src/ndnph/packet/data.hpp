@@ -83,14 +83,14 @@ public:
       TT::Data,
       [=](Encoder& encoder) {
         uint8_t* room = encoder.prependRoom(signedPortion.size());
-        assert(room != nullptr);
+        NDNPH_ASSERT(room != nullptr);
         if (room != signedPortion.begin()) {
           std::memmove(room, signedPortion.begin(), signedPortion.size());
         }
       },
       [=](Encoder& encoder) {
         uint8_t* room = encoder.prependRoom(sigLen);
-        assert(room != nullptr);
+        NDNPH_ASSERT(room != nullptr);
         if (room != sigBuf) {
           std::memmove(room, sigBuf, sigLen);
         }

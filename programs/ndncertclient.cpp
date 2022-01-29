@@ -58,7 +58,7 @@ loadCaProfile()
 
   ndnph::StaticRegion<2048> temp;
   ndnph::Data data = temp.create<ndnph::Data>();
-  assert(!!data);
+  NDNPH_ASSERT(!!data);
   if (!ndnph::Decoder(buffer, f.gcount()).decode(data)) {
     return false;
   }

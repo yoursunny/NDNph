@@ -265,9 +265,9 @@ protected:
   void SetUp() override
   {
     interest = cRegion.create<Interest>();
-    assert(!!interest);
+    NDNPH_ASSERT(!!interest);
     data = pRegion.create<Data>();
-    assert(!!data);
+    NDNPH_ASSERT(!!data);
   }
 
   void setupRespond(bool withPitToken = true)
@@ -319,7 +319,7 @@ TEST_F(FacePendingFixture, NormalMatch)
 TEST_F(FacePendingFixture, DigestMatch)
 {
   auto data1 = pRegion.create<Data>();
-  assert(!!data1);
+  NDNPH_ASSERT(!!data1);
   data1.setName(Name::parse(pRegion, "/A/B"));
   data.decodeFrom(data1.sign(NullKey::get()));
 

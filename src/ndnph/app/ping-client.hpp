@@ -57,12 +57,12 @@ private:
   {
     StaticRegion<1024> region;
     Component seqNumComp = Component::from(region, TT::GenericNameComponent, tlv::NNI8(++m_seqNum));
-    assert(!!seqNumComp);
+    NDNPH_ASSERT(!!seqNumComp);
     Name name = m_prefix.append(region, seqNumComp);
-    assert(!!name);
+    NDNPH_ASSERT(!!name);
 
     Interest interest = region.create<Interest>();
-    assert(!!interest);
+    NDNPH_ASSERT(!!interest);
     interest.setName(name);
     interest.setMustBeFresh(true);
 

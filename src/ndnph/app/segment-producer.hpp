@@ -112,7 +112,7 @@ private:
 
     StaticRegion<regionCap> region;
     Data data = region.template create<Data>();
-    assert(!!data);
+    NDNPH_ASSERT(!!data);
     data.setName(m_prefix.append(region, SegmentConvention(), segment));
     data.setFreshnessPeriod(m_opts.freshnessPeriod);
     data.setIsFinalBlock(segment == m_lastSegment);

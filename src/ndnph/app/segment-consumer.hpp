@@ -186,7 +186,7 @@ private:
 
     StaticRegion<regionCap> region;
     Interest interest = region.template create<Interest>();
-    assert(!!interest);
+    NDNPH_ASSERT(!!interest);
     interest.setName(m_prefix.append(region, SegmentConvention(), m_segment));
     m_pending.send(interest, m_opts.retxDelay);
   }

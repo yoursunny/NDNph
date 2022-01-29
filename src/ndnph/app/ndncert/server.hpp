@@ -310,7 +310,7 @@ public:
     , m_challenges(challenges)
     , m_signingPolicy(detail::makeISigPolicy())
   {
-    assert(m_challengeRegion != nullptr);
+    NDNPH_ASSERT(m_challengeRegion != nullptr);
     for (Challenge* ch : challenges) {
       if (ch != nullptr) {
         ch->clear();
@@ -537,7 +537,7 @@ private:
 
     StaticRegion<2048> temp;
     ndnph::Data data = temp.create<ndnph::Data>();
-    assert(!!data);
+    NDNPH_ASSERT(!!data);
 
     m_region.reset();
     if (!(m_cert.makeDecoder().decode(data) && m_pub.import(temp, data) &&

@@ -216,7 +216,7 @@ protected:
     {
       StaticRegion<128> region;
       auto interest = region.create<Interest>();
-      assert(!!interest);
+      NDNPH_ASSERT(!!interest);
       interest.setName(name);
       interest.setCanBePrefix(canBePrefix);
       return match(data, interest);

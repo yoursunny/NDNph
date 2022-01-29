@@ -127,7 +127,7 @@ private:
 
     StaticRegion<1024> region;
     Data data = region.create<Data>();
-    assert(!!data);
+    NDNPH_ASSERT(!!data);
     data.setName(m_rdrPrefix.append(region, getMetadataComponent(), convention::Version(),
                                     m_version, convention::Segment(), 0));
     data.setFreshnessPeriod(m_freshness);
@@ -199,7 +199,7 @@ public:
 
     StaticRegion<1024> region;
     auto interest = region.create<Interest>();
-    assert(!!interest);
+    NDNPH_ASSERT(!!interest);
     interest.setName(m_rdrPrefix.append(region, getMetadataComponent()));
     interest.setCanBePrefix(true);
     interest.setMustBeFresh(true);
