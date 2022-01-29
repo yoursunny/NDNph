@@ -11,7 +11,7 @@ endif
 
 conf.set('NDNPH_PORT_FS_LINUX', '')
 
-mbedcrypto = cpp.find_library('mbedcrypto', has_headers: ['mbedtls/ecdh.h'])
+mbedcrypto = cpp.find_library('mbedcrypto', has_headers: ['mbedtls/ecdh.h'], required: false)
 if mbedcrypto.found()
   conf.set('NDNPH_HAVE_MBED', '')
 endif
