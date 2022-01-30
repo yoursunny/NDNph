@@ -10,8 +10,8 @@ class TempDirFixture : public g::Test
 protected:
   void SetUp() override
   {
-    tempDir = "/tmp/NDNph-test-XXXXXX";
-    ::mkdtemp(const_cast<char*>(tempDir.data()));
+    char dir[PATH_MAX] = "/tmp/NDNph-test-XXXXXX";
+    tempDir = ::mkdtemp(dir);
   }
 
   void TearDown() override

@@ -203,7 +203,7 @@ getValidity(const Data& data)
   }
 
   auto decoder = sigInfo->extensions.makeDecoder();
-  for (auto tlv : decoder) {
+  for (const auto& tlv : decoder) {
     if (vp.decodeFrom(tlv)) {
       return vp;
     }

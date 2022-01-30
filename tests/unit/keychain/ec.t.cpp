@@ -11,6 +11,9 @@ using EcKeyFixture = TempDirFixture;
 
 TEST_F(EcKeyFixture, SignVerify)
 {
+  KeyChain keyChain;
+  ASSERT_TRUE(keyChain.open(tempDir.data()));
+
   DynamicRegion regionA0(4096);
   Name nameKA = Name::parse(regionA0, "/KA");
   EcPrivateKey pvtA;
@@ -20,22 +23,16 @@ TEST_F(EcKeyFixture, SignVerify)
   EXPECT_TRUE(certificate::isKeyName(pubA0.getName()));
 
   DynamicRegion regionA1(4096);
+  keyChain.certs.set("a", pubA0.selfSign(regionA1, ValidityPeriod::getMax(), pvtA), regionA1);
+  regionA1.reset();
   EcPublicKey pubA1;
   {
-    auto certA = pubA0.selfSign(regionA1, ValidityPeriod::getMax(), pvtA);
-    ASSERT_FALSE(!certA);
-
-    Data dataA = regionA1.create<Data>();
-    ASSERT_TRUE(dataA.decodeFrom(certA));
-
+    Data dataA = keyChain.certs.get("a", regionA1);
     EXPECT_TRUE(ec::isCertificate(dataA));
     ASSERT_TRUE(pubA1.import(regionA1, dataA));
   }
   EXPECT_EQ(pubA1.getName(), pubA0.getName());
   testSignVerify<Data>(pvtA, pubA0, pvtA, pubA1, true, true);
-
-  KeyChain keyChain;
-  ASSERT_TRUE(keyChain.open(tempDir.data()));
 
   DynamicRegion regionB0(4096);
   Name nameKB = certificate::toKeyName(regionB0, Name::parse(regionB0, "/KB"));

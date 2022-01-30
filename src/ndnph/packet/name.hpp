@@ -282,7 +282,7 @@ public:
     if (m_nComps == 0) {
       count += p.print('/');
     } else {
-      for (auto comp : *this) {
+      for (const auto& comp : *this) {
         count += p.print('/');
         // count += p.print(comp);
         count += comp.printTo(p);
@@ -420,7 +420,7 @@ operator<<(std::ostream& os, const Name& name)
   if (name.size() == 0) {
     return os << '/';
   }
-  for (auto comp : name) {
+  for (const auto& comp : name) {
     os << '/' << comp;
   }
   return os;

@@ -139,7 +139,7 @@ public:
   }
 
   /**
-   * @brief Read @p buffer into @p filename file.
+   * @brief Write @p buffer into @p filename file.
    * @return whether success.
    */
   bool write(const char* filename, const uint8_t* buffer, size_t count)
