@@ -1,6 +1,8 @@
 #ifndef NDNPH_PORT_TRANSPORT_PORT_HPP
 #define NDNPH_PORT_TRANSPORT_PORT_HPP
 
+#include "socket/ipv6-endpointid.hpp"
+
 #ifdef NDNPH_PORT_TRANSPORT_CUSTOM
 // Custom transport port will be included later.
 #else
