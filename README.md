@@ -31,7 +31,7 @@ Packet encoding and decoding
 
 Transports
 
-* UDP: unicast only
+* UDP: IPv4 and IPv6, unicast only
 * libmemif
 
 KeyChain

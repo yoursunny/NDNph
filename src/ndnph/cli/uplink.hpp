@@ -44,17 +44,27 @@ openUdp()
   if (env != nullptr && env[0] == '1') {
     transport.beginListen(port);
   } else {
-    sockaddr_in raddr{};
-    raddr.sin_family = AF_INET;
-    raddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    raddr.sin_port = htons(port);
-    env = getenv("NDNPH_UPLINK_UDP");
+    sockaddr_in raddr4{};
+    raddr4.sin_family = AF_INET;
+    raddr4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    raddr4.sin_port = htons(port);
 
-    if (env != nullptr && inet_aton(env, &raddr.sin_addr) == 0) {
-      return nullptr;
+    sockaddr_in6 raddr6{};
+    raddr6.sin6_family = AF_INET6;
+    raddr6.sin6_port = raddr4.sin_port;
+
+    bool useV6 = false;
+
+    env = getenv("NDNPH_UPLINK_UDP");
+    if (env != nullptr) {
+      if (inet_pton(raddr6.sin6_family, env, &raddr6.sin6_addr)) {
+        useV6 = true;
+      } else if (!inet_pton(raddr4.sin_family, env, &raddr4.sin_addr)) {
+        return nullptr;
+      }
     }
 
-    if (!transport.beginTunnel(&raddr)) {
+    if (!(useV6 ? transport.beginTunnel(&raddr6) : transport.beginTunnel(&raddr4))) {
       return nullptr;
     }
   }

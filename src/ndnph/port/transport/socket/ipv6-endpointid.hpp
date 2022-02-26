@@ -26,9 +26,9 @@ public:
    * @param port port number.
    * @return 64-bit EndpointId.
    */
-  uint64_t encode(const uint8_t* addr, int addrLen, uint16_t port)
+  uint64_t encode(const uint8_t* addr, size_t addrLen, uint16_t port)
   {
-    EndpointId ep = { 0 };
+    EndpointId ep{};
     ep.port = port;
     if (addrLen == 4) {
       std::copy_n(addr, 4, ep.v4);
@@ -67,9 +67,9 @@ public:
    * @param [out] port port number.
    * @return address length; 0 indicates error.
    */
-  int decode(uint64_t endpointId, uint8_t addr[16], uint16_t* port)
+  size_t decode(uint64_t endpointId, uint8_t addr[16], uint16_t* port)
   {
-    EndpointId ep = { 0 };
+    EndpointId ep{};
     ep.id = endpointId;
     *port = ep.port;
     if (!ep.isV6) {

@@ -2,6 +2,7 @@
 #define NDNPH_PORT_TRANSPORT_SOCKET_UDP_UNICAST_HPP
 
 #include "../../../face/transport-rxqueue.hpp"
+#include "ipv6-endpointid.hpp"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -22,26 +23,72 @@ public:
     : DynamicRxQueueMixin(bufLen)
   {}
 
-  /** @brief Start listening on given local address. */
+  ~UdpUnicastTransport() override
+  {
+    end();
+  }
+
+  /**
+   * @brief Start listening on given local IPv4 address.
+   * @param laddr local IPv4 address and UDP port.
+   * @return whether success.
+   */
   bool beginListen(const sockaddr_in* laddr)
   {
-    return (createSocket() && bindSocket(laddr)) || closeSocketOnError();
+    return (createSocket(laddr->sin_family) &&
+            bindSocket(reinterpret_cast<const sockaddr*>(laddr))) ||
+           closeSocketOnError();
   }
 
-  /** @brief Start listening on given local port. */
+  /**
+   * @brief Start listening on given local IPv6 address.
+   * @param laddr local IPv6 address and UDP port.
+   * @param v6only IPV6_V6ONLY socket option: 0=no, 1=yes, -1=unchanged.
+   * @return whether success.
+   */
+  bool beginListen(const sockaddr_in6* laddr, int v6only = -1)
+  {
+    return (createSocket(laddr->sin6_family) && changeV6Only(v6only) &&
+            bindSocket(reinterpret_cast<const sockaddr*>(laddr))) ||
+           closeSocketOnError();
+  }
+
+  /**
+   * @brief Start listening on given local port for both IPv4 and IPv6.
+   * @return whether success.
+   */
   bool beginListen(uint16_t localPort = 6363)
   {
-    sockaddr_in laddr{};
-    laddr.sin_family = AF_INET;
-    laddr.sin_addr.s_addr = INADDR_ANY;
-    laddr.sin_port = htons(localPort);
-    return beginListen(&laddr);
+    sockaddr_in6 laddr{};
+    laddr.sin6_family = AF_INET6;
+    laddr.sin6_addr = in6addr_any;
+    laddr.sin6_port = htons(localPort);
+    return beginListen(&laddr, 0);
   }
 
-  /** @brief Connect to given remote address. */
+  /**
+   * @brief Connect to given remote IPv4 address.
+   * @param raddr remote IPv4 address and UDP port.
+   * @return whether success.
+   */
   bool beginTunnel(const sockaddr_in* raddr)
   {
-    return (createSocket() && connectSocket(raddr)) || closeSocketOnError();
+    return (createSocket(raddr->sin_family) &&
+            connectSocket(reinterpret_cast<const sockaddr*>(raddr))) ||
+           closeSocketOnError();
+  }
+
+  /**
+   * @brief Connect to given remote IPv6 address.
+   * @param raddr remote IPv6 address and UDP port.
+   * @param v6only IPV6_V6ONLY socket option: 0=no, 1=yes, -1=unchanged.
+   * @return whether success.
+   */
+  bool beginTunnel(const sockaddr_in6* raddr, int v6only = -1)
+  {
+    return (createSocket(raddr->sin6_family) && changeV6Only(v6only) &&
+            connectSocket(reinterpret_cast<const sockaddr*>(raddr))) ||
+           closeSocketOnError();
   }
 
   /**
@@ -80,16 +127,26 @@ private:
 
   void doLoop() final
   {
+    const auto& p = getAddressFamilyParams(m_af);
+    uint8_t raddr[std::max(sizeof(sockaddr_in), sizeof(sockaddr_in6))];
+    iovec iov{};
     while (auto r = receiving()) {
-      sockaddr_in raddr = {};
-      socklen_t raddrLen = sizeof(raddr);
-      ssize_t pktLen =
-        recvfrom(m_fd, r.buf(), r.bufLen(), 0, reinterpret_cast<sockaddr*>(&raddr), &raddrLen);
-      if (pktLen < 0) {
+      iov.iov_base = r.buf();
+      iov.iov_len = r.bufLen();
+      msghdr msg{};
+      msg.msg_name = raddr;
+      msg.msg_namelen = sizeof(raddr);
+      msg.msg_iov = &iov;
+      msg.msg_iovlen = 1;
+
+      ssize_t pktLen = recvmsg(m_fd, &msg, 0);
+      if (pktLen < 0 || (msg.msg_flags & MSG_TRUNC) != 0 || msg.msg_namelen != p.nameLen) {
         clearSocketError();
         break;
       }
-      uint64_t endpointId = (static_cast<uint64_t>(raddr.sin_port) << 32) | raddr.sin_addr.s_addr;
+
+      in_port_t port = *reinterpret_cast<const in_port_t*>(raddr + p.portOff);
+      uint64_t endpointId = m_endpoints.encode(raddr + p.ipOff, p.ipLen, port);
       r(pktLen, endpointId);
     }
 
@@ -98,17 +155,18 @@ private:
 
   bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final
   {
-    const sockaddr* raddr = nullptr;
+    const auto& p = getAddressFamilyParams(m_af);
+    uint8_t raddr[std::max(sizeof(sockaddr_in), sizeof(sockaddr_in6))];
+    const sockaddr* raddrPtr = nullptr;
     socklen_t raddrLen = 0;
-    sockaddr_in raddrEndpoint;
-    if (endpointId != 0) {
-      raddrEndpoint.sin_family = AF_INET;
-      raddrEndpoint.sin_addr.s_addr = endpointId;
-      raddrEndpoint.sin_port = endpointId >> 32;
-      raddr = reinterpret_cast<const sockaddr*>(&raddrEndpoint);
-      raddrLen = sizeof(raddrEndpoint);
+    if (endpointId != 0 &&
+        m_endpoints.decode(endpointId, raddr + p.ipOff,
+                           reinterpret_cast<in_port_t*>(raddr + p.portOff)) == p.ipLen) {
+      raddrPtr = reinterpret_cast<const sockaddr*>(raddr);
+      raddrLen = p.nameLen;
     }
-    ssize_t sentLen = sendto(m_fd, pkt, pktLen, 0, raddr, raddrLen);
+
+    ssize_t sentLen = sendto(m_fd, pkt, pktLen, 0, raddrPtr, raddrLen);
     if (sentLen >= 0) {
       return true;
     }
@@ -117,16 +175,57 @@ private:
   }
 
 private:
-  bool createSocket()
+  struct AddressFamilyParams
+  {
+    socklen_t nameLen;
+    ptrdiff_t ipOff;
+    socklen_t ipLen;
+    ptrdiff_t portOff;
+    const char* fmtBracketL;
+    const char* fmtBracketR;
+  };
+
+  static const AddressFamilyParams& getAddressFamilyParams(sa_family_t family)
+  {
+    static const AddressFamilyParams inet = {
+      .nameLen = sizeof(sockaddr_in),
+      .ipOff = offsetof(sockaddr_in, sin_addr),
+      .ipLen = sizeof(in_addr),
+      .portOff = offsetof(sockaddr_in, sin_port),
+      .fmtBracketL = "",
+      .fmtBracketR = "",
+    };
+    static const AddressFamilyParams inet6 = {
+      .nameLen = sizeof(sockaddr_in6),
+      .ipOff = offsetof(sockaddr_in6, sin6_addr),
+      .ipLen = sizeof(in6_addr),
+      .portOff = offsetof(sockaddr_in6, sin6_port),
+      .fmtBracketL = "",
+      .fmtBracketR = "",
+    };
+    switch (family) {
+      case AF_INET:
+        return inet;
+      case AF_INET6:
+        return inet6;
+      default:
+        NDNPH_ASSERT(false);
+        return inet;
+    }
+  }
+
+  bool createSocket(sa_family_t family)
   {
     end();
-    m_fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    m_fd = socket(family, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (m_fd < 0) {
 #ifdef NDNPH_SOCKET_DEBUG
       perror("UdpUnicastTransport socket()");
 #endif
       return false;
     }
+    m_af = family;
+
     const int yes = 1;
     if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
 #ifdef NDNPH_SOCKET_DEBUG
@@ -137,32 +236,59 @@ private:
     return true;
   }
 
-  bool bindSocket(const sockaddr_in* laddr)
+  bool changeV6Only(int v6only)
   {
-    if (bind(m_fd, reinterpret_cast<const sockaddr*>(laddr), sizeof(*laddr)) < 0) {
+    if (v6only < 0) {
+      return true;
+    }
+    int value = v6only > 0 ? 1 : 0;
+    if (setsockopt(m_fd, IPPROTO_IPV6, IPV6_V6ONLY, &value, sizeof(value)) < 0) {
+#ifdef NDNPH_SOCKET_DEBUG
+      perror("UdpUnicastTransport setsockopt(IPV6_V6ONLY)");
+#endif
+      return false;
+    }
+    return true;
+  }
+
+  bool bindSocket(const sockaddr* laddr)
+  {
+    const auto& p = getAddressFamilyParams(laddr->sa_family);
+    if (bind(m_fd, laddr, p.nameLen) < 0) {
 #ifdef NDNPH_SOCKET_DEBUG
       perror("UdpUnicastTransport bind()");
 #endif
       return false;
     }
 #ifdef NDNPH_SOCKET_DEBUG
-    fprintf(stderr, "UdpUnicastTransport bind(%s:%" PRIu16 ")\n", inet_ntoa(laddr->sin_addr),
-            ntohs(laddr->sin_port));
+    char addrBuf[std::max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
+    inet_ntop(laddr->sa_family, reinterpret_cast<const uint8_t*>(laddr) + p.ipOff, addrBuf,
+              sizeof(addrBuf));
+    in_port_t port =
+      *reinterpret_cast<const in_port_t*>(reinterpret_cast<const uint8_t*>(laddr) + p.portOff);
+    fprintf(stderr, "UdpUnicastTransport bind(%s%s%s:%" PRIu16 ")\n", p.fmtBracketL, addrBuf,
+            p.fmtBracketR, ntohs(port));
 #endif
     return true;
   }
 
-  bool connectSocket(const sockaddr_in* raddr)
+  bool connectSocket(const sockaddr* raddr)
   {
-    if (connect(m_fd, reinterpret_cast<const sockaddr*>(raddr), sizeof(*raddr)) < 0) {
+    const auto& p = getAddressFamilyParams(raddr->sa_family);
+    if (connect(m_fd, raddr, p.nameLen) < 0) {
 #ifdef NDNPH_SOCKET_DEBUG
       perror("UdpUnicastTransport connect()");
 #endif
       return false;
     }
 #ifdef NDNPH_SOCKET_DEBUG
-    fprintf(stderr, "UdpUnicastTransport connect(%s:%" PRIu16 ")\n", inet_ntoa(raddr->sin_addr),
-            ntohs(raddr->sin_port));
+    char addrBuf[std::max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
+    inet_ntop(raddr->sa_family, reinterpret_cast<const uint8_t*>(raddr) + p.ipOff, addrBuf,
+              sizeof(addrBuf));
+    in_port_t port =
+      *reinterpret_cast<const in_port_t*>(reinterpret_cast<const uint8_t*>(raddr) + p.portOff);
+    fprintf(stderr, "UdpUnicastTransport connect(%s%s%s:%" PRIu16 ")\n", p.fmtBracketL, addrBuf,
+            p.fmtBracketR, ntohs(port));
 #endif
     return true;
   }
@@ -171,6 +297,7 @@ private:
   {
     if (m_fd >= 0) {
       close(m_fd);
+      m_af = AF_UNSPEC;
       m_fd = -1;
       m_mtu = -1;
     }
@@ -191,8 +318,10 @@ private:
   }
 
 private:
+  Ipv6EndpointIdHelper<15> m_endpoints;
   int m_fd = -1;
   ssize_t m_mtu = -1;
+  sa_family_t m_af = AF_UNSPEC;
 };
 
 } // namespace port_transport_socket

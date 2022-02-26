@@ -39,7 +39,7 @@ makeNackWire(int reasonV)
 TEST_P(NackP, LpDecode)
 {
   int reasonV = 0;
-  NackReason reason = {};
+  NackReason reason{};
   std::tie(reasonV, reason) = GetParam();
   auto wire = makeNackWire(reasonV);
 
@@ -59,7 +59,7 @@ TEST_P(NackP, LpDecode)
 TEST_P(NackP, LpEncode)
 {
   int reasonV = 0;
-  NackReason reason = {};
+  NackReason reason{};
   std::tie(reasonV, reason) = GetParam();
   if (reason == NackReason::Unspecified && reasonV >= 0) {
     return; // skip decode-only test case

@@ -107,7 +107,7 @@ TEST(Transport, Ipv6EndpointIdHelper)
   int oldMistaken = 0;
   for (size_t i = 0; i < 50; ++i) {
     SCOPED_TRACE(i);
-    AddrPort n = {};
+    AddrPort n{};
     port::RandomSource::generate(n.addr.data(), n.addr.size());
     port::RandomSource::generate(reinterpret_cast<uint8_t*>(&n.port), sizeof(n.port));
     n.endpointId = h.encode(n.addr.data(), n.addr.size(), n.port);
@@ -116,7 +116,7 @@ TEST(Transport, Ipv6EndpointIdHelper)
     uint64_t endpointId = h.encode(n.addr.data(), n.addr.size(), n.port);
     EXPECT_EQ(endpointId, n.endpointId);
 
-    std::array<uint8_t, 16> addr = {};
+    std::array<uint8_t, 16> addr{};
     uint16_t port = 0;
     int addrLen = h.decode(endpoint4, addr.data(), &port);
     EXPECT_EQ(addrLen, 4);
@@ -150,31 +150,43 @@ TEST(Transport, UdpUnicast)
 {
   uint16_t freePort = 0;
   {
-    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    sockaddr_in6 laddr{};
+    laddr.sin6_family = AF_INET6;
+    laddr.sin6_addr = in6addr_any;
+    int fd = socket(laddr.sin6_family, SOCK_DGRAM, 0);
     ASSERT_GE(fd, 0);
-    sockaddr_in laddr = {};
-    laddr.sin_family = AF_INET;
-    laddr.sin_addr.s_addr = INADDR_ANY;
     socklen_t laddrLen = sizeof(laddr);
     ASSERT_EQ(bind(fd, reinterpret_cast<sockaddr*>(&laddr), laddrLen), 0);
     ASSERT_EQ(getsockname(fd, reinterpret_cast<sockaddr*>(&laddr), &laddrLen), 0);
     ASSERT_EQ(close(fd), 0);
-    freePort = ntohs(laddr.sin_port);
+    freePort = ntohs(laddr.sin6_port);
   }
 
-  UdpUnicastTransport transportA;
-  UdpUnicastTransport transportB;
-  EXPECT_FALSE(transportA.isUp());
-  EXPECT_FALSE(transportB.isUp());
+  UdpUnicastTransport transport4;
+  UdpUnicastTransport transport6;
+  UdpUnicastTransport transportR;
+  EXPECT_FALSE(transport4.isUp());
+  EXPECT_FALSE(transport6.isUp());
+  EXPECT_FALSE(transportR.isUp());
 
-  ASSERT_TRUE(transportA.beginTunnel({ 127, 0, 0, 1 }, freePort));
-  ASSERT_TRUE(transportB.beginListen(freePort));
-  EXPECT_TRUE(transportA.isUp());
-  EXPECT_TRUE(transportB.isUp());
+  ASSERT_TRUE(transport4.beginTunnel({ 127, 0, 0, 1 }, freePort));
+  {
+    sockaddr_in6 addr6{};
+    addr6.sin6_family = AF_INET6;
+    addr6.sin6_port = htons(freePort);
+    addr6.sin6_addr = in6addr_loopback;
+    ASSERT_TRUE(transport6.beginTunnel(&addr6));
+  }
+  ASSERT_TRUE(transportR.beginListen(freePort));
+  EXPECT_TRUE(transport4.isUp());
+  EXPECT_TRUE(transport6.isUp());
+  EXPECT_TRUE(transportR.isUp());
 
-  Face faceA(transportA);
-  Face faceB(transportB);
-  TransportTest(faceA, faceB).run().check();
+  Face face4(transport4);
+  Face face6(transport6);
+  Face faceR(transportR);
+  TransportTest(face4, faceR).run().check();
+  TransportTest(face6, faceR).run().check();
 }
 
 } // namespace

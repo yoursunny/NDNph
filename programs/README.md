@@ -34,7 +34,7 @@ You can create a memif face in NDN-DPDK with this locator:
 
 `NDNPH_UPLINK_UDP_LISTEN=1` enables UDP listen mode.
 
-`NDNPH_UPLINK_UDP` specifies IPv4 address of the uplink router.
+`NDNPH_UPLINK_UDP` specifies IPv4 or IPv6 address of the uplink router.
 The default is `127.0.0.1`, which connects to local NFD over UDP.
 
 `NDNPH_UPLINK_UDP_PORT` specifies UDP port.

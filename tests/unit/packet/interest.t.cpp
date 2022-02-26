@@ -251,7 +251,7 @@ TEST(Interest, MatchImplicitDigest)
     data = data2;
   }
 
-  uint8_t digest[NDNPH_SHA256_LEN] = { 0 };
+  uint8_t digest[NDNPH_SHA256_LEN]{};
   EXPECT_TRUE(data.computeImplicitDigest(digest));
   EXPECT_LT(std::count(digest, digest + NDNPH_SHA256_LEN, 0), NDNPH_SHA256_LEN);
 

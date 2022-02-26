@@ -54,7 +54,8 @@ main(int argc, char** argv)
     static uint16_t i = 0;
     if (++i % 1024 == 0) {
       auto cnt = client->readCounters();
-      printf("%" PRIu32 "I %" PRIu32 "D\n", cnt.nTxInterests, cnt.nRxData);
+      printf("%" PRIu32 "I %" PRIu32 "D %0.2f%%\n", cnt.nTxInterests, cnt.nRxData,
+             100.0 * cnt.nRxData / cnt.nTxInterests);
     }
   }
 }

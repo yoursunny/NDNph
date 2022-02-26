@@ -20,7 +20,7 @@ public:
    */
   static uint64_t now()
   {
-    ::timeval tv = {};
+    ::timeval tv{};
     ::gettimeofday(&tv, nullptr);
     return static_cast<uint64_t>(tv.tv_sec) * 1000000 + static_cast<uint64_t>(tv.tv_usec);
   }
