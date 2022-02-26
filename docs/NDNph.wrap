@@ -1,0 +1,6 @@
+[wrap-git]
+url = https://github.com/yoursunny/NDNph.git
+revision = INSERT-COMMIT-HASH
+
+[provide]
+NDNph = ndnph_dep

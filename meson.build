@@ -4,7 +4,9 @@ project('NDNph', 'cpp',
     'cpp_std=c++11',
     'cpp_eh=none',
     'cpp_rtti=false'
-  ])
+  ],
+  meson_version: '>=0.61.0'
+)
 
 subdir('src')
 

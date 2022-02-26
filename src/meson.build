@@ -46,7 +46,7 @@ endif
 has_all_linux_deps = boost.found() and mbedcrypto.found() and have_urandom and have_socket_h
 
 config_h = configure_file(output: 'NDNph-config.h', configuration: conf)
-lib_dep = declare_dependency(
+ndnph_dep = declare_dependency(
   include_directories: include_directories('.'),
   compile_args: ['-include', 'NDNph-config.h'],
   dependencies: [boost, mbedcrypto, libmemif])

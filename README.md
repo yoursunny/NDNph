@@ -74,3 +74,5 @@ For Linux,
 5. Install headers to system: `sudo ninja install`
 6. Add `#include <NDNph-config.h>` and `#include <NDNph.h>` in your project, and start coding.
 7. Check out the [example programs](programs/) for how to use.
+
+To use as a Meson subproject, copy and modify the [sample Wrap file](docs/NDNph.wrap).
