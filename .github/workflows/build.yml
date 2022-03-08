@@ -97,9 +97,9 @@ jobs:
           ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/NDNph
       - name: compile examples
         run: |
-          for B in esp8266:esp8266:nodemcuv2 esp32:esp32:esp32wrover adafruit:nrf52:feather52832; do
+          for B in esp8266:esp8266:nodemcuv2 esp32:esp32:esp32wrover esp32:esp32:esp32c3 adafruit:nrf52:feather52832; do
             for E in $(find ./examples -name '*.ino' -printf '%h\n'); do
               printf "\n----\033[1;35m Build %s in %s \033[0m----\n" ${E##*/} $B
-              arduino-cli compile -b $B $E
+              arduino-cli compile -b $B --warnings more $E
             done
           done
