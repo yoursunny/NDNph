@@ -4,10 +4,6 @@
 #include "../mbed-common.hpp"
 #include <mbedtls/ecdsa.h>
 
-#ifndef MBEDTLS_ECDSA_DETERMINISTIC
-#error MBEDTLS_ECDSA_DETERMINISTIC must be declared
-#endif
-
 namespace ndnph {
 namespace port_ec_mbed {
 

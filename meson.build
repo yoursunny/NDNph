@@ -5,7 +5,7 @@ project('NDNph', 'cpp',
     'cpp_eh=none',
     'cpp_rtti=false'
   ],
-  meson_version: '>=0.61.0'
+  meson_version: '>=0.62.0'
 )
 
 subdir('src')

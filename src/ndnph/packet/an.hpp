@@ -1,5 +1,5 @@
-#ifndef NDNPH_AN_HPP
-#define NDNPH_AN_HPP
+#ifndef NDNPH_PACKET_AN_HPP
+#define NDNPH_PACKET_AN_HPP
 
 namespace ndnph {
 
@@ -87,4 +87,4 @@ enum
 
 } // namespace ndnph
 
-#endif // NDNPH_AN_HPP
+#endif // NDNPH_PACKET_AN_HPP
