@@ -32,7 +32,7 @@ Packet encoding and decoding
 Transports
 
 * UDP: IPv4 and IPv6, unicast only
-* libmemif
+* shared memory packet interface (memif)
 
 KeyChain
 
@@ -66,7 +66,7 @@ For Linux,
    * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
    * [Mbed TLS](https://github.com/ARMmbed/mbedtls) 2.16+, install from source or Ubuntu 20.04 package `libmbedtls-dev`
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
-   * [libmemif](https://docs.fd.io/vpp/21.10/dc/db3/libmemif_build_doc.html), install from source
+   * [libmemif](https://s3-docs.fd.io/vpp/22.02/interfacing/libmemif/) 4.0, install from VPP 22.02 source
    * Note: all dependencies are optional, but omitting a dependency may necessitate extra porting work
 2. Create build directory: `meson build`
 3. Enter build directory and execute build: `cd build && ninja`

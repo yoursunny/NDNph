@@ -8,22 +8,22 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: '3.9'
-      - name: install dependencies
+      - name: Install dependencies
         run: |
           wget https://apt.llvm.org/llvm.sh
           sudo bash ./llvm.sh 11
           sudo apt-get install --no-install-recommends clang-11 clang-format-11 lcov libboost-dev libmbedtls-dev lld-11 llvm-11 ninja-build
           pip install --user meson
-      - name: download VPP
-        uses: actions/checkout@v2
+      - name: Download VPP
+        uses: actions/checkout@v3
         with:
           repository: FDio/vpp
-          ref: v21.10.1
+          ref: v22.02
           path: vpp
-      - name: install libmemif
+      - name: Install libmemif
         run: |
           cd $HOME
           mv $GITHUB_WORKSPACE/vpp $HOME/
@@ -31,13 +31,13 @@ jobs:
           cmake -G Ninja ../vpp/extras/libmemif
           ninja
           sudo ninja install
-      - uses: actions/checkout@v2
-      - name: check meson.build lists and code style
+      - uses: actions/checkout@v3
+      - name: Check meson.build lists and code style
         run: |
           mk/update-list.sh
           mk/format-code.sh
           git diff --exit-code
-      - name: build and test with coverage
+      - name: Build and test with coverage
         run: |
           meson build.coverage -Db_coverage=true -Dwerror=true -Dunittest=enabled -Dprograms=disabled
           cd build.coverage
@@ -46,14 +46,14 @@ jobs:
           fi
           ninja coverage
           lcov --extract meson-logs/coverage.info $(readlink -f ../src)'/*' > coverage.lcov
-      - name: build and test with sanitizer
+      - name: Build and test with sanitizer
         run: |
           meson build.sanitize -Db_sanitize=address,undefined -Dunittest=enabled -Dprograms=enabled
           cd build.sanitize
           if ! ninja test; then
             cat meson-logs/testlog.txt && false
           fi
-      - name: build and test with LLVM
+      - name: Build and test with LLVM
         run: |
           LDFLAGS='-fuse-ld=lld-11 -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.ini --buildtype debugoptimized -Db_ndebug=true -Dwerror=true -Dunittest=enabled -Dprograms=enabled
           cd build.llvm
@@ -67,35 +67,35 @@ jobs:
   arduino:
     runs-on: ubuntu-20.04
     steps:
-      - uses: arduino/setup-arduino-cli@v1.1.1
+      - uses: arduino/setup-arduino-cli@v1
       - id: cores
-        name: refresh Arduino cores
+        name: Refresh Arduino cores
         run: |
           echo 'https://arduino.esp8266.com/stable/package_esp8266com_index.json,https://espressif.github.io/arduino-esp32/package_esp32_index.json,https://adafruit.github.io/arduino-board-index/package_adafruit_index.json' > ~/arduino-cores.txt
           arduino-cli version
           arduino-cli update --additional-urls "$(<~/arduino-cores.txt)"
           echo ::set-output name=d::$(sha256sum ~/.arduino15/package_*index.json | sha256sum | cut -d' ' -f1)
-      - name: cache Arduino cores
-        uses: actions/cache@v2
+      - name: Cache Arduino cores
+        uses: actions/cache@v3
         with:
           path: ~/.arduino15/staging/packages
           key: cores-${{ steps.cores.outputs.d }}
-      - name: install Arduino cores
+      - name: Install Arduino cores
         run: |
           arduino-cli core install esp8266:esp8266 esp32:esp32 adafruit:nrf52 --additional-urls "$(<~/arduino-cores.txt)"
           arduino-cli lib install ArduinoUnit
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: '3.9'
-      - name: install dependencies
+      - name: Install dependencies
         run: |
-          pip install adafruit-nrfutil esptool
-      - uses: actions/checkout@v2
-      - name: prepare Arduino libraries
+          pip install adafruit-nrfutil
+      - uses: actions/checkout@v3
+      - name: Prepare Arduino libraries
         run: |
           mkdir -p $HOME/Arduino/libraries
           ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/NDNph
-      - name: compile examples
+      - name: Compile examples
         run: |
           for B in esp8266:esp8266:nodemcuv2 esp32:esp32:esp32wrover esp32:esp32:esp32c3 adafruit:nrf52:feather52832; do
             for E in $(find ./examples -name '*.ino' -printf '%h\n'); do

@@ -82,34 +82,30 @@ public:
       opts.ringCapacity = 1024;
     }
 
-    int err = memif_per_thread_init(&m_main, this, nullptr, const_cast<char*>("NDNph"), nullptr,
-                                    nullptr, nullptr);
+    memif_socket_args_t sa{};
+    strncpy(sa.path, opts.socketName, sizeof(sa.path));
+    strncpy(sa.app_name, "NDNph", sizeof(sa.app_name));
+    int err = memif_create_socket(&m_sock, &sa, this);
     if (err != MEMIF_ERR_SUCCESS) {
-      NDNPH_MEMIF_PRINT_ERR(memif_per_thread_init);
+      NDNPH_MEMIF_PRINT_ERR(memif_create_socket);
       return false;
     }
 
-    err = memif_per_thread_create_socket(m_main, &m_sock, opts.socketName, this);
-    if (err != MEMIF_ERR_SUCCESS) {
-      NDNPH_MEMIF_PRINT_ERR(memif_per_thread_create_socket);
-      return false;
-    }
-
-    memif_conn_args_t args{};
-    args.is_master = static_cast<uint8_t>(opts.role == Role::SERVER);
-    args.socket = m_sock;
-    args.interface_id = opts.id;
-    for (args.buffer_size = 64; args.buffer_size < opts.dataroom;) {
-      args.buffer_size <<= 1;
+    memif_conn_args_t ca{};
+    ca.is_master = static_cast<uint8_t>(opts.role == Role::SERVER);
+    ca.socket = m_sock;
+    ca.interface_id = opts.id;
+    for (ca.buffer_size = 64; ca.buffer_size < opts.dataroom;) {
+      ca.buffer_size <<= 1;
       // libmemif internally assumes buffer_size to be power of two
-      // https://github.com/FDio/vpp/blob/v21.06/extras/libmemif/src/main.c#L2406
+      // https://github.com/FDio/vpp/blob/v22.02/extras/libmemif/src/main.c#L1538
     }
-    m_dataroom = args.buffer_size;
-    for (args.log2_ring_size = 4;
-         args.log2_ring_size < 14 && (1 << args.log2_ring_size) < opts.ringCapacity;) {
-      ++args.log2_ring_size;
+    m_dataroom = ca.buffer_size;
+    for (ca.log2_ring_size = 4;
+         ca.log2_ring_size < 14 && (1 << ca.log2_ring_size) < opts.ringCapacity;) {
+      ++ca.log2_ring_size;
     }
-    err = memif_create(&m_conn, &args, MemifTransport::handleConnect,
+    err = memif_create(&m_conn, &ca, MemifTransport::handleConnect,
                        MemifTransport::handleDisconnect, MemifTransport::handleInterrupt, this);
     if (err != MEMIF_ERR_SUCCESS) {
       NDNPH_MEMIF_PRINT_ERR(memif_create);
@@ -138,14 +134,6 @@ public:
       }
     }
 
-    if (m_main != nullptr) {
-      int err = memif_per_thread_cleanup(&m_main);
-      if (err != MEMIF_ERR_SUCCESS) {
-        NDNPH_MEMIF_PRINT_ERR(memif_per_thread_cleanup);
-        return false;
-      }
-    }
-
     m_dataroom = 0;
     return true;
   }
@@ -164,11 +152,11 @@ private:
 
   void doLoop() final
   {
-    if (m_main == nullptr) {
+    if (m_sock == nullptr) {
       return;
     }
 
-    int err = memif_per_thread_poll_event(m_main, 0);
+    int err = memif_poll_event(m_sock, 0);
     if (err != MEMIF_ERR_SUCCESS) {
       NDNPH_MEMIF_PRINT_ERR(memif_poll_event);
     }
@@ -265,7 +253,6 @@ private:
   }
 
 private:
-  memif_per_thread_main_handle_t m_main = nullptr;
   memif_socket_handle_t m_sock = nullptr;
   memif_conn_handle_t m_conn = nullptr;
   uint16_t m_dataroom = 0;

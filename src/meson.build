@@ -1,4 +1,3 @@
-cmake = import('cmake')
 fs = import('fs')
 cpp = meson.get_compiler('cpp')
 
@@ -27,7 +26,7 @@ if have_socket_h
 endif
 
 libmemif = cpp.find_library('memif', has_headers: ['libmemif.h'], required: false)
-if libmemif.found()
+if libmemif.found() and cpp.has_header_symbol('libmemif.h', 'memif_socket_args_t')
   conf.set('NDNPH_PORT_TRANSPORT_MEMIF', '')
 endif
 
