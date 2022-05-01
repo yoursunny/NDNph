@@ -6,9 +6,6 @@
 
 namespace ndnph {
 namespace tlv {
-
-class NNI;
-
 namespace detail {
 
 template<typename T>
@@ -36,7 +33,7 @@ public:
     }
   }
 
-  static T readValue(const uint8_t* value);
+  static T readValue(const uint8_t* input);
 
   static void writeValue(uint8_t* room, T n);
 
@@ -46,9 +43,9 @@ private:
 
 template<>
 inline uint8_t
-NNIValue<uint8_t>::readValue(const uint8_t* value)
+NNIValue<uint8_t>::readValue(const uint8_t* input)
 {
-  return value[0];
+  return input[0];
 }
 
 template<>
@@ -60,59 +57,59 @@ NNIValue<uint8_t>::writeValue(uint8_t* room, uint8_t n)
 
 template<>
 inline uint16_t
-NNIValue<uint16_t>::readValue(const uint8_t* value)
+NNIValue<uint16_t>::readValue(const uint8_t* input)
 {
-  return (static_cast<uint16_t>(value[0]) << 8) | static_cast<uint16_t>(value[1]);
+  return (static_cast<uint16_t>(input[0]) << 8) | static_cast<uint16_t>(input[1]);
 }
 
 template<>
 inline void
 NNIValue<uint16_t>::writeValue(uint8_t* room, uint16_t n)
 {
-  room[0] = static_cast<uint8_t>(n >> 8);
-  room[1] = static_cast<uint8_t>(n);
+  room[0] = n >> 8;
+  room[1] = n;
 }
 
 template<>
 inline uint32_t
-NNIValue<uint32_t>::readValue(const uint8_t* value)
+NNIValue<uint32_t>::readValue(const uint8_t* input)
 {
-  return (static_cast<uint32_t>(value[0]) << 24) | (static_cast<uint32_t>(value[1]) << 16) |
-         (static_cast<uint32_t>(value[2]) << 8) | static_cast<uint32_t>(value[3]);
+  return (static_cast<uint32_t>(input[0]) << 24) | (static_cast<uint32_t>(input[1]) << 16) |
+         (static_cast<uint32_t>(input[2]) << 8) | static_cast<uint32_t>(input[3]);
 }
 
 template<>
 inline void
 NNIValue<uint32_t>::writeValue(uint8_t* room, uint32_t n)
 {
-  room[0] = static_cast<uint8_t>(n >> 24);
-  room[1] = static_cast<uint8_t>(n >> 16);
-  room[2] = static_cast<uint8_t>(n >> 8);
-  room[3] = static_cast<uint8_t>(n);
+  room[0] = n >> 24;
+  room[1] = n >> 16;
+  room[2] = n >> 8;
+  room[3] = n;
 }
 
 template<>
 inline uint64_t
-NNIValue<uint64_t>::readValue(const uint8_t* value)
+NNIValue<uint64_t>::readValue(const uint8_t* input)
 {
-  return (static_cast<uint64_t>(value[0]) << 56) | (static_cast<uint64_t>(value[1]) << 48) |
-         (static_cast<uint64_t>(value[2]) << 40) | (static_cast<uint64_t>(value[3]) << 32) |
-         (static_cast<uint64_t>(value[4]) << 24) | (static_cast<uint64_t>(value[5]) << 16) |
-         (static_cast<uint64_t>(value[6]) << 8) | static_cast<uint64_t>(value[7]);
+  return (static_cast<uint64_t>(input[0]) << 56) | (static_cast<uint64_t>(input[1]) << 48) |
+         (static_cast<uint64_t>(input[2]) << 40) | (static_cast<uint64_t>(input[3]) << 32) |
+         (static_cast<uint64_t>(input[4]) << 24) | (static_cast<uint64_t>(input[5]) << 16) |
+         (static_cast<uint64_t>(input[6]) << 8) | static_cast<uint64_t>(input[7]);
 }
 
 template<>
 inline void
 NNIValue<uint64_t>::writeValue(uint8_t* room, uint64_t n)
 {
-  room[0] = static_cast<uint8_t>(n >> 56);
-  room[1] = static_cast<uint8_t>(n >> 48);
-  room[2] = static_cast<uint8_t>(n >> 40);
-  room[3] = static_cast<uint8_t>(n >> 32);
-  room[4] = static_cast<uint8_t>(n >> 24);
-  room[5] = static_cast<uint8_t>(n >> 16);
-  room[6] = static_cast<uint8_t>(n >> 8);
-  room[7] = static_cast<uint8_t>(n);
+  room[0] = n >> 56;
+  room[1] = n >> 48;
+  room[2] = n >> 40;
+  room[3] = n >> 32;
+  room[4] = n >> 24;
+  room[5] = n >> 16;
+  room[6] = n >> 8;
+  room[7] = n;
 }
 
 } // namespace detail
@@ -184,6 +181,7 @@ private:
   uint64_t m_number = 0;
 };
 
+/** @brief Encode to a TLV element where TLV-VALUE is a NonNegativeInteger. */
 template<typename N = NNI>
 class NniElement
 {

@@ -51,7 +51,7 @@ private:
 
 template<int type, bool repeatable, int order, typename Fn,
          typename R = typename std::conditional<
-           std::is_convertible<typename std::result_of<Fn(const Decoder::Tlv&)>::type, bool>::value,
+           std::is_convertible<decltype(std::declval<Fn>()(Decoder::Tlv())), bool>::value,
            EvdElementDefBool<type, repeatable, order, Fn>,
            EvdElementDefVoid<type, repeatable, order, Fn>>::type>
 class EvdElementDefFn : public R
@@ -170,19 +170,10 @@ public:
                        const UnknownCallback& unknownCb, const IsCritical& isCritical,
                        const E&... defs)
   {
-    if (topTypes.size() > 0) {
-      bool found = false;
-      for (uint32_t type : topTypes) {
-        if (input.type == type) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        return false;
-      }
+    if (topTypes.size() > 0 &&
+        std::find(topTypes.begin(), topTypes.end(), input.type) == topTypes.end()) {
+      return false;
     }
-
     return decodeValueEx(input.vd(), unknownCb, isCritical, defs...);
   }
 

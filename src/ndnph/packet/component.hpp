@@ -93,7 +93,7 @@ public:
 
   /**
    * @brief Parse from URI.
-   * @param region memory region; must have 8 + strlen(uri) available room
+   * @param region memory region; must have 8 + strlen(uri) available room.
    * @param uri URI in canonical format; except that `8=` prefix of GenericNameComponent
    *            may be omitted.
    * @return component; it's valid if !component is false.
@@ -254,7 +254,8 @@ private:
     std::for_each(m_value, m_value + m_length, [&](uint8_t ch) {
       if (ch != 0x00 && strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
                                ch) != nullptr) {
-        snprintf(buf, sizeof(buf), "%c", static_cast<char>(ch));
+        buf[0] = ch;
+        buf[1] = 0;
       } else {
         snprintf(buf, sizeof(buf), "%%%02X", static_cast<int>(ch));
       }

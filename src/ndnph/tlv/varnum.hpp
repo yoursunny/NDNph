@@ -44,11 +44,12 @@ readVarNum(const uint8_t* input, size_t size, uint32_t& n)
     return 1;
   }
   if (size >= 3 && input[0] == 0xFD) {
-    n = (input[1] << 8) | input[2];
+    n = (static_cast<uint32_t>(input[1]) << 8) | static_cast<uint32_t>(input[2]);
     return 3;
   }
   if (size >= 5 && input[0] == 0xFE) {
-    n = (input[1] << 24) | (input[2] << 16) | (input[3] << 8) | input[4];
+    n = (static_cast<uint32_t>(input[1]) << 24) | (static_cast<uint32_t>(input[2]) << 16) |
+        (static_cast<uint32_t>(input[3]) << 8) | static_cast<uint32_t>(input[4]);
     return 5;
   }
   return 0;
