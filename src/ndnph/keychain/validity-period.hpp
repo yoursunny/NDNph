@@ -34,7 +34,7 @@ private:
   char m_tz[64];
 };
 
-} // namespace ndnph
+} // namespace detail
 
 /** @brief ValidityPeriod of a certificate. */
 class ValidityPeriod
@@ -78,7 +78,7 @@ public:
     return includes(t / 1000000);
   }
 
-  /** @brief Calculate the intersection of this and @c other ValidityPeriod. */
+  /** @brief Calculate the intersection of this and @p other ValidityPeriod. */
   ValidityPeriod intersect(const ValidityPeriod& other) const
   {
     return ValidityPeriod(std::max(notBefore, other.notBefore), std::min(notAfter, other.notAfter));
@@ -86,20 +86,8 @@ public:
 
   void encodeTo(Encoder& encoder) const
   {
-    encoder.prependTlv(
-      TT::ValidityPeriod,
-      [this](Encoder& encoder) {
-        char buf[TIMESTAMP_BUFLEN];
-        printTimestamp(buf, notBefore);
-        encoder.prependTlv(TT::NotBefore,
-                           tlv::Value(reinterpret_cast<const uint8_t*>(buf), TIMESTAMP_LEN));
-      },
-      [this](Encoder& encoder) {
-        char buf[TIMESTAMP_BUFLEN];
-        printTimestamp(buf, notAfter);
-        encoder.prependTlv(TT::NotAfter,
-                           tlv::Value(reinterpret_cast<const uint8_t*>(buf), TIMESTAMP_LEN));
-      });
+    encoder.prependTlv(TT::ValidityPeriod, TimestampEncoder(TT::NotBefore, notBefore),
+                       TimestampEncoder(TT::NotAfter, notAfter));
   }
 
   bool decodeFrom(const Decoder::Tlv& input)
@@ -118,21 +106,33 @@ private:
     sizeof(time_t) <= 4 ? std::numeric_limits<time_t>::max() : 253402300799;
   static constexpr const char* const TIMESTAMP_FMT = "%04d%02d%02dT%02d%02d%02d";
   static constexpr size_t TIMESTAMP_LEN = 15;
-  static constexpr size_t TIMESTAMP_BUFLEN = TIMESTAMP_LEN + 1;
-  static constexpr size_t ENCODE_LENGTH =
-    tlv::sizeofVarNum(TT::NotBefore) + tlv::sizeofVarNum(TIMESTAMP_LEN) + TIMESTAMP_LEN +
-    tlv::sizeofVarNum(TT::NotAfter) + tlv::sizeofVarNum(TIMESTAMP_LEN) + TIMESTAMP_LEN;
 
-  static void printTimestamp(char buf[TIMESTAMP_BUFLEN], time_t t)
+  class TimestampEncoder
   {
-    struct tm* m = gmtime(&t);
-    if (m == nullptr) {
-      memset(buf, 0, TIMESTAMP_BUFLEN);
-      return;
+  public:
+    explicit TimestampEncoder(uint32_t tlvType, time_t t)
+      : tlvType(tlvType)
+      , t(t)
+    {}
+
+    void encodeTo(Encoder& encoder) const
+    {
+      struct tm* m = gmtime(&t);
+      if (m == nullptr) {
+        encoder.setError();
+        return;
+      }
+
+      char buf[TIMESTAMP_LEN + 1];
+      snprintf(buf, sizeof(buf), TIMESTAMP_FMT, 1900 + m->tm_year, 1 + m->tm_mon, m->tm_mday,
+               m->tm_hour, m->tm_min, m->tm_sec);
+      encoder.prependTlv(tlvType, tlv::Value(reinterpret_cast<const uint8_t*>(buf), TIMESTAMP_LEN));
     }
-    snprintf(buf, TIMESTAMP_BUFLEN, TIMESTAMP_FMT, 1900 + m->tm_year, 1 + m->tm_mon, m->tm_mday,
-             m->tm_hour, m->tm_min, m->tm_sec);
-  }
+
+  public:
+    uint32_t tlvType = 0;
+    time_t t = 0;
+  };
 
   static bool decodeTimestamp(const Decoder::Tlv& d, time_t* v)
   {
@@ -140,7 +140,7 @@ private:
       return false;
     }
 
-    char buf[TIMESTAMP_BUFLEN];
+    char buf[TIMESTAMP_LEN + 1];
     std::copy_n(d.value, TIMESTAMP_LEN, buf);
     buf[TIMESTAMP_LEN] = '\0';
 

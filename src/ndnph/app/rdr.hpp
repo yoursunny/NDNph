@@ -12,7 +12,7 @@ namespace rdr {
 inline Component
 getMetadataComponent()
 {
-  static const uint8_t tlv[]{ 0x20, 0x08, 0x6D, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61 };
+  static const uint8_t tlv[]{ 0x20, 0x08, 'm', 'e', 't', 'a', 'd', 'a', 't', 'a' };
   static Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }

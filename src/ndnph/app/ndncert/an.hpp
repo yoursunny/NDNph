@@ -18,7 +18,7 @@ enum
   CaCertificate = 0x89,
   MaxValidityPeriod = 0x8B,
   ProbeResponse = 0x8D,
-  AllowLongerName = 0x8F,
+  MaxSuffixLength = 0x8F,
   EcdhPub = 0x91,
   CertRequest = 0x93,
   Salt = 0x95,
@@ -45,7 +45,7 @@ using namespace ndnph::TT;
 inline Component
 getCaComponent()
 {
-  static const uint8_t tlv[]{ 0x08, 0x02, 0x43, 0x41 };
+  static const uint8_t tlv[]{ 0x08, 0x02, 'C', 'A' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
@@ -54,7 +54,7 @@ getCaComponent()
 inline Component
 getInfoComponent()
 {
-  static const uint8_t tlv[]{ 0x08, 0x04, 0x49, 0x4E, 0x46, 0x4F };
+  static const uint8_t tlv[]{ 0x08, 0x04, 'I', 'N', 'F', 'O' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
@@ -63,7 +63,7 @@ getInfoComponent()
 inline Component
 getProbeComponent()
 {
-  static const uint8_t tlv[]{ 0x08, 0x05, 0x50, 0x52, 0x4F, 0x42, 0x56 };
+  static const uint8_t tlv[]{ 0x08, 0x05, 'P', 'R', 'O', 'B', 'E' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
@@ -72,7 +72,7 @@ getProbeComponent()
 inline Component
 getNewComponent()
 {
-  static const uint8_t tlv[]{ 0x08, 0x03, 0x4E, 0x45, 0x57 };
+  static const uint8_t tlv[]{ 0x08, 0x03, 'N', 'E', 'W' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
@@ -81,7 +81,7 @@ getNewComponent()
 inline Component
 getChallengeComponent()
 {
-  static const uint8_t tlv[]{ 0x08, 0x09, 0x43, 0x48, 0x41, 0x4C, 0x4C, 0x45, 0x4E, 0x47, 0x45 };
+  static const uint8_t tlv[]{ 0x08, 0x09, 'C', 'H', 'A', 'L', 'L', 'E', 'N', 'G', 'E' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }

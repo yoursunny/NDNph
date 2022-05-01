@@ -12,7 +12,7 @@ namespace certificate {
 inline Component
 getKeyComponent()
 {
-  static const uint8_t tlv[]{ 0x08, 0x03, 0x4B, 0x45, 0x59 };
+  static const uint8_t tlv[]{ 0x08, 0x03, 'K', 'E', 'Y' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
@@ -21,7 +21,7 @@ getKeyComponent()
 inline Component
 getIssuerDefault()
 {
-  static const uint8_t tlv[]{ 0x08, 0x05, 0x4E, 0x44, 0x4E, 0x70, 0x68 };
+  static const uint8_t tlv[]{ 0x08, 0x05, 'N', 'D', 'N', 'p', 'h' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
@@ -30,7 +30,7 @@ getIssuerDefault()
 inline Component
 getIssuerSelf()
 {
-  static const uint8_t tlv[]{ 0x08, 0x04, 0x73, 0x65, 0x6C, 0x66 };
+  static const uint8_t tlv[]{ 0x08, 0x04, 's', 'e', 'l', 'f' };
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
