@@ -156,17 +156,20 @@ private:
   bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final
   {
     const auto& p = getAddressFamilyParams(m_af);
-    uint8_t raddr[std::max(sizeof(sockaddr_in), sizeof(sockaddr_in6))];
-    const sockaddr* raddrPtr = nullptr;
+    uint8_t raddrBuf[std::max(sizeof(sockaddr_in), sizeof(sockaddr_in6))];
+    sockaddr* raddr = nullptr;
     socklen_t raddrLen = 0;
-    if (endpointId != 0 &&
-        m_endpoints.decode(endpointId, raddr + p.ipOff,
-                           reinterpret_cast<in_port_t*>(raddr + p.portOff)) == p.ipLen) {
-      raddrPtr = reinterpret_cast<const sockaddr*>(raddr);
+    if (endpointId != 0) {
+      if (m_endpoints.decode(endpointId, raddrBuf + p.ipOff,
+                             reinterpret_cast<in_port_t*>(raddrBuf + p.portOff)) != p.ipLen) {
+        return false;
+      }
+      raddr = reinterpret_cast<sockaddr*>(raddrBuf);
+      raddr->sa_family = m_af;
       raddrLen = p.nameLen;
     }
 
-    ssize_t sentLen = sendto(m_fd, pkt, pktLen, 0, raddrPtr, raddrLen);
+    ssize_t sentLen = sendto(m_fd, pkt, pktLen, 0, raddr, raddrLen);
     if (sentLen >= 0) {
       return true;
     }
