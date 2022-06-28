@@ -1,6 +1,7 @@
 #define NDNPH_WANT_CLI
 #define NDNPH_MEMIF_DEBUG
 #define NDNPH_SOCKET_DEBUG
+#define NDNPH_NDNCERT_DEBUG
 #include <NDNph-config.h>
 #include <NDNph.h>
 

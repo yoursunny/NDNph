@@ -2,11 +2,20 @@
 #define NDNPH_APP_NDNCERT_COMMON_HPP
 #ifdef NDNPH_HAVE_MBED
 
+#include "../../core/log.hpp"
 #include "../../keychain/ec.hpp"
 #include "../../packet/encrypted-message.hpp"
 #include "../../port/clock/port.hpp"
 #include "../../port/mbed-common.hpp"
 #include <mbedtls/hkdf.h>
+
+#ifdef NDNPH_NDNCERT_DEBUG
+#define NDNPH_NDNCERT_LOG(...) NDNPH_LOG_LINE("ndncert", ##__VA_ARGS__)
+#else
+#define NDNPH_NDNCERT_LOG(...)                                                                     \
+  do {                                                                                             \
+  } while (false)
+#endif
 
 namespace ndnph {
 namespace ndncert {

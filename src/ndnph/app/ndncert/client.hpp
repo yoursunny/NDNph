@@ -313,6 +313,8 @@ private:
 
     bool operator()(State state)
     {
+      NDNPH_NDNCERT_LOG("client state %d => %d", static_cast<int>(m_client->m_state),
+                        static_cast<int>(state));
       m_client->m_state = state;
       m_set = true;
       return true;
@@ -321,6 +323,8 @@ private:
     ~GotoState()
     {
       if (!m_set) {
+        NDNPH_NDNCERT_LOG("client state %d => %d", static_cast<int>(m_client->m_state),
+                          static_cast<int>(State::Failure));
         m_client->m_state = State::Failure;
       }
     }
@@ -404,18 +408,21 @@ private:
     int res = mbedtls_ecdh_gen_public(mbedtls::P256::group(), m_ecdhPvt, m_newRequest.ecdhPub,
                                       mbedtls::rng, nullptr);
     if (res != 0) {
+      NDNPH_NDNCERT_LOG("NewRequest ECDH error");
       return;
     }
 
     auto validity = certificate::getValidity(m_profile.cert)
                       .intersect(ValidityPeriod::secondsFromNow(m_profile.maxValidityPeriod));
     if (!validity.includesUnix()) {
+      NDNPH_NDNCERT_LOG("NewRequest validity expired");
       return;
     }
 
     auto cert = pub.selfSign(m_region, validity, m_pvt);
     m_newRequest.certRequest = m_region.create<Data>();
     if (!m_newRequest.certRequest || !m_newRequest.certRequest.decodeFrom(cert)) {
+      NDNPH_NDNCERT_LOG("NewRequest cert request error");
       return;
     }
 
@@ -427,6 +434,7 @@ private:
   {
     bool ok = m_newResponse.fromData(m_region, data, m_profile, m_challenges);
     if (!ok) {
+      NDNPH_NDNCERT_LOG("NewResponse parse error");
       return false;
     }
 
@@ -437,11 +445,15 @@ private:
         break;
       }
     }
+    if (m_challengeRequest.challenge == nullptr) {
+      NDNPH_NDNCERT_LOG("NewResponse no common challenge");
+      return true;
+    }
 
-    ok = m_challengeRequest.challenge != nullptr &&
-         m_sessionKey.makeKey(m_ecdhPvt, m_newResponse.ecdhPub, m_newResponse.salt,
+    ok = m_sessionKey.makeKey(m_ecdhPvt, m_newResponse.ecdhPub, m_newResponse.salt,
                               m_newResponse.requestId);
     if (!ok) {
+      NDNPH_NDNCERT_LOG("NewResponse session key error");
       return true;
     }
     prepareChallengeRequest(gotoState);
@@ -481,6 +493,7 @@ private:
     bool ok = m_challengeResponse.fromData(m_challengeRegion, data, m_profile,
                                            m_newResponse.requestId, m_sessionKey);
     if (!ok) {
+      NDNPH_NDNCERT_LOG("ChallengeResponse parse error");
       return false;
     }
 
@@ -502,9 +515,7 @@ private:
     ndnph::StaticRegion<2048> region;
     GotoState gotoState(this);
     auto interest = region.create<ndnph::Interest>();
-    if (!interest) {
-      return;
-    }
+    NDNPH_ASSERT(!!interest);
     interest.setName(m_challengeResponse.issuedCertName);
     interest.setFwHint(m_challengeResponse.fwHint);
     m_pending.send(interest) && gotoState(State::WaitIssuedCert);
@@ -514,11 +525,13 @@ private:
   {
     ndnph::StaticRegion<512> region;
     if (data.getFullName(region) != m_challengeResponse.issuedCertName) {
+      NDNPH_NDNCERT_LOG("IssuedCert full name mismatch");
       return false;
     }
 
     GotoState gotoState(this);
     if (!ec::isCertificate(data)) {
+      NDNPH_NDNCERT_LOG("IssuedCert parse error");
       return true;
     }
     m_cb(m_cbCtx, data);
@@ -587,6 +600,7 @@ public:
     encoder.prepend(m_cert);
     encoder.trim();
     if (!encoder) {
+      NDNPH_NDNCERT_LOG("PossessionChallenge encode error");
       cb(arg, false);
       return;
     }
@@ -601,12 +615,14 @@ public:
     tlv::Value nonce = response.params.get(challenge_consts::nonce());
     uint8_t* sig = region.alloc(m_signer.getMaxSigLen());
     if (nonce.size() != 16 || sig == nullptr) {
+      NDNPH_NDNCERT_LOG("PossessionChallenge bad nonce or sig");
       cb(arg, false);
       return;
     }
 
     ssize_t sigLen = m_signer.sign({ nonce }, sig);
     if (sigLen < 0) {
+      NDNPH_NDNCERT_LOG("PossessionChallenge signing error");
       cb(arg, false);
       return;
     }

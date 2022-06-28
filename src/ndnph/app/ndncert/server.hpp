@@ -321,6 +321,7 @@ public:
   Data::Signed handleNewRequest(Region& packetRegion, const Interest& interest)
   {
     if (!m_newRequest.fromInterest(m_region, interest, m_profile, m_signingPolicy)) {
+      NDNPH_NDNCERT_LOG("NewRequest parse error");
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
     }
 
@@ -333,8 +334,11 @@ public:
         !port::RandomSource::generate(m_newResponse.requestId, sizeof(m_newResponse.requestId)) ||
         !m_sessionKey.makeKey(ecdhPvt, m_newRequest.ecdhPub, m_newResponse.salt,
                               m_newResponse.requestId)) {
+      NDNPH_NDNCERT_LOG("NewRequest ECDH or session key error");
       return Data::Signed();
     }
+
+    NDNPH_NDNCERT_LOG("NewResponse continue");
     return m_newResponse.toData(packetRegion, interest, m_challenges, m_signer);
   }
 
@@ -345,6 +349,7 @@ public:
     if (!m_challengeRequest.fromInterest(*m_challengeRegion, interest, m_profile,
                                          m_newResponse.requestId, m_sessionKey, m_newRequest.pub,
                                          m_challenges, m_signingPolicy)) {
+      NDNPH_NDNCERT_LOG("ChallengeRequest parse error");
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
     }
 
@@ -355,13 +360,16 @@ public:
       m_challengeResponse.expireTime =
         port::Clock::add(now, m_challengeRequest.challenge->getTimeLimit());
     } else if (m_challengeRequest.challenge != prevChallenge) {
+      NDNPH_NDNCERT_LOG("ChallengeRequest wrong challenge");
       return makeError(packetRegion, interest, ErrorCode::OutOfTries, m_signer);
     }
 
     if (m_challengeResponse.remainingTries == 0) {
+      NDNPH_NDNCERT_LOG("ChallengeRequest out of tries");
       return makeError(packetRegion, interest, ErrorCode::OutOfTries, m_signer);
     }
     if (port::Clock::isBefore(m_challengeResponse.expireTime, now)) {
+      NDNPH_NDNCERT_LOG("ChallengeRequest out of time");
       return makeError(packetRegion, interest, ErrorCode::OutOfTime, m_signer);
     }
 
@@ -377,12 +385,18 @@ public:
           !!(m_challengeResponse.issuedCertName = m_issuedCert.getFullName(m_region))) {
         m_challengeResponse.status = Status::SUCCESS;
         m_challengeResponse.fwHint = m_profile.prefix.append(m_region, getCaComponent());
+        NDNPH_NDNCERT_LOG("ChallengeResponse cert issued");
       } else {
         m_challengeResponse.status = Status::PENDING;
+        NDNPH_NDNCERT_LOG("ChallengeResponse cert issuance error");
       }
     } else if (result.decrementRetry) {
       --m_challengeResponse.remainingTries;
+      NDNPH_NDNCERT_LOG("ChallengeResponse decrement retry");
+    } else {
+      NDNPH_NDNCERT_LOG("ChallengeResponse continue");
     }
+
     return m_challengeResponse.toData(packetRegion, interest, m_newResponse.requestId, m_sessionKey,
                                       m_signer);
   }
