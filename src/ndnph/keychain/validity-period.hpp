@@ -124,8 +124,9 @@ private:
       }
 
       char buf[TIMESTAMP_LEN + 1];
-      snprintf(buf, sizeof(buf), TIMESTAMP_FMT, 1900 + m->tm_year, 1 + m->tm_mon, m->tm_mday,
-               m->tm_hour, m->tm_min, m->tm_sec);
+      int res = snprintf(buf, sizeof(buf), TIMESTAMP_FMT, 1900 + m->tm_year, 1 + m->tm_mon,
+                         m->tm_mday, m->tm_hour, m->tm_min, m->tm_sec);
+      NDNPH_ASSERT(res >= 0 && res < static_cast<int>(sizeof(buf)));
       encoder.prependTlv(tlvType, tlv::Value(reinterpret_cast<const uint8_t*>(buf), TIMESTAMP_LEN));
     }
 
