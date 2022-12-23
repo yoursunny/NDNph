@@ -39,25 +39,25 @@ jobs:
           git diff --exit-code
       - name: Build and test with coverage
         run: |
-          meson build.coverage -Db_coverage=true -Dwerror=true -Dunittest=enabled -Dprograms=disabled
+          meson setup -Db_coverage=true -Dwerror=true -Dunittest=enabled -Dprograms=disabled build.coverage
           cd build.coverage
-          if ! ninja test; then
+          if ! meson test; then
             cat meson-logs/testlog.txt && false
           fi
           ninja coverage
           lcov --extract meson-logs/coverage.info $(readlink -f ../src)'/*' > coverage.lcov
       - name: Build and test with sanitizer
         run: |
-          meson build.sanitize -Db_sanitize=address,undefined -Dunittest=enabled -Dprograms=enabled
+          meson setup -Db_sanitize=address,undefined -Dunittest=enabled -Dprograms=enabled build.sanitize
           cd build.sanitize
-          if ! ninja test; then
+          if ! meson test; then
             cat meson-logs/testlog.txt && false
           fi
       - name: Build and test with LLVM
         run: |
-          LDFLAGS='-fuse-ld=lld-11 -L/usr/local/lib' meson build.llvm --native-file mk/native-llvm.ini --buildtype debugoptimized -Db_ndebug=true -Dwerror=true -Dunittest=enabled -Dprograms=enabled
+          LDFLAGS='-fuse-ld=lld-11 -L/usr/local/lib' meson setup --native-file mk/native-llvm.ini --buildtype debugoptimized -Db_ndebug=true -Dwerror=true -Dunittest=enabled -Dprograms=enabled build.llvm
           cd build.llvm
-          if ! ninja test; then
+          if ! meson test; then
             cat meson-logs/testlog.txt && false
           fi
       - uses: coverallsapp/github-action@master

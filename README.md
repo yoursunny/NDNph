@@ -1,6 +1,6 @@
 # NDNph: Named Data Networking packet headers
 
-[![GitHub Workflow status](https://img.shields.io/github/workflow/status/yoursunny/NDNph/build?style=flat)](https://github.com/yoursunny/NDNph/actions) [![Coveralls code coverage](https://img.shields.io/coveralls/github/yoursunny/NDNph?style=flat)](https://coveralls.io/github/yoursunny/NDNph) [![GitHub code size](https://img.shields.io/github/languages/code-size/yoursunny/NDNph?style=flat)](https://github.com/yoursunny/NDNph)
+[![GitHub Workflow status](https://img.shields.io/github/actions/workflow/status/yoursunny/NDNph/build.yml?style=flat)](https://github.com/yoursunny/NDNph/actions) [![Coveralls code coverage](https://img.shields.io/coveralls/github/yoursunny/NDNph?style=flat)](https://coveralls.io/github/yoursunny/NDNph) [![GitHub code size](https://img.shields.io/github/languages/code-size/yoursunny/NDNph?style=flat)](https://github.com/yoursunny/NDNph)
 
 **NDNph** provides [Named Data Networking](https://named-data.net) packet encoding and more in a header-only C++11 library.
 It is part of [esp8266ndn](https://github.com/yoursunny/esp8266ndn) that supports microcontroller programming in Arduino IDE.
@@ -8,7 +8,7 @@ NDNph can also work independently on Linux and other platforms.
 
 * [Doxygen documentation](https://esp8266ndn.ndn.today) together with esp8266ndn
 * [#NDNph on Twitter](https://twitter.com/hashtag/NDNph) for announcements
-* [ndn-lib mailing list](https://www.lists.cs.ucla.edu/mailman/listinfo/ndn-lib) for best-effort support
+* [GitHub Issues](https://github.com/yoursunny/NDNph) for bug reports and best-effort support
 
 ![NDNph logo](docs/logo.svg)
 
@@ -67,12 +67,12 @@ For Linux,
    * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
    * [Mbed TLS](https://github.com/ARMmbed/mbedtls) 2.16+, install from source or Ubuntu 20.04 package `libmbedtls-dev`
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
-   * [libmemif](https://s3-docs.fd.io/vpp/22.02/interfacing/libmemif/) 4.0, install from VPP 22.02 source
+   * [libmemif](https://s3-docs.fd.io/vpp/22.06/interfacing/libmemif/) 4.0, install from VPP 22.06 source
    * Note: all dependencies are optional, but omitting a dependency may necessitate extra porting work
-2. Create build directory: `meson build`
-3. Enter build directory and execute build: `cd build && ninja`
-4. Run unit test (optional): `ninja test`
-5. Install headers to system: `sudo ninja install`
+2. Create build directory: `meson setup build`
+3. Enter build directory and execute build: `meson compile -C build`
+4. Run unit test (optional): `meson test -C build`
+5. Install headers to system: `sudo meson install -C build`
 6. Add `#include <NDNph-config.h>` and `#include <NDNph.h>` in your project, and start coding.
 7. Check out the [example programs](programs/) for how to use.
 
