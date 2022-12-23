@@ -1,5 +1,5 @@
-#ifndef NDNPH_CLI_FACE_HPP
-#define NDNPH_CLI_FACE_HPP
+#ifndef NDNPH_CLI_UPLINK_HPP
+#define NDNPH_CLI_UPLINK_HPP
 
 #include "../face/face.hpp"
 #include "../port/transport/port.hpp"
@@ -95,7 +95,7 @@ openUplink()
     const char* envMtu = getenv("NDNPH_UPLINK_MTU");
     if (envMtu != nullptr) {
       mtu = atoi(envMtu);
-      if (mtu <= 64 || mtu >= 9000) {
+      if (mtu < 64 || mtu > 9000) {
         fprintf(stderr, "ndnph::cli::openUplink invalid or out-of-range NDNPH_UPLINK_MTU\n");
         exit(1);
       }
@@ -123,4 +123,4 @@ openUplink()
 } // namespace cli
 } // namespace ndnph
 
-#endif // NDNPH_CLI_FACE_HPP
+#endif // NDNPH_CLI_UPLINK_HPP
