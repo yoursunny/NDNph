@@ -8,20 +8,16 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/setup-python@v3
-        with:
-          python-version: '3.9'
       - name: Install dependencies
         run: |
-          wget https://apt.llvm.org/llvm.sh
-          sudo bash ./llvm.sh 11
-          sudo apt-get install --no-install-recommends clang-11 clang-format-11 lcov libboost-dev libmbedtls-dev lld-11 llvm-11 ninja-build
-          pip install --user meson
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends lcov libboost-dev libmbedtls-dev ninja-build
+          sudo pip install meson
       - name: Download VPP
         uses: actions/checkout@v3
         with:
           repository: FDio/vpp
-          ref: v22.06
+          ref: v22.10
           path: vpp
       - name: Install libmemif
         run: |
@@ -84,12 +80,9 @@ jobs:
         run: |
           arduino-cli core install esp8266:esp8266 esp32:esp32 adafruit:nrf52 --additional-urls "$(<~/arduino-cores.txt)"
           arduino-cli lib install ArduinoUnit
-      - uses: actions/setup-python@v3
-        with:
-          python-version: '3.9'
       - name: Install dependencies
         run: |
-          pip install adafruit-nrfutil
+          sudo pip install adafruit-nrfutil
       - uses: actions/checkout@v3
       - name: Prepare Arduino libraries
         run: |
