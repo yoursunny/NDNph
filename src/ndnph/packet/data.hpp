@@ -6,6 +6,7 @@
 #include "../port/sha256/port.hpp"
 #include "../port/timingsafe/port.hpp"
 #include "convention.hpp"
+#include "sig-info.hpp"
 
 namespace ndnph {
 namespace detail {
@@ -318,6 +319,12 @@ public:
     return getName().append(region, convention::ImplicitDigest(), digest);
   }
 
+  enum CanSatisfyOptions
+  {
+    CanSatisfyNone = 0,
+    CanSatisfyInCache = 1 << 0,
+  };
+
   /**
    * @brief Determine whether Data can satisfy Interest.
    * @tparam InterestT the ndnph::Interest type.
@@ -327,9 +334,9 @@ public:
    * Interest carrying implicit digest component.
    */
   template<typename InterestT>
-  bool canSatisfy(const InterestT& interest) const
+  bool canSatisfy(const InterestT& interest, CanSatisfyOptions opts = CanSatisfyNone) const
   {
-    if (interest.getMustBeFresh() && getFreshnessPeriod() == 0) {
+    if ((opts & CanSatisfyInCache) != 0 && interest.getMustBeFresh() && getFreshnessPeriod() == 0) {
       return false;
     }
     const Name& interestName = interest.getName();

@@ -121,10 +121,12 @@ TEST(Data, CanSatisfySimple)
 
   data.setFreshnessPeriod(0);
   interest.setMustBeFresh(true);
-  EXPECT_FALSE(data.canSatisfy(interest));
+  EXPECT_TRUE(data.canSatisfy(interest));
+  EXPECT_FALSE(data.canSatisfy(interest, Data::CanSatisfyInCache));
 
   data.setFreshnessPeriod(1000);
   EXPECT_TRUE(data.canSatisfy(interest));
+  EXPECT_TRUE(data.canSatisfy(interest, Data::CanSatisfyInCache));
 
   interest.setName(Name::parse(region, "/C"));
   EXPECT_FALSE(data.canSatisfy(interest));
