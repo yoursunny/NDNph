@@ -4,6 +4,7 @@
 #include "../keychain/private-key.hpp"
 #include "../keychain/public-key.hpp"
 #include "../port/sha256/port.hpp"
+#include "../port/timingsafe/port.hpp"
 #include "convention.hpp"
 
 namespace ndnph {
@@ -315,6 +316,39 @@ public:
       return Name();
     }
     return getName().append(region, convention::ImplicitDigest(), digest);
+  }
+
+  /**
+   * @brief Determine whether Data can satisfy Interest.
+   * @tparam InterestT the ndnph::Interest type.
+   *
+   * This method only works reliably on decoded packets. For packets that are being constructed
+   * or modified, this method may give incorrect results for parameterized/signed Interests or
+   * Interest carrying implicit digest component.
+   */
+  template<typename InterestT>
+  bool canSatisfy(const InterestT& interest) const
+  {
+    if (interest.getMustBeFresh() && getFreshnessPeriod() == 0) {
+      return false;
+    }
+    const Name& interestName = interest.getName();
+    const Name& dataName = getName();
+    switch (interestName.compare(dataName)) {
+      case Name::CMP_EQUAL:
+        return true;
+      case Name::CMP_LPREFIX:
+        return interest.getCanBePrefix();
+      case Name::CMP_RPREFIX: {
+        Component lastComp = interestName[-1];
+        uint8_t digest[NDNPH_SHA256_LEN];
+        return interestName.size() == dataName.size() + 1 &&
+               lastComp.is<convention::ImplicitDigest>() && computeImplicitDigest(digest) &&
+               port::TimingSafeEqual()(digest, sizeof(digest), lastComp.value(), lastComp.length());
+      }
+      default:
+        return false;
+    }
   }
 
 #ifdef NDNPH_PRINT_ARDUINO

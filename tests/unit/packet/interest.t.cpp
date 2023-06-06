@@ -207,64 +207,6 @@ TEST(Interest, EncodeSignedReplace)
   }
 }
 
-TEST(Interest, MatchSimple)
-{
-  StaticRegion<1024> region;
-
-  Interest interest = region.create<Interest>();
-  ASSERT_FALSE(!interest);
-  interest.setName(Name::parse(region, "/A"));
-
-  Data data = region.create<Data>();
-  ASSERT_FALSE(!data);
-  data.setName(Name::parse(region, "/A"));
-  EXPECT_TRUE(interest.match(data));
-
-  data.setName(Name::parse(region, "/A/B"));
-  EXPECT_FALSE(interest.match(data));
-
-  interest.setCanBePrefix(true);
-  EXPECT_TRUE(interest.match(data));
-
-  data.setFreshnessPeriod(0);
-  interest.setMustBeFresh(true);
-  EXPECT_FALSE(interest.match(data));
-
-  data.setFreshnessPeriod(1000);
-  EXPECT_TRUE(interest.match(data));
-
-  interest.setName(Name::parse(region, "/C"));
-  EXPECT_FALSE(interest.match(data));
-}
-
-TEST(Interest, MatchImplicitDigest)
-{
-  StaticRegion<1024> region;
-
-  Data data = region.create<Data>();
-  ASSERT_FALSE(!data);
-  data.setName(Name::parse(region, "/A"));
-  {
-    g::NiceMock<MockPrivateKey<0>> key;
-    auto data2 = region.create<Data>();
-    ASSERT_TRUE(data2.decodeFrom(data.sign(key)));
-    data = data2;
-  }
-
-  uint8_t digest[NDNPH_SHA256_LEN]{};
-  EXPECT_TRUE(data.computeImplicitDigest(digest));
-  EXPECT_LT(std::count(digest, digest + NDNPH_SHA256_LEN, 0), NDNPH_SHA256_LEN);
-
-  Interest interest = region.create<Interest>();
-  ASSERT_FALSE(!interest);
-  interest.setName(data.getName().append(region, convention::ImplicitDigest(), digest));
-  EXPECT_TRUE(interest.match(data));
-
-  interest.setName(
-    Name::parse(region, "/A/B").append(region, convention::ImplicitDigest(), digest));
-  EXPECT_FALSE(interest.match(data));
-}
-
 template<typename MakePolicy>
 void
 testSigPolicy(MakePolicy makePolicy, bool canDetectReorder = true,

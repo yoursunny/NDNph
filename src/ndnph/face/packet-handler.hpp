@@ -202,7 +202,7 @@ protected:
      */
     bool match(const Data& data, const Interest& interest) const
     {
-      return matchPitToken() && interest.match(data);
+      return matchPitToken() && data.canSatisfy(interest);
     }
 
     /**

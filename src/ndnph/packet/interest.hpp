@@ -532,36 +532,10 @@ public:
       obj->params->sigValue.begin(), obj->params->sigValue.size());
   }
 
-  /**
-   * @brief Determine whether Data can satisfy Interest.
-   * @tparam DataT the ndnph::Data type.
-   *
-   * This method only works reliably on decoded packets. For packets that are being constructed
-   * or modified, this method may give incorrect results for parameterized/signed Interests or
-   * Interest carrying implicit digest component.
-   */
   template<typename DataT>
-  bool match(const DataT& data) const
+  [[deprecated]] bool match(const DataT& data) const
   {
-    if (obj->mustBeFresh && data.getFreshnessPeriod() == 0) {
-      return false;
-    }
-    const Name& dataName = data.getName();
-    switch (obj->name.compare(dataName)) {
-      case Name::CMP_EQUAL:
-        return true;
-      case Name::CMP_LPREFIX:
-        return obj->canBePrefix;
-      case Name::CMP_RPREFIX: {
-        Component lastComp = obj->name[-1];
-        uint8_t digest[NDNPH_SHA256_LEN];
-        return obj->name.size() == dataName.size() + 1 &&
-               lastComp.is<convention::ImplicitDigest>() && data.computeImplicitDigest(digest) &&
-               port::TimingSafeEqual()(digest, sizeof(digest), lastComp.value(), lastComp.length());
-      }
-      default:
-        return false;
-    }
+    return data.canSatisfy(*this);
   }
 
 #ifdef NDNPH_PRINT_ARDUINO
