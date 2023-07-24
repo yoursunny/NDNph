@@ -8,8 +8,7 @@ namespace ndnph {
 /** @brief Virtual transport that connects to a peer. */
 class BridgeTransport
   : public virtual Transport
-  , public transport::DynamicRxQueueMixin
-{
+  , public transport::DynamicRxQueueMixin {
 public:
   using transport::DynamicRxQueueMixin::DynamicRxQueueMixin;
 
@@ -17,8 +16,7 @@ public:
    * @brief Connect to peer transport.
    * @post Packets sent on one transport are received at the other.
    */
-  bool begin(BridgeTransport& peer)
-  {
+  bool begin(BridgeTransport& peer) {
     if (m_peer != nullptr || peer.m_peer != nullptr) {
       return false;
     }
@@ -28,8 +26,7 @@ public:
   }
 
   /** @brief Disconnect from peer transport. */
-  bool end()
-  {
+  bool end() {
     if (m_peer == nullptr || m_peer->m_peer != this) {
       return false;
     }
@@ -39,18 +36,15 @@ public:
   }
 
 private:
-  bool doIsUp() const final
-  {
+  bool doIsUp() const final {
     return m_peer != nullptr;
   }
 
-  void doLoop() final
-  {
+  void doLoop() final {
     this->loopRxQueue();
   }
 
-  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final
-  {
+  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final {
     if (m_peer == nullptr) {
       return false;
     }

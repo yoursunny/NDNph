@@ -9,19 +9,16 @@ namespace ndnph {
 namespace lp {
 
 /** @brief Fragment header fields. */
-class FragmentHeader
-{
+class FragmentHeader {
 public:
   /** @brief Maximum encoded size. */
   using MaxSize = std::integral_constant<size_t, 1 + 1 + 8 + 1 + 1 + 1 + 1 + 1 + 1>;
 
-  uint64_t getSeqNumBase() const
-  {
+  uint64_t getSeqNumBase() const {
     return seqNum - fragIndex;
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     encoder.prepend(
       [this](Encoder& encoder) { encoder.prependTlv(TT::LpSeqNum, tlv::NNI8(seqNum)); },
       [this](Encoder& encoder) { encoder.prependTlv(TT::FragIndex, tlv::NNI(fragIndex)); },
@@ -35,12 +32,10 @@ public:
 };
 
 /** @brief PIT token field. */
-class PitToken
-{
+class PitToken {
 public:
   /** @brief Construct 4-octet PIT token from uint32. */
-  static PitToken from4(uint32_t n)
-  {
+  static PitToken from4(uint32_t n) {
     uint8_t room[4];
     tlv::NNI4::writeValue(room, n);
     PitToken token;
@@ -49,30 +44,25 @@ public:
   }
 
   /** @brief Determine whether PIT token exists. */
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return m_length > 0;
   }
 
-  size_t length() const
-  {
+  size_t length() const {
     return m_length;
   }
 
-  const uint8_t* value() const
-  {
+  const uint8_t* value() const {
     return m_value.begin();
   }
 
   /** @brief Interpret 4-octet PIT token as uint32. */
-  uint32_t to4() const
-  {
+  uint32_t to4() const {
     return m_length == 4 ? tlv::NNI4::readValue(m_value.begin()) : 0;
   }
 
   /** @brief Assign PIT token length and value. */
-  bool set(size_t length, const uint8_t* value)
-  {
+  bool set(size_t length, const uint8_t* value) {
     if (length > m_value.size()) {
       return false;
     }
@@ -81,8 +71,7 @@ public:
     return true;
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     uint8_t* room = encoder.prependRoom(m_length);
     if (room == nullptr) {
       return;
@@ -91,13 +80,11 @@ public:
     encoder.prependTypeLength(TT::PitToken, m_length);
   }
 
-  bool decodeFrom(const Decoder::Tlv& d)
-  {
+  bool decodeFrom(const Decoder::Tlv& d) {
     return set(d.length, d.value);
   }
 
-  friend bool operator==(const PitToken& lhs, const PitToken& rhs)
-  {
+  friend bool operator==(const PitToken& lhs, const PitToken& rhs) {
     return lhs.m_length == rhs.m_length &&
            std::equal(lhs.m_value.begin(), lhs.m_value.begin() + lhs.m_length, rhs.m_value.begin());
   }
@@ -113,15 +100,13 @@ private:
 };
 
 /** @brief Common fields during encoding. */
-class EncodableBase
-{
+class EncodableBase {
 public:
   /** @brief Maximum encoded size of L3 headers. */
   using L3MaxSize =
     std::integral_constant<size_t, 1 + 1 + NDNPH_PITTOKEN_MAX + NackHeader::MaxSize::value>;
 
-  void encodeL3Header(Encoder& encoder) const
-  {
+  void encodeL3Header(Encoder& encoder) const {
     encoder.prepend(
       [this](Encoder& encoder) {
         if (pitToken) {
@@ -135,8 +120,7 @@ public:
       });
   }
 
-  void copyL3HeaderFrom(const EncodableBase& src)
-  {
+  void copyL3HeaderFrom(const EncodableBase& src) {
     pitToken = src.pitToken;
     nack = src.nack;
   }
@@ -152,15 +136,12 @@ public:
  * @tparam Payload Encodable type of the payload.
  */
 template<typename Payload>
-class Encodable : public EncodableBase
-{
+class Encodable : public EncodableBase {
 public:
   explicit Encodable(Payload payload)
-    : payload(std::move(payload))
-  {}
+    : payload(std::move(payload)) {}
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     StaticRegion<L3MaxSize::value> l3hRegion;
     Encoder l3h(l3hRegion);
     encodeL3Header(l3h);
@@ -194,8 +175,7 @@ public:
  */
 template<typename L3, typename R = Encodable<L3>>
 R
-encode(L3 l3, PitToken pitToken = {})
-{
+encode(L3 l3, PitToken pitToken = {}) {
   R encodable(l3);
   encodable.pitToken = pitToken;
   return encodable;
@@ -206,20 +186,17 @@ encode(L3 l3, PitToken pitToken = {})
  * @return an Encodable object.
  */
 inline Encodable<Interest>
-encode(Nack nack, PitToken pitToken = {})
-{
+encode(Nack nack, PitToken pitToken = {}) {
   auto encodable = encode(nack.getInterest(), pitToken);
   encodable.nack = nack.getHeader();
   return encodable;
 }
 
 /** @brief NDNLPv2 fragmenter. */
-class Fragmenter : public WithRegion
-{
+class Fragmenter : public WithRegion {
 public:
   /** @brief Singly linked list of encodable fragments. */
-  class Fragment : public Encodable<tlv::Value>
-  {
+  class Fragment : public Encodable<tlv::Value> {
   public:
     using Encodable::Encodable;
 
@@ -235,8 +212,7 @@ public:
    */
   explicit Fragmenter(Region& region, uint16_t mtu)
     : WithRegion(region)
-    , m_room(static_cast<int>(mtu) - FragmentOverhead)
-  {
+    , m_room(static_cast<int>(mtu) - FragmentOverhead) {
     port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_nextSeqNum), sizeof(m_nextSeqNum));
   }
 
@@ -252,8 +228,7 @@ public:
    * When the region is reset by any means, previously returned fragments are invalidated.
    */
   template<typename L3>
-  const Fragment* fragment(Encodable<L3> packet)
-  {
+  const Fragment* fragment(Encodable<L3> packet) {
     region.reset();
     size_t sizeofHeader = 0;
     {
@@ -277,8 +252,7 @@ public:
   }
 
 private:
-  const Fragment* fragmentImpl(EncodableBase& input, size_t sizeofHeader, tlv::Value payload)
-  {
+  const Fragment* fragmentImpl(EncodableBase& input, size_t sizeofHeader, tlv::Value payload) {
     int sizeofFirstFragment = m_room - sizeofHeader;
     if (sizeofFirstFragment > static_cast<int>(payload.size())) {
       auto frag = region.make<Fragment>(payload);
@@ -324,8 +298,7 @@ private:
   }
 
 private:
-  enum
-  {
+  enum {
     FragmentOverhead = 1 + 3 +     // LpPacket TL
                        1 + 1 + 8 + // LpSeqNum
                        1 + 1 + 1 + // FragIndex
@@ -338,11 +311,9 @@ private:
 };
 
 /** @brief Decoded L3 header fields. */
-class L3Header
-{
+class L3Header {
 public:
-  std::tuple<bool, L3Header> clone(Region& region) const
-  {
+  std::tuple<bool, L3Header> clone(Region& region) const {
     L3Header copy;
     copy.pitToken = pitToken;
     if (!nack) {
@@ -358,19 +329,16 @@ public:
 };
 
 /** @brief Decoded fragment. */
-class Fragment : public FragmentHeader
-{
+class Fragment : public FragmentHeader {
 public:
   L3Header l3header;
   tlv::Value payload;
 };
 
 /** @brief Decode NDNLPv2 packet for classification. */
-class PacketClassify
-{
+class PacketClassify {
 public:
-  enum class Type : uint16_t
-  {
+  enum class Type : uint16_t {
     None = 0,
     Fragment = TT::FragIndex,
     Interest = TT::Interest,
@@ -382,13 +350,11 @@ public:
 
   explicit PacketClassify(L3Header l3header, tlv::Value payload)
     : m_l3header(l3header)
-    , m_payload(payload)
-  {
+    , m_payload(payload) {
     m_type = classifyType();
   }
 
-  bool decodeFrom(const Decoder::Tlv& input)
-  {
+  bool decodeFrom(const Decoder::Tlv& input) {
     m_type = Type::None;
     m_l3header = L3Header();
     m_frag = FragmentHeader();
@@ -406,7 +372,7 @@ public:
     }
 
     bool ok = EvDecoder::decodeEx(
-      input, { TT::LpPacket }, EvDecoder::DefaultUnknownCb(),
+      input, {TT::LpPacket}, EvDecoder::DefaultUnknownCb(),
       [](uint32_t type) { return type < 800 || type > 959 || (type & 0x03) != 0x00; },
       EvDecoder::defNni<TT::LpSeqNum, tlv::NNI8>(&m_frag.seqNum),
       EvDecoder::defNni<TT::FragIndex>(&m_frag.fragIndex),
@@ -426,14 +392,12 @@ public:
   }
 
   /** @brief Determine L3 packet type. */
-  Type getType() const
-  {
+  Type getType() const {
     return m_type;
   }
 
   /** @brief Retrieve PIT token. */
-  const PitToken& getPitToken() const
-  {
+  const PitToken& getPitToken() const {
     return m_l3header.pitToken;
   }
 
@@ -441,8 +405,7 @@ public:
    * @brief Retrieve fragment.
    * @pre getType() == Type::Fragment
    */
-  Fragment getFragment() const
-  {
+  Fragment getFragment() const {
     Fragment frag;
     static_cast<FragmentHeader&>(frag) = m_frag;
     frag.l3header = m_l3header;
@@ -454,8 +417,7 @@ public:
    * @brief Decode payload as Interest.
    * @pre getType() == Type::Interest
    */
-  bool decodeInterest(Interest interest) const
-  {
+  bool decodeInterest(Interest interest) const {
     return m_type == Type::Interest && m_payload.makeDecoder().decode(interest);
   }
 
@@ -463,8 +425,7 @@ public:
    * @brief Decode payload as Data.
    * @pre getType() == Type::Data
    */
-  bool decodeData(Data data) const
-  {
+  bool decodeData(Data data) const {
     return m_type == Type::Data && m_payload.makeDecoder().decode(data);
   }
 
@@ -472,8 +433,7 @@ public:
    * @brief Decode Nack.
    * @pre getType() == Nack
    */
-  bool decodeNack(Nack nack) const
-  {
+  bool decodeNack(Nack nack) const {
     auto nackHeader = nack.getHeader();
     auto interest = nack.getInterest();
     return m_type == Type::Nack && m_l3header.nack.makeDecoder().decode(nackHeader) &&
@@ -481,8 +441,7 @@ public:
   }
 
 private:
-  Type classifyType() const
-  {
+  Type classifyType() const {
     if (m_frag.fragCount > 1) {
       return Type::Fragment;
     }
@@ -509,8 +468,7 @@ private:
 /**
  * @brief NDNLPv2 fragmenter.
  */
-class Reassembler : public WithRegion
-{
+class Reassembler : public WithRegion {
 public:
   /**
    * @brief Constructor.
@@ -518,8 +476,7 @@ public:
    *               This region may be shared with others fragmenters and reassemblers.
    */
   explicit Reassembler(Region& region)
-    : WithRegion(region)
-  {}
+    : WithRegion(region) {}
 
   /**
    * @brief Discard the reassembly buffer.
@@ -528,8 +485,7 @@ public:
    * region), this function should be invoked to discard the reassembly buffer. Otherwise,
    * undefined behavior may occur.
    */
-  void discard()
-  {
+  void discard() {
     m_buffer = nullptr;
   }
 
@@ -548,8 +504,7 @@ public:
    * Otherwise:
    * - Return false.
    */
-  bool add(const Fragment& frag)
-  {
+  bool add(const Fragment& frag) {
     if (frag.fragIndex == 0) {
       return begin(frag);
     }
@@ -562,8 +517,7 @@ public:
    * If the reassembly buffer contains a complete packet, return the reassembled packet.
    * Otherwise, return a @c PacketClassify with @c Type::None .
    */
-  PacketClassify reassemble() const
-  {
+  PacketClassify reassemble() const {
     if (m_nextFragIndex != m_fragCount) {
       return PacketClassify();
     }
@@ -571,8 +525,7 @@ public:
   }
 
 private:
-  bool begin(const Fragment& frag)
-  {
+  bool begin(const Fragment& frag) {
     discard();
     region.reset();
 
@@ -591,8 +544,7 @@ private:
     return append(frag);
   }
 
-  bool append(const Fragment& frag)
-  {
+  bool append(const Fragment& frag) {
     if (m_buffer == nullptr || frag.getSeqNumBase() != m_seqNumBase ||
         frag.fragIndex != m_nextFragIndex || frag.fragCount != m_fragCount ||
         frag.payload.size() > m_capacity - m_size) {

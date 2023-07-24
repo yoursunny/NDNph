@@ -16,15 +16,12 @@ namespace port_transport_socket {
 /** @brief A transport that communicates over IPv4 unicast UDP tunnel. */
 class UdpUnicastTransport
   : public virtual Transport
-  , public transport::DynamicRxQueueMixin
-{
+  , public transport::DynamicRxQueueMixin {
 public:
   explicit UdpUnicastTransport(size_t bufLen = DEFAULT_BUFLEN)
-    : DynamicRxQueueMixin(bufLen)
-  {}
+    : DynamicRxQueueMixin(bufLen) {}
 
-  ~UdpUnicastTransport() override
-  {
+  ~UdpUnicastTransport() override {
     end();
   }
 
@@ -33,8 +30,7 @@ public:
    * @param laddr local IPv4 address and UDP port.
    * @return whether success.
    */
-  bool beginListen(const sockaddr_in* laddr)
-  {
+  bool beginListen(const sockaddr_in* laddr) {
     return (createSocket(laddr->sin_family) &&
             bindSocket(reinterpret_cast<const sockaddr*>(laddr))) ||
            closeSocketOnError();
@@ -46,8 +42,7 @@ public:
    * @param v6only IPV6_V6ONLY socket option: 0=no, 1=yes, -1=unchanged.
    * @return whether success.
    */
-  bool beginListen(const sockaddr_in6* laddr, int v6only = -1)
-  {
+  bool beginListen(const sockaddr_in6* laddr, int v6only = -1) {
     return (createSocket(laddr->sin6_family) && changeV6Only(v6only) &&
             bindSocket(reinterpret_cast<const sockaddr*>(laddr))) ||
            closeSocketOnError();
@@ -57,8 +52,7 @@ public:
    * @brief Start listening on given local port for both IPv4 and IPv6.
    * @return whether success.
    */
-  bool beginListen(uint16_t localPort = 6363)
-  {
+  bool beginListen(uint16_t localPort = 6363) {
     sockaddr_in6 laddr{};
     laddr.sin6_family = AF_INET6;
     laddr.sin6_addr = in6addr_any;
@@ -71,8 +65,7 @@ public:
    * @param raddr remote IPv4 address and UDP port.
    * @return whether success.
    */
-  bool beginTunnel(const sockaddr_in* raddr)
-  {
+  bool beginTunnel(const sockaddr_in* raddr) {
     return (createSocket(raddr->sin_family) &&
             connectSocket(reinterpret_cast<const sockaddr*>(raddr))) ||
            closeSocketOnError();
@@ -84,8 +77,7 @@ public:
    * @param v6only IPV6_V6ONLY socket option: 0=no, 1=yes, -1=unchanged.
    * @return whether success.
    */
-  bool beginTunnel(const sockaddr_in6* raddr, int v6only = -1)
-  {
+  bool beginTunnel(const sockaddr_in6* raddr, int v6only = -1) {
     return (createSocket(raddr->sin6_family) && changeV6Only(v6only) &&
             connectSocket(reinterpret_cast<const sockaddr*>(raddr))) ||
            closeSocketOnError();
@@ -96,8 +88,7 @@ public:
    * @param remoteHost four octets to represent IPv4 address.
    * @param remotePort port number.
    */
-  bool beginTunnel(std::initializer_list<uint8_t> remoteHost, uint16_t remotePort = 6363)
-  {
+  bool beginTunnel(std::initializer_list<uint8_t> remoteHost, uint16_t remotePort = 6363) {
     sockaddr_in raddr{};
     if (remoteHost.size() != sizeof(raddr.sin_addr)) {
       return false;
@@ -109,8 +100,7 @@ public:
   }
 
   /** @brief Stop listening or close connection. */
-  bool end()
-  {
+  bool end() {
     if (m_fd < 0) {
       return true;
     }
@@ -120,13 +110,11 @@ public:
   }
 
 private:
-  bool doIsUp() const final
-  {
+  bool doIsUp() const final {
     return m_fd >= 0;
   }
 
-  void doLoop() final
-  {
+  void doLoop() final {
     const auto& p = getAddressFamilyParams(m_af);
     uint8_t raddr[std::max(sizeof(sockaddr_in), sizeof(sockaddr_in6))];
     iovec iov{};
@@ -153,8 +141,7 @@ private:
     loopRxQueue();
   }
 
-  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final
-  {
+  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) final {
     const auto& p = getAddressFamilyParams(m_af);
     uint8_t raddrBuf[std::max(sizeof(sockaddr_in), sizeof(sockaddr_in6))];
     sockaddr* raddr = nullptr;
@@ -178,8 +165,7 @@ private:
   }
 
 private:
-  struct AddressFamilyParams
-  {
+  struct AddressFamilyParams {
     socklen_t nameLen;
     ptrdiff_t ipOff;
     socklen_t ipLen;
@@ -188,8 +174,7 @@ private:
     const char* fmtBracketR;
   };
 
-  static const AddressFamilyParams& getAddressFamilyParams(sa_family_t family)
-  {
+  static const AddressFamilyParams& getAddressFamilyParams(sa_family_t family) {
     static const AddressFamilyParams inet = {
       .nameLen = sizeof(sockaddr_in),
       .ipOff = offsetof(sockaddr_in, sin_addr),
@@ -217,8 +202,7 @@ private:
     }
   }
 
-  bool createSocket(sa_family_t family)
-  {
+  bool createSocket(sa_family_t family) {
     end();
     m_fd = socket(family, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (m_fd < 0) {
@@ -239,8 +223,7 @@ private:
     return true;
   }
 
-  bool changeV6Only(int v6only)
-  {
+  bool changeV6Only(int v6only) {
     if (v6only < 0) {
       return true;
     }
@@ -254,8 +237,7 @@ private:
     return true;
   }
 
-  bool bindSocket(const sockaddr* laddr)
-  {
+  bool bindSocket(const sockaddr* laddr) {
     const auto& p = getAddressFamilyParams(laddr->sa_family);
     if (bind(m_fd, laddr, p.nameLen) < 0) {
 #ifdef NDNPH_SOCKET_DEBUG
@@ -275,8 +257,7 @@ private:
     return true;
   }
 
-  bool connectSocket(const sockaddr* raddr)
-  {
+  bool connectSocket(const sockaddr* raddr) {
     const auto& p = getAddressFamilyParams(raddr->sa_family);
     if (connect(m_fd, raddr, p.nameLen) < 0) {
 #ifdef NDNPH_SOCKET_DEBUG
@@ -296,8 +277,7 @@ private:
     return true;
   }
 
-  bool closeSocketOnError()
-  {
+  bool closeSocketOnError() {
     if (m_fd >= 0) {
       close(m_fd);
       m_af = AF_UNSPEC;
@@ -307,8 +287,7 @@ private:
     return false;
   }
 
-  void clearSocketError()
-  {
+  void clearSocketError() {
     int error = 0;
     socklen_t len = sizeof(error);
     getsockopt(m_fd, SOL_SOCKET, SO_ERROR, &error, &len);

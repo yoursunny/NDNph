@@ -9,8 +9,7 @@ namespace cli {
 namespace detail {
 
 inline Face*
-openMemif(const char* socketName, int* mtu)
-{
+openMemif(const char* socketName, int* mtu) {
 #ifdef NDNPH_PORT_TRANSPORT_MEMIF
   static MemifTransport transport;
   uint16_t dataroom = static_cast<uint16_t>(std::max(0, *mtu));
@@ -28,8 +27,7 @@ openMemif(const char* socketName, int* mtu)
 }
 
 inline Face*
-openUdp()
-{
+openUdp() {
   int port = 6363;
   const char* env = getenv("NDNPH_UPLINK_UDP_PORT");
   if (env != nullptr) {
@@ -74,8 +72,7 @@ openUdp()
 }
 
 inline void
-enableFragReass(Face& face, int mtu)
-{
+enableFragReass(Face& face, int mtu) {
   static DynamicRegion region(9200);
   static lp::Fragmenter fragmenter(region, mtu);
   static lp::Reassembler reassembler(region);
@@ -87,8 +84,7 @@ enableFragReass(Face& face, int mtu)
 
 /** @brief Open uplink face. */
 inline Face&
-openUplink()
-{
+openUplink() {
   static Face* face = nullptr;
   if (face == nullptr) {
     int mtu = -1;

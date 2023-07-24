@@ -30,13 +30,11 @@ using RequestIdLen = std::integral_constant<size_t, 8>;
 using AuthenticationTagLen = std::integral_constant<size_t, 16>;
 
 /** @brief Symmetric key used in CHALLENGE step. */
-class SessionKey
-{
+class SessionKey {
 public:
   /** @brief Derive the key. */
   bool makeKey(const mbedtls::Mpi& ecdhPvt, const mbedtls::P256::Point& ecdhPub,
-               const uint8_t* salt, const uint8_t* requestId)
-  {
+               const uint8_t* salt, const uint8_t* requestId) {
     mbedtls::P256::SharedSecret ikm;
     AesGcm::Key okm;
     return mbedtls::P256::ecdh(ecdhPvt, ecdhPub, ikm) &&
@@ -47,14 +45,12 @@ public:
   }
 
   /** @brief Encrypt to encrypted-message. */
-  tlv::Value encrypt(Region& region, tlv::Value plaintext, const uint8_t* requestId)
-  {
+  tlv::Value encrypt(Region& region, tlv::Value plaintext, const uint8_t* requestId) {
     return m_aes.encrypt<Encrypted>(region, plaintext, requestId, RequestIdLen::value);
   }
 
   /** @brief Decrypt from encrypted-message. */
-  tlv::Value decrypt(Region& region, tlv::Value message, const uint8_t* requestId)
-  {
+  tlv::Value decrypt(Region& region, tlv::Value message, const uint8_t* requestId) {
     Encrypted encrypted;
     bool ok = EvDecoder::decodeValue(message.makeDecoder(),
                                      EvDecoder::def<TT::InitializationVector>(&encrypted),
@@ -77,28 +73,23 @@ private:
 using ISigPolicy = isig::Policy<isig::Nonce<>, isig::Time<>>;
 
 inline ISigPolicy
-makeISigPolicy()
-{
+makeISigPolicy() {
   return isig::makePolicy(isig::Nonce<>(), isig::Time<>());
 }
 
 } // namespace detail
 namespace packet_struct {
 
-class ParameterKV
-{
+class ParameterKV {
 public:
-  class Parser
-  {
+  class Parser {
   public:
     explicit Parser(ParameterKV& target)
-      : m_target(target)
-    {
+      : m_target(target) {
       m_target.clear();
     }
 
-    bool parseKey(const Decoder::Tlv& d)
-    {
+    bool parseKey(const Decoder::Tlv& d) {
       if (m_pos >= detail::MaxChallengeParams::value) {
         return false;
       }
@@ -106,8 +97,7 @@ public:
       return true;
     }
 
-    bool parseValue(const Decoder::Tlv& d)
-    {
+    bool parseValue(const Decoder::Tlv& d) {
       if (m_pos >= detail::MaxChallengeParams::value) {
         return false;
       }
@@ -123,8 +113,7 @@ public:
   };
 
   /** @brief Retrieve parameter value by parameter key. */
-  tlv::Value get(tlv::Value key) const
-  {
+  tlv::Value get(tlv::Value key) const {
     for (const auto& p : m_kv) {
       if (p.first == key) {
         return p.second;
@@ -134,8 +123,7 @@ public:
   }
 
   /** @brief Set a parameter. */
-  bool set(tlv::Value key, tlv::Value value)
-  {
+  bool set(tlv::Value key, tlv::Value value) {
     NDNPH_ASSERT(!!key);
     for (auto& p : m_kv) {
       if (!p.first) {
@@ -147,14 +135,12 @@ public:
   }
 
   /** @brief Clear parameters. */
-  void clear()
-  {
+  void clear() {
     m_kv.fill(std::make_pair(tlv::Value(), tlv::Value()));
   }
 
   /** @brief Prepend ParameterKey-ParameterValue pairs to Encoder. */
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     for (auto it = m_kv.rbegin(); it != m_kv.rend(); ++it) {
       if (!it->first) {
         continue;
@@ -168,8 +154,7 @@ private:
   std::array<std::pair<tlv::Value, tlv::Value>, detail::MaxChallengeParams::value> m_kv;
 };
 
-struct CaProfile
-{
+struct CaProfile {
   /** @brief CA prefix. */
   Name prefix;
 
@@ -180,8 +165,7 @@ struct CaProfile
   Data cert;
 };
 
-struct NewRequest
-{
+struct NewRequest {
   /** @brief Client ECDH public key. */
   mbedtls::P256::Point ecdhPub;
 
@@ -189,8 +173,7 @@ struct NewRequest
   Data certRequest;
 };
 
-struct NewResponse
-{
+struct NewResponse {
   /** @brief Server ECDH public key. */
   mbedtls::P256::Point ecdhPub;
 
@@ -202,8 +185,7 @@ struct NewResponse
 };
 
 template<typename ChallengeT>
-struct ChallengeRequest
-{
+struct ChallengeRequest {
   /** @brief Challenge reference. */
   ChallengeT* challenge = nullptr;
 
@@ -211,8 +193,7 @@ struct ChallengeRequest
   ParameterKV params;
 };
 
-struct ChallengeResponse
-{
+struct ChallengeResponse {
   /** @brief Application status code. */
   uint8_t status = Status::BEFORE_CHALLENGE;
 

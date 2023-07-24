@@ -6,15 +6,12 @@ namespace detail {
 
 /** @brief Wrap a value to appear as InputIterator::pointer. */
 template<typename T>
-class InputIteratorPointerProxy
-{
+class InputIteratorPointerProxy {
 public:
   InputIteratorPointerProxy(T&& item)
-    : m_item(item)
-  {}
+    : m_item(item) {}
 
-  T* operator->() const
-  {
+  T* operator->() const {
     return &m_item;
   }
 

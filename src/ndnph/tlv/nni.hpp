@@ -9,11 +9,9 @@ namespace tlv {
 namespace detail {
 
 template<typename T>
-class NNIValue
-{
+class NNIValue {
 public:
-  static bool decode(const Decoder::Tlv& d, T& value)
-  {
+  static bool decode(const Decoder::Tlv& d, T& value) {
     if (d.length != sizeof(T)) {
       return false;
     }
@@ -22,11 +20,9 @@ public:
   }
 
   explicit NNIValue(T number)
-    : m_number(number)
-  {}
+    : m_number(number) {}
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     uint8_t* room = encoder.prependRoom(sizeof(m_number));
     if (room != nullptr) {
       writeValue(room, m_number);
@@ -43,45 +39,39 @@ private:
 
 template<>
 inline uint8_t
-NNIValue<uint8_t>::readValue(const uint8_t* input)
-{
+NNIValue<uint8_t>::readValue(const uint8_t* input) {
   return input[0];
 }
 
 template<>
 inline void
-NNIValue<uint8_t>::writeValue(uint8_t* room, uint8_t n)
-{
+NNIValue<uint8_t>::writeValue(uint8_t* room, uint8_t n) {
   room[0] = n;
 }
 
 template<>
 inline uint16_t
-NNIValue<uint16_t>::readValue(const uint8_t* input)
-{
+NNIValue<uint16_t>::readValue(const uint8_t* input) {
   return (static_cast<uint16_t>(input[0]) << 8) | static_cast<uint16_t>(input[1]);
 }
 
 template<>
 inline void
-NNIValue<uint16_t>::writeValue(uint8_t* room, uint16_t n)
-{
+NNIValue<uint16_t>::writeValue(uint8_t* room, uint16_t n) {
   room[0] = n >> 8;
   room[1] = n;
 }
 
 template<>
 inline uint32_t
-NNIValue<uint32_t>::readValue(const uint8_t* input)
-{
+NNIValue<uint32_t>::readValue(const uint8_t* input) {
   return (static_cast<uint32_t>(input[0]) << 24) | (static_cast<uint32_t>(input[1]) << 16) |
          (static_cast<uint32_t>(input[2]) << 8) | static_cast<uint32_t>(input[3]);
 }
 
 template<>
 inline void
-NNIValue<uint32_t>::writeValue(uint8_t* room, uint32_t n)
-{
+NNIValue<uint32_t>::writeValue(uint8_t* room, uint32_t n) {
   room[0] = n >> 24;
   room[1] = n >> 16;
   room[2] = n >> 8;
@@ -90,8 +80,7 @@ NNIValue<uint32_t>::writeValue(uint8_t* room, uint32_t n)
 
 template<>
 inline uint64_t
-NNIValue<uint64_t>::readValue(const uint8_t* input)
-{
+NNIValue<uint64_t>::readValue(const uint8_t* input) {
   return (static_cast<uint64_t>(input[0]) << 56) | (static_cast<uint64_t>(input[1]) << 48) |
          (static_cast<uint64_t>(input[2]) << 40) | (static_cast<uint64_t>(input[3]) << 32) |
          (static_cast<uint64_t>(input[4]) << 24) | (static_cast<uint64_t>(input[5]) << 16) |
@@ -100,8 +89,7 @@ NNIValue<uint64_t>::readValue(const uint8_t* input)
 
 template<>
 inline void
-NNIValue<uint64_t>::writeValue(uint8_t* room, uint64_t n)
-{
+NNIValue<uint64_t>::writeValue(uint8_t* room, uint64_t n) {
   room[0] = n >> 56;
   room[1] = n >> 48;
   room[2] = n >> 40;
@@ -127,8 +115,7 @@ using NNI4 = detail::NNIValue<uint32_t>;
 using NNI8 = detail::NNIValue<uint64_t>;
 
 /** @brief NonNegativeInteger encoding. */
-class NNI
-{
+class NNI {
 public:
   /**
    * @brief Decode NonNegativeInteger.
@@ -137,8 +124,7 @@ public:
    */
   template<typename I, typename Limit = typename std::enable_if<std::is_integral<I>::value,
                                                                 std::numeric_limits<I>>::type>
-  static bool decode(const Decoder::Tlv& d, I& value, uint64_t max = Limit::max())
-  {
+  static bool decode(const Decoder::Tlv& d, I& value, uint64_t max = Limit::max()) {
     uint64_t n = 0;
     switch (d.length) {
       case 1:
@@ -161,11 +147,9 @@ public:
   }
 
   explicit NNI(uint64_t number)
-    : m_number(number)
-  {}
+    : m_number(number) {}
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     if (m_number <= std::numeric_limits<uint8_t>::max()) {
       NNI1(m_number).encodeTo(encoder);
     } else if (m_number <= std::numeric_limits<uint16_t>::max()) {
@@ -183,17 +167,14 @@ private:
 
 /** @brief Encode to a TLV element where TLV-VALUE is a NonNegativeInteger. */
 template<typename N = NNI>
-class NniElement
-{
+class NniElement {
 public:
   template<typename I>
   explicit NniElement(uint32_t type, I value)
     : m_type(type)
-    , m_nni(value)
-  {}
+    , m_nni(value) {}
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     encoder.prependTlv(m_type, m_nni);
   }
 

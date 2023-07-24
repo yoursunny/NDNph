@@ -21,21 +21,18 @@ namespace ndnph {
  * Other structures are not supported.
  */
 template<uint32_t ivType, size_t ivLen, uint32_t tagType, size_t tagLen, uint32_t epType>
-class EncryptedMessage
-{
+class EncryptedMessage {
 public:
   using IvLen = std::integral_constant<size_t, ivLen>;
   using TagLen = std::integral_constant<size_t, tagLen>;
 
-  struct InPlace
-  {
+  struct InPlace {
     uint8_t* iv = nullptr;
     uint8_t* tag = nullptr;
     uint8_t* ciphertext = nullptr;
   };
 
-  static InPlace prependInPlace(Encoder& encoder, size_t ciphertextLen)
-  {
+  static InPlace prependInPlace(Encoder& encoder, size_t ciphertextLen) {
     InPlace result;
     result.ciphertext = encoder.prependRoom(ciphertextLen);
     encoder.prependTypeLength(epType, ciphertextLen);
@@ -50,8 +47,7 @@ public:
     return result;
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     auto place = prependInPlace(encoder, ciphertext.size());
     if (!encoder) {
       return;
@@ -66,8 +62,7 @@ public:
     std::copy(ciphertext.begin(), ciphertext.end(), place.ciphertext);
   }
 
-  bool decodeFrom(const Decoder::Tlv& d)
-  {
+  bool decodeFrom(const Decoder::Tlv& d) {
     switch (d.type) {
       case ivType: {
         if (d.length == ivLen) {

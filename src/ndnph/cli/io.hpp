@@ -12,8 +12,7 @@ namespace cli {
 /** @brief Read and decode from input stream. */
 template<typename T, int bufferSize = 4096>
 inline bool
-input(Region& region, T& target, std::istream& is = std::cin)
-{
+input(Region& region, T& target, std::istream& is = std::cin) {
   uint8_t* buffer = region.alloc(bufferSize);
   if (buffer == nullptr) {
     fprintf(stderr, "ndnph::cli::input alloc error\n");
@@ -31,8 +30,7 @@ input(Region& region, T& target, std::istream& is = std::cin)
 /** @brief Write an Encodable to output stream. */
 template<typename Encodable, int bufferSize = 65536>
 inline void
-output(const Encodable& packet, std::ostream& os = std::cout)
-{
+output(const Encodable& packet, std::ostream& os = std::cout) {
   StaticRegion<bufferSize> temp;
   Encoder encoder(temp);
   if (!encoder.prepend(packet)) {

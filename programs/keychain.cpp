@@ -7,8 +7,7 @@ ndnph::StaticRegion<65536> region;
 ndnph::KeyChain& keyChain = ndnph::cli::openKeyChain();
 
 static bool
-keygen(int argc, char** argv)
-{
+keygen(int argc, char** argv) {
   if (argc != 4) {
     return false;
   }
@@ -34,8 +33,7 @@ keygen(int argc, char** argv)
 }
 
 static bool
-certinfo(int argc, char** argv)
-{
+certinfo(int argc, char** argv) {
   if (argc != 3) {
     return false;
   }
@@ -51,8 +49,7 @@ certinfo(int argc, char** argv)
 }
 
 static bool
-certexport(int argc, char** argv)
-{
+certexport(int argc, char** argv) {
   if (argc != 3) {
     return false;
   }
@@ -63,8 +60,7 @@ certexport(int argc, char** argv)
 }
 
 static bool
-certsign(int argc, char** argv)
-{
+certsign(int argc, char** argv) {
   if (argc != 3) {
     return false;
   }
@@ -83,8 +79,7 @@ certsign(int argc, char** argv)
 }
 
 static bool
-certimport(int argc, char** argv)
-{
+certimport(int argc, char** argv) {
   if (argc != 3) {
     return false;
   }
@@ -99,8 +94,7 @@ certimport(int argc, char** argv)
 }
 
 static bool
-execute(int argc, char** argv)
-{
+execute(int argc, char** argv) {
   if (argc <= 1) {
     return false;
   }
@@ -120,8 +114,7 @@ execute(int argc, char** argv)
 }
 
 static void
-usage()
-{
+usage() {
   fprintf(stderr, "ndnph-keychain keygen ID NAME > self-signed-cert.data\n"
                   "  Generate a key pair for NAME and save to ID.\n"
                   "\n"
@@ -139,8 +132,7 @@ usage()
 }
 
 int
-main(int argc, char** argv)
-{
+main(int argc, char** argv) {
   if (!execute(argc, argv)) {
     usage();
     return 1;

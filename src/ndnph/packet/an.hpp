@@ -5,8 +5,7 @@ namespace ndnph {
 
 /** @brief TLV-TYPE assigned numbers. */
 namespace TT {
-enum
-{
+enum {
   LpPacket = 0x64,
   LpPayload = 0x50,
   LpSeqNum = 0x51,
@@ -63,8 +62,7 @@ enum
 
 /** @brief ContentType assigned numbers. */
 namespace ContentType {
-enum
-{
+enum {
   Blob = 0x00,
   Link = 0x01,
   Key = 0x02,
@@ -75,8 +73,7 @@ enum
 
 /** @brief SignatureType assigned numbers. */
 namespace SigType {
-enum
-{
+enum {
   Sha256 = 0x00,
   Sha256WithRsa = 0x01,
   Sha256WithEcdsa = 0x03,

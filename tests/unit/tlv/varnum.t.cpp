@@ -5,8 +5,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Tlv, SizeofVarNum)
-{
+TEST(Tlv, SizeofVarNum) {
   EXPECT_EQ(tlv::sizeofVarNum(0x01), 1);
   EXPECT_EQ(tlv::sizeofVarNum(0xFC), 1);
   EXPECT_EQ(tlv::sizeofVarNum(0xFD), 3);
@@ -16,8 +15,7 @@ TEST(Tlv, SizeofVarNum)
   EXPECT_EQ(tlv::sizeofVarNum(0xFFFFFFFF), 5);
 }
 
-TEST(Tlv, WriteVarNum)
-{
+TEST(Tlv, WriteVarNum) {
   std::vector<uint8_t> room(1);
   tlv::writeVarNum(room.data(), 0x01);
   EXPECT_THAT(room, g::ElementsAre(0x01));

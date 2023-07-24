@@ -6,10 +6,9 @@
 namespace ndnph {
 namespace {
 
-TEST(Convention, ImplicitDigest)
-{
+TEST(Convention, ImplicitDigest) {
   StaticRegion<1024> region;
-  Name name(region, { 0x08, 0x01, 0x41, 0x01, 0x00 });
+  Name name(region, {0x08, 0x01, 0x41, 0x01, 0x00});
   EXPECT_FALSE(name[0].is<convention::ImplicitDigest>());
   EXPECT_FALSE(name[1].is<convention::ImplicitDigest>());
 
@@ -25,10 +24,9 @@ TEST(Convention, ImplicitDigest)
   EXPECT_THAT(std::vector<uint8_t>(digest, digest + NDNPH_SHA256_LEN), g::ElementsAreArray(value));
 }
 
-TEST(Convention, Keyword)
-{
+TEST(Convention, Keyword) {
   StaticRegion<1024> region;
-  Name name(region, { 0x08, 0x01, 0x41, 0x20, 0x00 });
+  Name name(region, {0x08, 0x01, 0x41, 0x20, 0x00});
   EXPECT_FALSE(name[0].is<convention::Keyword>());
   EXPECT_TRUE(name[1].is<convention::Keyword>());
 
@@ -42,10 +40,9 @@ TEST(Convention, Keyword)
   EXPECT_EQ(keyword, std::string("hello"));
 }
 
-TEST(Convention, Segment)
-{
+TEST(Convention, Segment) {
   StaticRegion<1024> region;
-  Name name(region, { 0x08, 0x01, 0x41, TT::SegmentNameComponent, 0x00 });
+  Name name(region, {0x08, 0x01, 0x41, TT::SegmentNameComponent, 0x00});
   EXPECT_FALSE(name[0].is<convention::Segment>());
   EXPECT_FALSE(name[1].is<convention::Segment>());
 

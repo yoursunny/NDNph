@@ -12,17 +12,14 @@ namespace transport {
  * One use case is to wrap a transport that is capable of both multicast and unicast,
  * and force every outgoing packet to be sent over multicast.
  */
-class ForceEndpointId : public TransportWrap
-{
+class ForceEndpointId : public TransportWrap {
 public:
   explicit ForceEndpointId(Transport& inner, uint64_t endpointId = 0)
     : TransportWrap(inner)
-    , m_endpointId(endpointId)
-  {}
+    , m_endpointId(endpointId) {}
 
 private:
-  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t) final
-  {
+  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t) final {
     return inner.send(pkt, pktLen, m_endpointId);
   }
 

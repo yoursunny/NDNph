@@ -7,8 +7,7 @@ namespace ndnph {
 namespace port_random_urandom {
 
 /** @brief Generate random bytes by reading from urandom device. */
-class RandomSource
-{
+class RandomSource {
 public:
   RandomSource() = delete;
 
@@ -16,8 +15,7 @@ public:
    * @brief Fill output[0:count] with random bytes.
    * @return whether success.
    */
-  static bool generate(uint8_t* output, size_t count)
-  {
+  static bool generate(uint8_t* output, size_t count) {
     static FILE* fd = std::fopen("/dev/urandom", "r");
     return fd != nullptr && std::fread(output, 1, count, fd) == count;
   }

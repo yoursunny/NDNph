@@ -7,8 +7,7 @@
 namespace ndnph {
 
 /** @brief Base class to receive packets from Face. */
-class PacketHandler
-{
+class PacketHandler {
 public:
   using PacketInfo = Face::PacketInfo;
 
@@ -16,22 +15,19 @@ public:
   explicit PacketHandler() = default;
 
   /** @brief Construct and add handler to Face. */
-  explicit PacketHandler(Face& face, int8_t prio = 0)
-  {
+  explicit PacketHandler(Face& face, int8_t prio = 0) {
     face.addHandler(*this, prio);
   }
 
 protected:
   /** @brief Remove handler from Face. */
-  virtual ~PacketHandler()
-  {
+  virtual ~PacketHandler() {
     if (m_face != nullptr) {
       m_face->removeHandler(*this);
     }
   }
 
-  Face* getFace() const
-  {
+  Face* getFace() const {
     return m_face;
   }
 
@@ -39,8 +35,7 @@ protected:
    * @brief Retrieve information about current processing packet.
    * @pre one of processInterest, processData, or processNack is executing.
    */
-  const PacketInfo* getCurrentPacketInfo() const
-  {
+  const PacketInfo* getCurrentPacketInfo() const {
     return m_face == nullptr ? nullptr : m_face->getCurrentPacketInfo();
   }
 
@@ -51,21 +46,17 @@ protected:
    * @return whether success.
    */
   template<typename Packet>
-  bool send(Region& region, const Packet& packet, PacketInfo pi = {})
-  {
+  bool send(Region& region, const Packet& packet, PacketInfo pi = {}) {
     return m_face != nullptr && m_face->send(region, packet, pi);
   }
 
   /** @brief Set EndpointId of PacketInfo. */
-  class WithEndpointId
-  {
+  class WithEndpointId {
   public:
     explicit WithEndpointId(uint64_t endpointId)
-      : endpointId(endpointId)
-    {}
+      : endpointId(endpointId) {}
 
-    void operator()(PacketInfo& pi) const
-    {
+    void operator()(PacketInfo& pi) const {
       pi.endpointId = endpointId;
     }
 
@@ -74,15 +65,12 @@ protected:
   };
 
   /** @brief Set PIT token of PacketInfo. */
-  class WithPitToken
-  {
+  class WithPitToken {
   public:
     explicit WithPitToken(const lp::PitToken& pitToken)
-      : pitToken(pitToken)
-    {}
+      : pitToken(pitToken) {}
 
-    void operator()(PacketInfo& pi) const
-    {
+    void operator()(PacketInfo& pi) const {
       pi.pitToken = pitToken;
     }
 
@@ -96,8 +84,7 @@ protected:
    * @tparam PacketInfoModifier WithEndpointId or WithPitToken
    */
   template<typename Packet, typename... PacketInfoModifier>
-  bool send(Region& region, const Packet& packet, const PacketInfoModifier&... pim)
-  {
+  bool send(Region& region, const Packet& packet, const PacketInfoModifier&... pim) {
     return send(region, packet, PacketInfo(), pim...);
   }
 
@@ -116,8 +103,7 @@ protected:
   template<typename Packet, typename... Arg,
            typename = typename std::enable_if<
              !std::is_base_of<Region, typename std::decay<Packet>::type>::value>::type>
-  bool send(const Packet& packet, Arg&&... arg)
-  {
+  bool send(const Packet& packet, Arg&&... arg) {
     return send(regionOf(packet), packet, std::forward<Arg>(arg)...);
   }
 
@@ -130,19 +116,16 @@ protected:
    * current Interest to the endpointId of current Interest.
    */
   template<typename... Arg>
-  bool reply(Arg&&... arg)
-  {
+  bool reply(Arg&&... arg) {
     const PacketInfo* pi = getCurrentPacketInfo();
     return pi != nullptr && send(std::forward<Arg>(arg)..., *pi);
   }
 
   /** @brief Helper to keep track an outgoing pending Interest. */
-  class OutgoingPendingInterest
-  {
+  class OutgoingPendingInterest {
   public:
     OutgoingPendingInterest(PacketHandler* ph)
-      : m_ph(*ph)
-    {
+      : m_ph(*ph) {
       port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_pitToken), sizeof(m_pitToken));
       expireNow();
     }
@@ -155,8 +138,7 @@ protected:
      * @param arg other arguments to @c PacketHandler::send() .
      */
     template<typename Packet, typename... Arg>
-    bool send(const Packet& interest, int timeout, Arg&&... arg)
-    {
+    bool send(const Packet& interest, int timeout, Arg&&... arg) {
       m_expire = ndnph::port::Clock::add(ndnph::port::Clock::now(), timeout);
 
       do {
@@ -167,15 +149,13 @@ protected:
     }
 
     template<typename Packet>
-    bool send(const Packet& interest)
-    {
+    bool send(const Packet& interest) {
       return send(interest, interest.getLifetime());
     }
 
     template<typename Packet, typename ArgFirst, typename... Arg,
              typename = typename std::enable_if<!std::is_integral<ArgFirst>::value>::type>
-    bool send(const Packet& interest, ArgFirst&& arg1, Arg&&... arg)
-    {
+    bool send(const Packet& interest, ArgFirst&& arg1, Arg&&... arg) {
       return send(interest, interest.getLifetime(), std::forward<ArgFirst>(arg1),
                   std::forward<Arg>(arg)...);
     }
@@ -188,8 +168,7 @@ protected:
      * If the application has saved a copy of the outgoing Interest or its name, it's
      * recommended to use @c match() instead.
      */
-    bool matchPitToken() const
-    {
+    bool matchPitToken() const {
       auto pi = m_ph.getCurrentPacketInfo();
       return pi != nullptr && pi->pitToken.to4() == m_pitToken;
     }
@@ -200,8 +179,7 @@ protected:
      * @param data incoming Data.
      * @param interest saved outgoing Interest.
      */
-    bool match(const Data& data, const Interest& interest) const
-    {
+    bool match(const Data& data, const Interest& interest) const {
       return matchPitToken() && data.canSatisfy(interest);
     }
 
@@ -212,8 +190,7 @@ protected:
      * @param name saved outgoing Interest name.
      * @param canBePrefix CanBePrefix flag on the Interest.
      */
-    bool match(const Data& data, const Name& name, bool canBePrefix = true) const
-    {
+    bool match(const Data& data, const Name& name, bool canBePrefix = true) const {
       StaticRegion<128> region;
       auto interest = region.create<Interest>();
       NDNPH_ASSERT(!!interest);
@@ -223,14 +200,12 @@ protected:
     }
 
     /** @brief Set expire time to now. */
-    void expireNow()
-    {
+    void expireNow() {
       m_expire = port::Clock::now();
     }
 
     /** @brief Determine if the pending Interest has expired / timed out. */
-    bool expired() const
-    {
+    bool expired() const {
       return ndnph::port::Clock::isBefore(m_expire, ndnph::port::Clock::now());
     }
 
@@ -249,8 +224,7 @@ private:
    * @retval true packet has been accepted by this handler.
    * @retval false packet is not accepted, and should go to the next handler.
    */
-  virtual bool processInterest(Interest)
-  {
+  virtual bool processInterest(Interest) {
     return false;
   }
 
@@ -259,8 +233,7 @@ private:
    * @retval true packet has been accepted by this handler.
    * @retval false packet is not accepted, and should go to the next handler.
    */
-  virtual bool processData(Data)
-  {
+  virtual bool processData(Data) {
     return false;
   }
 
@@ -269,15 +242,13 @@ private:
    * @retval true packet has been accepted by this handler.
    * @retval false packet is not accepted, and should go to the next handler.
    */
-  virtual bool processNack(Nack)
-  {
+  virtual bool processNack(Nack) {
     return false;
   }
 
   template<typename Packet, typename PimFirst, typename... PimRest>
   bool send(Region& region, const Packet& packet, PacketInfo pi, const PimFirst& pimFirst,
-            const PimRest&... pimRest)
-  {
+            const PimRest&... pimRest) {
     pimFirst(pi);
     return send(region, packet, pi, pimRest...);
   }

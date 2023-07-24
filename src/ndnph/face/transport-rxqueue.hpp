@@ -11,8 +11,7 @@
 namespace ndnph {
 namespace transport {
 
-struct RxQueueItem
-{
+struct RxQueueItem {
   Region* region = nullptr;
   uint64_t endpointId = 0;
   uint8_t* pkt = nullptr;
@@ -20,16 +19,14 @@ struct RxQueueItem
 };
 
 /** @brief Mixin of RX queue in Transport. */
-class RxQueueMixin : public virtual Transport
-{
+class RxQueueMixin : public virtual Transport {
 protected:
   /**
    * @brief Allocate receive buffers during initialization.
    * @tparam F `Region* (*)()`
    */
   template<typename F>
-  void initAllocBuffers(const F& makeRegion)
-  {
+  void initAllocBuffers(const F& makeRegion) {
     for (size_t i = 0; i < NDNPH_TRANSPORT_RXQUEUELEN; ++i) {
       RxQueueItem item;
       item.region = makeRegion();
@@ -39,12 +36,10 @@ protected:
     }
   }
 
-  class RxContext
-  {
+  class RxContext {
   public:
     explicit RxContext(RxQueueMixin& transport)
-      : m_transport(transport)
-    {
+      : m_transport(transport) {
       bool ok = false;
       std::tie(m_item, ok) = transport.m_allocQ.pop();
       if (ok) {
@@ -56,8 +51,7 @@ protected:
       }
     }
 
-    ~RxContext()
-    {
+    ~RxContext() {
       if (m_item.region == nullptr) {
         return;
       }
@@ -70,23 +64,19 @@ protected:
       NDNPH_ASSERT(ok);
     }
 
-    operator bool() const
-    {
+    operator bool() const {
       return m_item.pkt != nullptr;
     }
 
-    uint8_t* buf()
-    {
+    uint8_t* buf() {
       return m_item.pkt;
     }
 
-    size_t bufLen()
-    {
+    size_t bufLen() {
       return m_bufLen;
     }
 
-    void operator()(size_t pktLen, uint64_t endpointId = 0)
-    {
+    void operator()(size_t pktLen, uint64_t endpointId = 0) {
       m_item.pktLen = pktLen;
       m_item.endpointId = endpointId;
     }
@@ -110,8 +100,7 @@ protected:
    * }
    * @endcode
    */
-  RxContext receiving()
-  {
+  RxContext receiving() {
     return RxContext(*this);
   }
 
@@ -121,8 +110,7 @@ protected:
    * This delivers received packets to Face.
    * This should be called in `loop()`.
    */
-  void loopRxQueue()
-  {
+  void loopRxQueue() {
     while (true) {
       RxQueueItem item;
       bool ok = false;
@@ -143,8 +131,7 @@ private:
 /**
  * @brief Mixin of RX queue in Transport, allocating buffers from DynamicRegion.
  */
-class DynamicRxQueueMixin : public RxQueueMixin
-{
+class DynamicRxQueueMixin : public RxQueueMixin {
 public:
   static constexpr size_t DEFAULT_BUFLEN = 1500;
 
@@ -154,8 +141,7 @@ protected:
    * @param bufLen buffer length, typically MTU.
    */
   explicit DynamicRxQueueMixin(size_t bufLen = DEFAULT_BUFLEN)
-    : m_region(sizeofSubRegions(bufLen, NDNPH_TRANSPORT_RXQUEUELEN))
-  {
+    : m_region(sizeofSubRegions(bufLen, NDNPH_TRANSPORT_RXQUEUELEN)) {
     this->initAllocBuffers([=] { return makeSubRegion(m_region, bufLen); });
   }
 

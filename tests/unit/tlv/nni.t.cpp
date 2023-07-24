@@ -5,8 +5,7 @@
 namespace ndnph {
 namespace {
 
-TEST(NNI, Decode)
-{
+TEST(NNI, Decode) {
   auto wire = test::fromHex("C000"
                             "C101A0"
                             "C202A0A1"
@@ -133,8 +132,7 @@ TEST(NNI, Decode)
   }
 }
 
-TEST(NNI, Encode)
-{
+TEST(NNI, Encode) {
   StaticRegion<100> region;
   Encoder encoder(region);
   encoder.prependTlv(0x10, tlv::NNI1(0x00));

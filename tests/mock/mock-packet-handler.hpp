@@ -7,16 +7,14 @@
 
 namespace ndnph {
 
-class MockPacketHandler : public PacketHandler
-{
+class MockPacketHandler : public PacketHandler {
 public:
   using PacketHandler::getCurrentPacketInfo;
   using PacketHandler::PacketHandler;
   using PacketHandler::reply;
 
   template<typename... Arg>
-  bool send(Arg&&... arg)
-  {
+  bool send(Arg&&... arg) {
     return PacketHandler::send(std::forward<Arg>(arg)...);
   }
 

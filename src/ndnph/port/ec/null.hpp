@@ -7,12 +7,10 @@ namespace ndnph {
 namespace port_ec_null {
 
 /** @brief Stub ECDSA algorithm implementation. */
-class Ec
-{
+class Ec {
 public:
   /** @brief Give information about the curve. */
-  struct Curve
-  {
+  struct Curve {
     /** @brief Private key length. */
     using PvtLen = std::integral_constant<size_t, 32>;
 
@@ -24,15 +22,13 @@ public:
   };
 
   /** @brief Private key. */
-  class PrivateKey
-  {
+  class PrivateKey {
   public:
     /**
      * @brief Import raw key.
      * @return whether success.
      */
-    bool import(const uint8_t[Curve::PubLen::value])
-    {
+    bool import(const uint8_t[Curve::PubLen::value]) {
       return false;
     }
 
@@ -40,8 +36,8 @@ public:
      * @brief Perform signing on a SHA256 digest.
      * @return signature length, or -1 upon failure.
      */
-    ssize_t sign(const uint8_t digest[NDNPH_SHA256_LEN], uint8_t sig[Curve::MaxSigLen::value]) const
-    {
+    ssize_t sign(const uint8_t digest[NDNPH_SHA256_LEN],
+                 uint8_t sig[Curve::MaxSigLen::value]) const {
       (void)digest;
       (void)sig;
       return -1;
@@ -49,15 +45,13 @@ public:
   };
 
   /** @brief Public key. */
-  class PublicKey
-  {
+  class PublicKey {
   public:
     /**
      * @brief Import raw key.
      * @return whether success.
      */
-    bool import(const uint8_t[Curve::PubLen::value])
-    {
+    bool import(const uint8_t[Curve::PubLen::value]) {
       return false;
     }
 
@@ -65,8 +59,7 @@ public:
      * @brief Perform verification on a SHA256 digest against a given signature.
      * @return verification result.
      */
-    bool verify(const uint8_t digest[NDNPH_SHA256_LEN], const uint8_t* sig, size_t sigLen) const
-    {
+    bool verify(const uint8_t digest[NDNPH_SHA256_LEN], const uint8_t* sig, size_t sigLen) const {
       (void)digest;
       (void)sig;
       (void)sigLen;
@@ -80,8 +73,7 @@ public:
    * @param[out] pub raw public key.
    * @return whether success.
    */
-  static bool generateKey(uint8_t pvt[Curve::PvtLen::value], uint8_t pub[Curve::PubLen::value])
-  {
+  static bool generateKey(uint8_t pvt[Curve::PvtLen::value], uint8_t pub[Curve::PubLen::value]) {
     (void)pvt;
     (void)pub;
     return false;

@@ -21,34 +21,28 @@ namespace mbedtls {
 
 /** @brief Random number generator for various Mbed TLS library functions. */
 inline int
-rng(void*, uint8_t* output, size_t count)
-{
+rng(void*, uint8_t* output, size_t count) {
   bool ok = port::RandomSource::generate(output, count);
   return ok ? 0 : -1;
 }
 
 /** @brief SHA256 hash function. */
-class Sha256
-{
+class Sha256 {
 public:
-  explicit Sha256()
-  {
+  explicit Sha256() {
     mbedtls_sha256_init(&m_ctx);
     m_ok = mbedtls_sha256_starts_ret(&m_ctx, 0) == 0;
   }
 
-  ~Sha256()
-  {
+  ~Sha256() {
     mbedtls_sha256_free(&m_ctx);
   }
 
-  void update(const uint8_t* chunk, size_t size)
-  {
+  void update(const uint8_t* chunk, size_t size) {
     m_ok = m_ok && mbedtls_sha256_update_ret(&m_ctx, chunk, size) == 0;
   }
 
-  bool final(uint8_t digest[NDNPH_SHA256_LEN])
-  {
+  bool final(uint8_t digest[NDNPH_SHA256_LEN]) {
     m_ok = m_ok && mbedtls_sha256_finish_ret(&m_ctx, digest) == 0;
     return m_ok;
   }
@@ -64,25 +58,21 @@ private:
  * @tparam mdSize checksum size.
  */
 template<mbedtls_md_type_t mdType, size_t mdSize>
-class Hmac
-{
+class Hmac {
 public:
   /** @brief Start HMAC operation and set key. */
-  explicit Hmac(const uint8_t* key, size_t keyLen)
-  {
+  explicit Hmac(const uint8_t* key, size_t keyLen) {
     mbedtls_md_init(&m_ctx);
     m_ok = mbedtls_md_setup(&m_ctx, mbedtls_md_info_from_type(mdType), 1) == 0 &&
            mbedtls_md_hmac_starts(&m_ctx, key, keyLen) == 0;
   }
 
-  ~Hmac()
-  {
+  ~Hmac() {
     mbedtls_md_free(&m_ctx);
   }
 
   /** @brief Append bytes into hash state. */
-  void update(const uint8_t* chunk, size_t size)
-  {
+  void update(const uint8_t* chunk, size_t size) {
     m_ok = m_ok && mbedtls_md_hmac_update(&m_ctx, chunk, size) == 0;
   }
 
@@ -91,8 +81,7 @@ public:
    * @return whether success.
    * @post this object is ready for new HMAC operation with same key.
    */
-  bool final(uint8_t result[mdSize])
-  {
+  bool final(uint8_t result[mdSize]) {
     m_ok =
       m_ok && mbedtls_md_hmac_finish(&m_ctx, result) == 0 && mbedtls_md_hmac_reset(&m_ctx) == 0;
     return m_ok;
@@ -104,41 +93,34 @@ private:
 };
 
 /** @brief Multi-Precision Integer. */
-class Mpi
-{
+class Mpi {
 public:
   /** @brief Construct zero. */
-  explicit Mpi()
-  {
+  explicit Mpi() {
     mbedtls_mpi_init(&m_value);
   }
 
   /** @brief Construct from MPI. */
   explicit Mpi(const mbedtls_mpi* src)
-    : Mpi()
-  {
+    : Mpi() {
     mbedtls_mpi_copy(&m_value, src);
   }
 
   /** @brief Construct from integer. */
   explicit Mpi(mbedtls_mpi_sint src)
-    : Mpi()
-  {
+    : Mpi() {
     mbedtls_mpi_lset(&m_value, src);
   }
 
-  ~Mpi()
-  {
+  ~Mpi() {
     mbedtls_mpi_free(&m_value);
   }
 
-  operator mbedtls_mpi*()
-  {
+  operator mbedtls_mpi*() {
     return &m_value;
   }
 
-  operator const mbedtls_mpi*() const
-  {
+  operator const mbedtls_mpi*() const {
     return &m_value;
   }
 
@@ -149,8 +131,7 @@ public:
    * @brief Move assignment.
    * @post @p y is cleared
    */
-  Mpi& operator=(Mpi&& y)
-  {
+  Mpi& operator=(Mpi&& y) {
     mbedtls_mpi_swap(&m_value, &y.m_value);
     return *this;
   }
@@ -160,52 +141,44 @@ private:
 };
 
 /** @brief EC point. */
-class EcPoint
-{
+class EcPoint {
 public:
   /** @brief Construct zero. */
-  explicit EcPoint()
-  {
+  explicit EcPoint() {
     mbedtls_ecp_point_init(&m_value);
   }
 
   /** @brief Construct from EC point. */
   explicit EcPoint(const mbedtls_ecp_point* q)
-    : EcPoint()
-  {
+    : EcPoint() {
     if (q != nullptr) {
       mbedtls_ecp_copy(&m_value, q);
     }
   }
 
-  ~EcPoint()
-  {
+  ~EcPoint() {
     mbedtls_ecp_point_free(&m_value);
   }
 
-  operator mbedtls_ecp_point*()
-  {
+  operator mbedtls_ecp_point*() {
     return &m_value;
   }
 
-  operator const mbedtls_ecp_point*() const
-  {
+  operator const mbedtls_ecp_point*() const {
     return &m_value;
   }
 
   /** @brief Copy assignment is disallowed due to lack of error handling. */
   EcPoint& operator=(const EcPoint&) = delete;
 
-  bool writeBinary(mbedtls_ecp_group* group, uint8_t* room, size_t length) const
-  {
+  bool writeBinary(mbedtls_ecp_group* group, uint8_t* room, size_t length) const {
     size_t actualLength = 0;
     return mbedtls_ecp_point_write_binary(group, *this, MBEDTLS_ECP_PF_UNCOMPRESSED, &actualLength,
                                           room, length) == 0 &&
            actualLength == length;
   }
 
-  void encodeTo(mbedtls_ecp_group* group, Encoder& encoder, size_t length) const
-  {
+  void encodeTo(mbedtls_ecp_group* group, Encoder& encoder, size_t length) const {
     uint8_t* room = encoder.prependRoom(length);
     if (room == nullptr) {
       return;
@@ -216,14 +189,12 @@ public:
     }
   }
 
-  bool readBinary(mbedtls_ecp_group* group, const uint8_t* value, size_t length)
-  {
+  bool readBinary(mbedtls_ecp_group* group, const uint8_t* value, size_t length) {
     return mbedtls_ecp_point_read_binary(group, *this, value, length) == 0 &&
            mbedtls_ecp_check_pubkey(group, *this) == 0;
   }
 
-  bool decodeFrom(mbedtls_ecp_group* group, const Decoder::Tlv& d)
-  {
+  bool decodeFrom(mbedtls_ecp_group* group, const Decoder::Tlv& d) {
     return readBinary(group, d.value, d.length);
   }
 
@@ -233,45 +204,36 @@ private:
 
 /** @brief EC point associated with a curve. */
 template<typename Curve>
-class EcCurvePoint : public EcPoint
-{
+class EcCurvePoint : public EcPoint {
 public:
-  bool writeBinary(uint8_t room[Curve::PubLen::value]) const
-  {
+  bool writeBinary(uint8_t room[Curve::PubLen::value]) const {
     return EcPoint::writeBinary(Curve::group(), room, Curve::PubLen::value);
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     return EcPoint::encodeTo(Curve::group(), encoder, Curve::PubLen::value);
   }
 
-  bool readBinary(const uint8_t* value, size_t length)
-  {
+  bool readBinary(const uint8_t* value, size_t length) {
     return EcPoint::readBinary(Curve::group(), value, length);
   }
 
-  bool decodeFrom(const Decoder::Tlv& d)
-  {
+  bool decodeFrom(const Decoder::Tlv& d) {
     return EcPoint::decodeFrom(Curve::group(), d);
   }
 };
 
 /** @brief EC curve P256. */
-class P256
-{
+class P256 {
 public:
   using PvtLen = std::integral_constant<size_t, 32>;
   using PubLen = std::integral_constant<size_t, 65>;
   using MaxSigLen = std::integral_constant<size_t, 74>;
   using Point = EcCurvePoint<P256>;
 
-  static mbedtls_ecp_group* group()
-  {
-    static struct S
-    {
-      S()
-      {
+  static mbedtls_ecp_group* group() {
+    static struct S {
+      S() {
         int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
         NDNPH_ASSERT(res == 0);
       }
@@ -284,8 +246,7 @@ public:
   using SharedSecret = std::array<uint8_t, PvtLen::value>;
 
   /** @brief Compute ECDH shared secret. */
-  static bool ecdh(const mbedtls_mpi* pvt, const mbedtls_ecp_point* pub, SharedSecret& shared)
-  {
+  static bool ecdh(const mbedtls_mpi* pvt, const mbedtls_ecp_point* pub, SharedSecret& shared) {
     Mpi z;
     return mbedtls_ecdh_compute_shared(group(), z, pub, pvt, rng, nullptr) == 0 &&
            mbedtls_mpi_write_binary(z, shared.data(), shared.size()) == 0;
@@ -300,21 +261,18 @@ public:
  * AuthenticationTag is 16 octets. Other sizes are not supported.
  */
 template<int keyBits>
-class AesGcm
-{
+class AesGcm {
 public:
   static_assert(keyBits == 128 || keyBits == 256, "");
   using Key = std::array<uint8_t, keyBits / 8>;
   using IvLen = AesGcmIvHelper::IvLen;
   using TagLen = std::integral_constant<size_t, 16>;
 
-  explicit AesGcm()
-  {
+  explicit AesGcm() {
     mbedtls_gcm_init(&m_ctx);
   }
 
-  ~AesGcm()
-  {
+  ~AesGcm() {
     mbedtls_gcm_free(&m_ctx);
   }
 
@@ -325,8 +283,7 @@ public:
    * @brief Import raw AES key.
    * @return whether success.
    */
-  bool import(const Key& key)
-  {
+  bool import(const Key& key) {
     m_ok = mbedtls_gcm_setkey(&m_ctx, MBEDTLS_CIPHER_ID_AES, key.data(), keyBits) == 0 &&
            m_ivEncrypt.randomize();
     return m_ok;
@@ -344,8 +301,7 @@ public:
    */
   template<typename Encrypted>
   tlv::Value encrypt(Region& region, tlv::Value plaintext, const uint8_t* aad = nullptr,
-                     size_t aadLen = 0)
-  {
+                     size_t aadLen = 0) {
     checkEncryptedMessage<Encrypted>();
     Encoder encoder(region);
     auto place = Encrypted::prependInPlace(encoder, plaintext.size());
@@ -380,8 +336,7 @@ public:
    */
   template<typename Encrypted>
   tlv::Value decrypt(Region& region, const Encrypted& encrypted, const uint8_t* aad = nullptr,
-                     size_t aadLen = 0)
-  {
+                     size_t aadLen = 0) {
     checkEncryptedMessage<Encrypted>();
     uint8_t* plaintext = region.alloc(encrypted.ciphertext.size());
     bool ok =
@@ -397,15 +352,13 @@ public:
     return tlv::Value(plaintext, encrypted.ciphertext.size());
   }
 
-  void clearDecryptIvChecker()
-  {
+  void clearDecryptIvChecker() {
     m_ivDecrypt = AesGcmIvHelper();
   }
 
 private:
   template<typename Encrypted>
-  static void checkEncryptedMessage()
-  {
+  static void checkEncryptedMessage() {
     static_assert(Encrypted::IvLen::value == IvLen::value, "");
     static_assert(Encrypted::TagLen::value == TagLen::value, "");
   }

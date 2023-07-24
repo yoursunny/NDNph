@@ -12,8 +12,7 @@ namespace ndnph {
 namespace detail {
 
 inline bool
-computeDigest(std::initializer_list<tlv::Value> chunks, uint8_t digest[NDNPH_SHA256_LEN])
-{
+computeDigest(std::initializer_list<tlv::Value> chunks, uint8_t digest[NDNPH_SHA256_LEN]) {
   port::Sha256 hash;
   for (const auto& chunk : chunks) {
     hash.update(chunk.begin(), chunk.size());
@@ -22,8 +21,7 @@ computeDigest(std::initializer_list<tlv::Value> chunks, uint8_t digest[NDNPH_SHA
 }
 
 inline Component
-makeRandomComponent(Region& region, uint16_t type = TT::GenericNameComponent)
-{
+makeRandomComponent(Region& region, uint16_t type = TT::GenericNameComponent) {
   uint8_t value[8];
   if (!port::RandomSource::generate(value, sizeof(value))) {
     return Component();
@@ -31,18 +29,15 @@ makeRandomComponent(Region& region, uint16_t type = TT::GenericNameComponent)
   return Component(region, type, sizeof(value), value);
 }
 
-class NamedKey
-{
+class NamedKey {
 public:
   /** @brief Retrieve KeyLocator name. */
-  const Name& getName() const
-  {
+  const Name& getName() const {
     return m_name;
   }
 
   /** @brief Assign KeyLocator name. */
-  void setName(const Name& v)
-  {
+  void setName(const Name& v) {
     m_name = v;
   }
 
@@ -56,11 +51,9 @@ private:
 template<uint8_t sigType>
 class NamedPublicKey
   : public PublicKey
-  , public virtual NamedKey
-{
+  , public virtual NamedKey {
 public:
-  bool matchSigInfo(const SigInfo& sigInfo) const override
-  {
+  bool matchSigInfo(const SigInfo& sigInfo) const override {
     return sigInfo.sigType == sigType && (!getName() || sigInfo.name.isPrefixOf(getName()));
   }
 };
@@ -68,11 +61,9 @@ public:
 template<uint8_t sigType>
 class NamedPrivateKey
   : public PrivateKey
-  , public virtual NamedKey
-{
+  , public virtual NamedKey {
 public:
-  void updateSigInfo(SigInfo& sigInfo) const override
-  {
+  void updateSigInfo(SigInfo& sigInfo) const override {
     sigInfo.sigType = sigType;
     sigInfo.name = getName();
   }

@@ -7,8 +7,7 @@
 namespace ndnph {
 
 /** @brief Respond to every incoming Interest with empty Data. */
-class PingServer : public PacketHandler
-{
+class PingServer : public PacketHandler {
 public:
   /**
    * @brief Constructor.
@@ -18,12 +17,10 @@ public:
   explicit PingServer(Name prefix, Face& face, const PrivateKey& signer = DigestKey::get())
     : PacketHandler(face)
     , m_prefix(std::move(prefix))
-    , m_signer(signer)
-  {}
+    , m_signer(signer) {}
 
 private:
-  bool processInterest(Interest interest) final
-  {
+  bool processInterest(Interest interest) final {
     if (!m_prefix.isPrefixOf(interest.getName())) {
       return false;
     }

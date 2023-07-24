@@ -19,8 +19,7 @@ namespace ndnph {
 namespace test {
 
 inline std::vector<uint8_t>
-fromHex(const std::string& input)
-{
+fromHex(const std::string& input) {
   std::vector<uint8_t> v;
   v.reserve(input.size() / 2);
   static const char* hexDigits = "0123456789ABCDEF";
@@ -43,8 +42,7 @@ fromHex(const std::string& input)
 
 template<typename T>
 std::string
-toString(const T& obj)
-{
+toString(const T& obj) {
   std::string s;
   bool ok = boost::conversion::try_lexical_convert(obj, s);
   return ok ? s : "boost::bad_lexical_cast";

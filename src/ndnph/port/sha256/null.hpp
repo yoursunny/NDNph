@@ -7,8 +7,7 @@ namespace ndnph {
 namespace port_sha256_null {
 
 /** @brief Stub SHA256 algorithm implementation. */
-class Sha256
-{
+class Sha256 {
 public:
   /** @brief Append bytes into hash state. */
   void update(const uint8_t*, size_t) {}
@@ -17,19 +16,16 @@ public:
    * @brief Finalize hash and obtain digest.
    * @return whether success.
    */
-  bool final(uint8_t[NDNPH_SHA256_LEN])
-  {
+  bool final(uint8_t[NDNPH_SHA256_LEN]) {
     return false;
   }
 };
 
 /** @brief Stub HMAC-SHA256 algorithm implementation. */
-class HmacSha256
-{
+class HmacSha256 {
 public:
   /** @brief Start HMAC operation and set key. */
-  explicit HmacSha256(const uint8_t* key, size_t keyLen)
-  {
+  explicit HmacSha256(const uint8_t* key, size_t keyLen) {
     (void)key;
     (void)keyLen;
   }
@@ -42,8 +38,7 @@ public:
    * @return whether success.
    * @post this object is ready for new HMAC operation with same key.
    */
-  bool final(uint8_t result[NDNPH_SHA256_LEN])
-  {
+  bool final(uint8_t result[NDNPH_SHA256_LEN]) {
     (void)result;
     return false;
   }

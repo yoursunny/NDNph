@@ -16,8 +16,7 @@ namespace port_transport_socket {
  * distinct flows. Overflow may cause failed or incorrect unpacking.
  */
 template<int capacity>
-class Ipv6EndpointIdHelper
-{
+class Ipv6EndpointIdHelper {
 public:
   /**
    * @brief Pack IP address+port into EndpointId.
@@ -26,8 +25,7 @@ public:
    * @param port port number.
    * @return 64-bit EndpointId.
    */
-  uint64_t encode(const uint8_t* addr, size_t addrLen, uint16_t port)
-  {
+  uint64_t encode(const uint8_t* addr, size_t addrLen, uint16_t port) {
     EndpointId ep{};
     ep.port = port;
     if (addrLen == 4) {
@@ -43,8 +41,8 @@ public:
     ep.v6c = addr[13];
     ep.v6d = addr[14];
     ep.v6e = addr[15];
-    Intern r{ addr[0], addr[1], addr[2], addr[3],  addr[4], addr[5],
-              addr[6], addr[7], addr[8], addr[11], addr[12] };
+    Intern r{addr[0], addr[1], addr[2], addr[3],  addr[4], addr[5],
+             addr[6], addr[7], addr[8], addr[11], addr[12]};
     ep.v6sum = computeChecksum(r);
 
     auto found = std::find(m_interns.begin(), m_interns.end(), r);
@@ -67,8 +65,7 @@ public:
    * @param [out] port port number.
    * @return address length; 0 indicates error.
    */
-  size_t decode(uint64_t endpointId, uint8_t addr[16], uint16_t* port)
-  {
+  size_t decode(uint64_t endpointId, uint8_t addr[16], uint16_t* port) {
     EndpointId ep{};
     ep.id = endpointId;
     *port = ep.port;
@@ -96,17 +93,14 @@ public:
   }
 
 private:
-  union EndpointId
-  {
+  union EndpointId {
     uint64_t id;
-    struct
-    {
+    struct {
       uint16_t port;
       uint8_t v4[4];
       uint16_t isV6;
     };
-    struct
-    {
+    struct {
       // [____:____:____:____:__AA:BB__:__CC:DDEE]:port
       uint16_t port_;
       uint8_t v6a;
@@ -130,8 +124,7 @@ private:
   // * When using SLAAC and EUI-64, JJ:KK is always "FF-FE".
   // * II has 6~7 bits of entropy because MAC address I/G bit is always zero.
 
-  uint8_t computeChecksum(const Intern& r)
-  {
+  uint8_t computeChecksum(const Intern& r) {
     uint8_t sum = 0;
     for (uint8_t b : r) {
       sum ^= b;

@@ -8,18 +8,15 @@ namespace port_queue_null {
 
 /** @brief Generic thread-safe queue stub. */
 template<typename T, size_t capacity>
-class SafeQueue
-{
+class SafeQueue {
 public:
   using Item = T;
 
-  bool push(Item)
-  {
+  bool push(Item) {
     return false;
   }
 
-  std::tuple<Item, bool> pop()
-  {
+  std::tuple<Item, bool> pop() {
     return std::make_tuple(T(), false);
   }
 };

@@ -15,8 +15,7 @@ namespace ndnph {
  * The random number portion is expected to stay the same.
  * The counter portion is incremented for every encrypted block.
  */
-class AesGcmIvHelper
-{
+class AesGcmIvHelper {
 public:
   /** @brief IV length. */
   using IvLen = std::integral_constant<size_t, 12>;
@@ -25,15 +24,13 @@ public:
   using BlockSize = std::integral_constant<size_t, 16>;
 
   /** @brief Randomize the random number portion. */
-  bool randomize()
-  {
+  bool randomize() {
     m_ok = port::RandomSource::generate(reinterpret_cast<uint8_t*>(&random), sizeof(random));
     return m_ok;
   }
 
   /** @brief Write IV to @p room . */
-  bool write(uint8_t room[12])
-  {
+  bool write(uint8_t room[12]) {
     tlv::NNI8::writeValue(room, random);
     tlv::NNI4::writeValue(room + 8, counter);
     return true;
@@ -43,8 +40,7 @@ public:
    * @brief Advance the counter portion.
    * @param size ciphertext size.
    */
-  bool advance(size_t size)
-  {
+  bool advance(size_t size) {
     uint64_t nBlocks = divCeil(size, BlockSize::value);
     uint64_t cnt = static_cast<uint64_t>(counter) + nBlocks;
     if (cnt > std::numeric_limits<uint32_t>::max()) {
@@ -60,8 +56,7 @@ public:
    * @param size ciphertext size.
    * @post counter is advanced.
    */
-  bool check(const uint8_t* iv, size_t size)
-  {
+  bool check(const uint8_t* iv, size_t size) {
     uint64_t rand = tlv::NNI8::readValue(iv);
     uint32_t cnt = tlv::NNI4::readValue(iv + sizeof(rand));
 

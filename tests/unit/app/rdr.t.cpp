@@ -8,8 +8,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Rdr, Producer)
-{
+TEST(Rdr, Producer) {
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
@@ -76,11 +75,9 @@ TEST(Rdr, Producer)
   testOneInterest("/dataset/32=metadata", true, true, "/dataset/54=%1A");
 }
 
-class RdrEndToEndFixture : public BridgeFixture
-{
+class RdrEndToEndFixture : public BridgeFixture {
 protected:
-  static void consumerCallback(void* ctx, Data data)
-  {
+  static void consumerCallback(void* ctx, Data data) {
     RdrEndToEndFixture& self = *reinterpret_cast<RdrEndToEndFixture*>(ctx);
     auto versioned = rdr::parseMetadata(data);
     if (!!self.expectedName) {
@@ -99,8 +96,7 @@ protected:
   bool hasCallback = false;
 };
 
-TEST_F(RdrEndToEndFixture, Consumer)
-{
+TEST_F(RdrEndToEndFixture, Consumer) {
   StaticRegion<1024> prefixRegion;
   auto rdrPrefix = Name::parse(prefixRegion, "/dataset");
   auto rdrPrefix2 = Name::parse(prefixRegion, "/dataset/32=metadata");

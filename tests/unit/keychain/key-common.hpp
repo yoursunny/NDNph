@@ -15,8 +15,7 @@ makePacket(Region& region, const Name& name);
 
 template<>
 inline Interest
-makePacket<Interest>(Region& region, const Name& name)
-{
+makePacket<Interest>(Region& region, const Name& name) {
   Interest interest = region.create<Interest>();
   interest.setName(name);
   interest.setNonce(0x7A156BB2);
@@ -25,8 +24,7 @@ makePacket<Interest>(Region& region, const Name& name)
 
 template<>
 inline Data
-makePacket<Data>(Region& region, const Name& name)
-{
+makePacket<Data>(Region& region, const Name& name) {
   Data data = region.create<Data>();
   data.setName(name);
   return data;
@@ -35,11 +33,10 @@ makePacket<Data>(Region& region, const Name& name)
 template<typename Pkt>
 inline void
 testSignVerify(const PrivateKey& pvtA, const PublicKey& pubA, const PrivateKey& pvtB,
-               const PublicKey& pubB, bool deterministic = false, bool sameAB = false)
-{
+               const PublicKey& pubB, bool deterministic = false, bool sameAB = false) {
   StaticRegion<1024> region;
-  Name nameA(region, { 0x08, 0x01, 0x41 });
-  Name nameB(region, { 0x08, 0x01, 0x42 });
+  Name nameA(region, {0x08, 0x01, 0x41});
+  Name nameB(region, {0x08, 0x01, 0x42});
 
   Pkt pktA = makePacket<Pkt>(region, nameA);
   Encoder encoderA(region);
@@ -62,7 +59,7 @@ testSignVerify(const PrivateKey& pvtA, const PublicKey& pubA, const PrivateKey& 
   using SigInfoT = typename std::remove_cv<
     typename std::remove_pointer<decltype(std::declval<Pkt>().getSigInfo())>::type>::type;
   SigInfoT sigInfoB;
-  std::vector<uint8_t> sigInfoExtB({ 0x20, 0x00 });
+  std::vector<uint8_t> sigInfoExtB({0x20, 0x00});
   sigInfoB.extensions = tlv::Value(sigInfoExtB.data(), sigInfoExtB.size());
 
   Pkt pktB = makePacket<Pkt>(region, nameB);

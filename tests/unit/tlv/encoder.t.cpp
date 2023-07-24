@@ -6,8 +6,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Encoder, Room)
-{
+TEST(Encoder, Room) {
   uint8_t buf[60];
   Encoder encoder(buf, sizeof(buf));
   EXPECT_FALSE(!encoder);
@@ -36,8 +35,7 @@ TEST(Encoder, Room)
   EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::SizeIs(0));
 }
 
-TEST(Encoder, TrimDiscard)
-{
+TEST(Encoder, TrimDiscard) {
   StaticRegion<60> region;
   Encoder encoder(region);
   EXPECT_EQ(region.available(), 0);
@@ -67,8 +65,7 @@ TEST(Encoder, TrimDiscard)
   EXPECT_EQ(region.available(), 60);
 }
 
-TEST(Encoder, TrimErrorDiscard)
-{
+TEST(Encoder, TrimErrorDiscard) {
   StaticRegion<60> region;
   Encoder encoder(region);
 
@@ -87,8 +84,7 @@ TEST(Encoder, TrimErrorDiscard)
   EXPECT_EQ(region.available(), 60);
 }
 
-TEST(Encoder, ErrorTrimDiscard)
-{
+TEST(Encoder, ErrorTrimDiscard) {
   StaticRegion<60> region;
   Encoder encoder(region);
 
@@ -103,8 +99,7 @@ TEST(Encoder, ErrorTrimDiscard)
   EXPECT_EQ(region.available(), 60);
 }
 
-TEST(Encoder, TrimDiscardNop)
-{
+TEST(Encoder, TrimDiscardNop) {
   uint8_t buf[60];
   Encoder encoder(buf, sizeof(buf));
 
@@ -125,11 +120,9 @@ TEST(Encoder, TrimDiscardNop)
 }
 
 template<int V>
-class MyEncodable
-{
+class MyEncodable {
 public:
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     uint8_t* room = encoder.prependRoom(1);
     if (room != nullptr) {
       room[0] = V;
@@ -137,14 +130,13 @@ public:
   }
 };
 
-TEST(Encoder, Prepend)
-{
+TEST(Encoder, Prepend) {
   uint8_t buf[60];
   Encoder encoder(buf, sizeof(buf));
 
   std::vector<uint8_t> value0({});
-  std::vector<uint8_t> valueE({ 0xE0, 0xE1 });
-  std::vector<uint8_t> valueF({ 0xF0, 0xF1 });
+  std::vector<uint8_t> valueE({0xE0, 0xE1});
+  std::vector<uint8_t> valueF({0xF0, 0xF1});
 
   bool ok = encoder.prepend(
     MyEncodable<0xA0>(), [](Encoder& encoder) { encoder.prependTlv(0xA1); }, MyEncodable<0xA2>());

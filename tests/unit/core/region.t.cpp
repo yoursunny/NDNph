@@ -5,8 +5,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Region, AllocFree)
-{
+TEST(Region, AllocFree) {
   static_assert(Region::ALIGNMENT == 8, "");
 
   StaticRegion<60> region;
@@ -50,31 +49,26 @@ TEST(Region, AllocFree)
   EXPECT_EQ(region.availableA(), 1);
 }
 
-class MyObj : public InRegion
-{
+class MyObj : public InRegion {
 public:
   explicit MyObj(Region& region, uint32_t x = 1)
     : InRegion(region)
-    , x(x)
-  {}
+    , x(x) {}
 
 public:
   uint32_t x;
 };
 
-class MyRef : public RefRegion<MyObj>
-{
+class MyRef : public RefRegion<MyObj> {
 public:
   using RefRegion::RefRegion;
 
-  MyObj* getObj()
-  {
+  MyObj* getObj() {
     return obj;
   }
 };
 
-TEST(Region, Create)
-{
+TEST(Region, Create) {
   static_assert(sizeof(MyObj) > Region::ALIGNMENT && sizeof(MyObj) <= 2 * Region::ALIGNMENT, "");
   StaticRegion<Region::ALIGNMENT * 5 - 1> region;
 
@@ -93,8 +87,7 @@ TEST(Region, Create)
   EXPECT_THAT(ref.getObj(), g::IsNull());
 }
 
-TEST(Region, SubRegion)
-{
+TEST(Region, SubRegion) {
   constexpr size_t capacity = 18;
   constexpr size_t count = 5;
   size_t total = sizeofSubRegions(capacity, count);

@@ -5,17 +5,14 @@
 
 namespace ndnph {
 
-class TempDirFixture : public g::Test
-{
+class TempDirFixture : public g::Test {
 protected:
-  void SetUp() override
-  {
+  void SetUp() override {
     char dir[PATH_MAX] = "/tmp/NDNph-test-XXXXXX";
     tempDir = ::mkdtemp(dir);
   }
 
-  void TearDown() override
-  {
+  void TearDown() override {
     std::string rmrf = "rm -rf " + tempDir;
     ::system(rmrf.data());
   }

@@ -13,20 +13,17 @@ namespace ndnph {
  * Unencrypted private keys may be stored. It's important to protect the storage directory
  * using Unix permissions or similar mechanisms.
  */
-class KeyChainKeys : public KvStore
-{
+class KeyChainKeys : public KvStore {
 public:
   using KvStore::KvStore;
 };
 
 /** @brief File based certificate store. */
-class KeyChainCerts : public PacketStore<Data>
-{
+class KeyChainCerts : public PacketStore<Data> {
 public:
   using PacketStore::PacketStore;
 
-  Data get(const char* id, Region& region)
-  {
+  Data get(const char* id, Region& region) {
     Data data = PacketStore::get(id, region);
     if (!data || !certificate::isCertificate(data)) {
       return Data();
@@ -36,20 +33,17 @@ public:
 };
 
 /** @brief File based key and certificate store. */
-class KeyChain
-{
+class KeyChain {
 public:
   explicit KeyChain() = default;
 
   explicit KeyChain(port::FileStore& fs)
     : keys(fs)
-    , certs(fs)
-  {}
+    , certs(fs) {}
 
   /** @brief Open the FileStore backend in both key store and certificate store. */
   template<typename... Arg>
-  bool open(Arg&&... arg)
-  {
+  bool open(Arg&&... arg) {
     return keys.open(std::forward<Arg>(arg)...) && certs.open(std::forward<Arg>(arg)...);
   }
 

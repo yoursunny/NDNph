@@ -19,8 +19,7 @@ class ChallengeResponse;
  * Subclass instance may store internal state in member fields.
  * An instance can only handle one challenge session at a time.
  */
-class Challenge
-{
+class Challenge {
 public:
   virtual ~Challenge() = default;
 
@@ -49,12 +48,10 @@ public:
 using ChallengeList = std::array<Challenge*, detail::MaxChallenges::value>;
 
 /** @brief CA profile packet. */
-class CaProfile : public packet_struct::CaProfile
-{
+class CaProfile : public packet_struct::CaProfile {
 public:
   /** @brief Determine whether @p name is a valid CA profile packet name. */
-  static bool isName(const Name& name)
-  {
+  static bool isName(const Name& name) {
     return name.size() >= 4 && name[-4] == getCaComponent() && name[-3] == getInfoComponent() &&
            name[-2].is<convention::Version>() && name[-1].is<convention::Segment>() &&
            name[-1].as<convention::Segment>() == 0;
@@ -65,8 +62,7 @@ public:
    * @param data input Data packet; it can be freed after this operation.
    * @return whether success.
    */
-  bool fromData(Region& region, const Data& data)
-  {
+  bool fromData(Region& region, const Data& data) {
     return isName(data.getName()) &&
            EvDecoder::decodeValue(
              data.getContent().makeDecoder(),
@@ -93,8 +89,7 @@ public:
 };
 
 /** @brief NEW request packet. */
-class NewRequest : public packet_struct::NewRequest
-{
+class NewRequest : public packet_struct::NewRequest {
 public:
   /**
    * @brief Build NEW request packet.
@@ -102,8 +97,7 @@ public:
    * @return an Encodable object, or a falsy value upon failure.
    */
   Interest::Signed toInterest(Region& region, const CaProfile& profile,
-                              detail::ISigPolicy& signingPolicy, const EcPrivateKey& signer) const
-  {
+                              detail::ISigPolicy& signingPolicy, const EcPrivateKey& signer) const {
     Encoder encoder(region);
     encoder.prepend([this](Encoder& encoder) { encoder.prependTlv(TT::EcdhPub, ecdhPub); },
                     [this](Encoder& encoder) { encoder.prependTlv(TT::CertRequest, certRequest); });
@@ -121,8 +115,7 @@ public:
 };
 
 /** @brief NEW response packet. */
-class NewResponse : public packet_struct::NewResponse
-{
+class NewResponse : public packet_struct::NewResponse {
 public:
   /**
    * @brief Extract NEW response from Data packet.
@@ -131,8 +124,7 @@ public:
    * @return whether success.
    */
   bool fromData(Region&, const Data& data, const CaProfile& profile,
-                const ChallengeList& challenges)
-  {
+                const ChallengeList& challenges) {
     hasChallenge.reset();
     return data.verify(profile.pub) &&
            EvDecoder::decodeValue(
@@ -171,8 +163,7 @@ public:
 };
 
 /** @brief CHALLENGE request packet. */
-class ChallengeRequest : public packet_struct::ChallengeRequest<Challenge>
-{
+class ChallengeRequest : public packet_struct::ChallengeRequest<Challenge> {
 public:
   /**
    * @brief Build CHALLENGE request packet.
@@ -182,8 +173,7 @@ public:
    */
   Interest::Signed toInterest(Region& region, const CaProfile& profile, const uint8_t* requestId,
                               detail::SessionKey& sessionKey, detail::ISigPolicy& signingPolicy,
-                              const EcPrivateKey& signer) const
-  {
+                              const EcPrivateKey& signer) const {
     NDNPH_ASSERT(challenge != nullptr);
     Encoder encoder(region);
     encoder.prepend(
@@ -208,8 +198,7 @@ public:
 };
 
 /** @brief CHALLENGE response packet. */
-class ChallengeResponse : public packet_struct::ChallengeResponse
-{
+class ChallengeResponse : public packet_struct::ChallengeResponse {
 public:
   /**
    * @brief Extract CHALLENGE response from Data packet.
@@ -217,8 +206,7 @@ public:
    * @return whether success.
    */
   bool fromData(Region& region, const Data& data, const CaProfile& profile,
-                const uint8_t* requestId, detail::SessionKey& sessionKey)
-  {
+                const uint8_t* requestId, detail::SessionKey& sessionKey) {
     if (!data.verify(profile.pub)) {
       return false;
     }
@@ -250,8 +238,7 @@ public:
 };
 
 /** @brief Client application. */
-class Client : public PacketHandler
-{
+class Client : public PacketHandler {
 public:
   /**
    * @brief Callback to be invoked upon completion of a certificate request procedure.
@@ -260,8 +247,7 @@ public:
    */
   using Callback = void (*)(void* ctx, Data cert);
 
-  struct Options
-  {
+  struct Options {
     /** @brief Face for communication. */
     Face& face;
 
@@ -285,14 +271,12 @@ public:
   };
 
   /** @brief Request a certificate. */
-  static void requestCertificate(const Options& opts)
-  {
+  static void requestCertificate(const Options& opts) {
     new Client(opts);
   }
 
 private:
-  enum class State
-  {
+  enum class State {
     SendNewRequest,
     WaitNewResponse,
     ExecuteChallenge,
@@ -304,15 +288,12 @@ private:
     Failure,
   };
 
-  class GotoState
-  {
+  class GotoState {
   public:
     explicit GotoState(Client* client)
-      : m_client(client)
-    {}
+      : m_client(client) {}
 
-    bool operator()(State state)
-    {
+    bool operator()(State state) {
       NDNPH_NDNCERT_LOG("client state %d => %d", static_cast<int>(m_client->m_state),
                         static_cast<int>(state));
       m_client->m_state = state;
@@ -320,8 +301,7 @@ private:
       return true;
     }
 
-    ~GotoState()
-    {
+    ~GotoState() {
       if (!m_set) {
         NDNPH_NDNCERT_LOG("client state %d => %d", static_cast<int>(m_client->m_state),
                           static_cast<int>(State::Failure));
@@ -341,13 +321,11 @@ private:
     , m_challenges(opts.challenges)
     , m_pvt(opts.pvt)
     , m_cb(opts.cb)
-    , m_cbCtx(opts.ctx)
-  {
+    , m_cbCtx(opts.ctx) {
     sendNewRequest(opts.pub);
   }
 
-  void loop() final
-  {
+  void loop() final {
     switch (m_state) {
       case State::SendChallengeRequest: {
         sendChallengeRequest();
@@ -379,8 +357,7 @@ private:
     }
   }
 
-  bool processData(Data data) final
-  {
+  bool processData(Data data) final {
     if (!m_pending.matchPitToken()) {
       return false;
     }
@@ -401,8 +378,7 @@ private:
     return false;
   }
 
-  void sendNewRequest(const EcPublicKey& pub)
-  {
+  void sendNewRequest(const EcPublicKey& pub) {
     StaticRegion<2048> region;
     GotoState gotoState(this);
     int res = mbedtls_ecdh_gen_public(mbedtls::P256::group(), m_ecdhPvt, m_newRequest.ecdhPub,
@@ -430,8 +406,7 @@ private:
       gotoState(State::WaitNewResponse);
   }
 
-  bool handleNewResponse(Data data)
-  {
+  bool handleNewResponse(Data data) {
     bool ok = m_newResponse.fromData(m_region, data, m_profile, m_challenges);
     if (!ok) {
       NDNPH_NDNCERT_LOG("NewResponse parse error");
@@ -460,13 +435,11 @@ private:
     return true;
   }
 
-  static void challengeCallback(void* self, bool ok)
-  {
+  static void challengeCallback(void* self, bool ok) {
     static_cast<Client*>(self)->m_state = ok ? State::SendChallengeRequest : State::Failure;
   }
 
-  void prepareChallengeRequest(GotoState& gotoState)
-  {
+  void prepareChallengeRequest(GotoState& gotoState) {
     gotoState(State::ExecuteChallenge);
     m_challengeRequest.params.clear();
     if (m_challengeResponse.status == Status::BEFORE_CHALLENGE) {
@@ -478,8 +451,7 @@ private:
     }
   }
 
-  void sendChallengeRequest()
-  {
+  void sendChallengeRequest() {
     StaticRegion<2048> region;
     GotoState gotoState(this);
     m_pending.send(m_challengeRequest.toInterest(region, m_profile, m_newResponse.requestId,
@@ -487,8 +459,7 @@ private:
       gotoState(State::WaitChallengeResponse);
   }
 
-  bool handleChallengeResponse(Data data)
-  {
+  bool handleChallengeResponse(Data data) {
     m_challengeRegion.reset();
     bool ok = m_challengeResponse.fromData(m_challengeRegion, data, m_profile,
                                            m_newResponse.requestId, m_sessionKey);
@@ -510,8 +481,7 @@ private:
     return true;
   }
 
-  void sendFetchInterest()
-  {
+  void sendFetchInterest() {
     ndnph::StaticRegion<2048> region;
     GotoState gotoState(this);
     auto interest = region.create<ndnph::Interest>();
@@ -521,8 +491,7 @@ private:
     m_pending.send(interest) && gotoState(State::WaitIssuedCert);
   }
 
-  bool handleIssuedCert(Data data)
-  {
+  bool handleIssuedCert(Data data) {
     ndnph::StaticRegion<512> region;
     if (data.getFullName(region) != m_challengeResponse.issuedCertName) {
       NDNPH_NDNCERT_LOG("IssuedCert full name mismatch");
@@ -560,42 +529,35 @@ private:
 };
 
 /** @brief The "nop" challenge where the server would approve every request. */
-class NopChallenge : public Challenge
-{
+class NopChallenge : public Challenge {
 public:
-  tlv::Value getId() const override
-  {
+  tlv::Value getId() const override {
     return challenge_consts::nop();
   }
 
-  void start(Region&, ChallengeRequest&, void (*cb)(void*, bool), void* arg) override
-  {
+  void start(Region&, ChallengeRequest&, void (*cb)(void*, bool), void* arg) override {
     cb(arg, true);
   }
 
   void next(Region&, const ChallengeResponse&, ChallengeRequest&, void (*cb)(void*, bool),
-            void* arg) override
-  {
+            void* arg) override {
     cb(arg, false);
   }
 };
 
 /** @brief The "possession" challenge where client must present an existing certificate. */
-class PossessionChallenge : public Challenge
-{
+class PossessionChallenge : public Challenge {
 public:
   explicit PossessionChallenge(Data cert, const PrivateKey& signer)
     : m_cert(std::move(cert))
-    , m_signer(signer)
-  {}
+    , m_signer(signer) {}
 
-  tlv::Value getId() const override
-  {
+  tlv::Value getId() const override {
     return challenge_consts::possession();
   }
 
-  void start(Region& region, ChallengeRequest& request, void (*cb)(void*, bool), void* arg) override
-  {
+  void start(Region& region, ChallengeRequest& request, void (*cb)(void*, bool),
+             void* arg) override {
     Encoder encoder(region);
     encoder.prepend(m_cert);
     encoder.trim();
@@ -610,8 +572,7 @@ public:
   }
 
   void next(Region& region, const ChallengeResponse& response, ChallengeRequest& request,
-            void (*cb)(void*, bool), void* arg) override
-  {
+            void (*cb)(void*, bool), void* arg) override {
     tlv::Value nonce = response.params.get(challenge_consts::nonce());
     uint8_t* sig = region.alloc(m_signer.getMaxSigLen());
     if (nonce.size() != 16 || sig == nullptr) {
@@ -620,7 +581,7 @@ public:
       return;
     }
 
-    ssize_t sigLen = m_signer.sign({ nonce }, sig);
+    ssize_t sigLen = m_signer.sign({nonce}, sig);
     if (sigLen < 0) {
       NDNPH_NDNCERT_LOG("PossessionChallenge signing error");
       cb(arg, false);

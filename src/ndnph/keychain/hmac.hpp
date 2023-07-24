@@ -11,12 +11,10 @@ namespace ndnph {
 /** @brief HMAC-SHA256 secret key. */
 class HmacKey
   : public detail::NamedPublicKey<SigType::HmacWithSha256>
-  , public detail::NamedPrivateKey<SigType::HmacWithSha256>
-{
+  , public detail::NamedPrivateKey<SigType::HmacWithSha256> {
 public:
   /** @brief Determine if this key is non-empty. */
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return m_key != nullptr;
   }
 
@@ -26,34 +24,29 @@ public:
    * @param keyLen key length in octets.
    * @return whether success.
    */
-  bool import(const uint8_t* key, size_t keyLen)
-  {
+  bool import(const uint8_t* key, size_t keyLen) {
     m_key.reset(new port::HmacSha256(key, keyLen));
     return true;
   }
 
-  size_t getMaxSigLen() const final
-  {
+  size_t getMaxSigLen() const final {
     return NDNPH_SHA256_LEN;
   }
 
-  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final
-  {
+  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final {
     bool ok = computeHmac(chunks, sig);
     return ok ? NDNPH_SHA256_LEN : -1;
   }
 
   bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
-              size_t sigLen) const final
-  {
+              size_t sigLen) const final {
     uint8_t result[NDNPH_SHA256_LEN];
     return computeHmac(chunks, result) &&
            port::TimingSafeEqual()(result, NDNPH_SHA256_LEN, sig, sigLen);
   }
 
 private:
-  bool computeHmac(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const
-  {
+  bool computeHmac(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const {
     if (m_key == nullptr) {
       return false;
     }

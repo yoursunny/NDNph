@@ -6,10 +6,9 @@
 namespace ndnph {
 namespace {
 
-TEST(Component, Construct)
-{
+TEST(Component, Construct) {
   StaticRegion<1024> region;
-  std::vector<uint8_t> value({ 0xC0, 0xC1, 0xC2, 0xC3 });
+  std::vector<uint8_t> value({0xC0, 0xC1, 0xC2, 0xC3});
 
   {
     Component comp(region, 0xA1, value.size(), value.data());
@@ -41,12 +40,11 @@ TEST(Component, Construct)
   }
 }
 
-TEST(Component, From)
-{
+TEST(Component, From) {
   StaticRegion<1024> region;
 
-  std::vector<uint8_t> value1({ 0xA0, 0xA1 });
-  std::vector<uint8_t> value2({ 0xB0, 0xB1, 0xB2 });
+  std::vector<uint8_t> value1({0xA0, 0xA1});
+  std::vector<uint8_t> value2({0xB0, 0xB1, 0xB2});
 
   Component comp = Component::from(region, 0x04, tlv::Value(value1.data(), value1.size()),
                                    tlv::Value(value2.data(), value2.size()));
@@ -56,8 +54,7 @@ TEST(Component, From)
               g::ElementsAre(0x04, 0x05, 0xA0, 0xA1, 0xB0, 0xB1, 0xB2));
 }
 
-TEST(Component, Parse)
-{
+TEST(Component, Parse) {
   StaticRegion<1024> region;
 
   {
@@ -121,8 +118,7 @@ TEST(Component, Parse)
   }
 }
 
-TEST(Component, Equality)
-{
+TEST(Component, Equality) {
   Component compA, compB;
   EXPECT_EQ(compA, compB);
 

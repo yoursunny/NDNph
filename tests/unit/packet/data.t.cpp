@@ -8,8 +8,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Data, EncodeMinimal)
-{
+TEST(Data, EncodeMinimal) {
   StaticRegion<1024> region;
   Data data = region.create<Data>();
   ASSERT_FALSE(!data);
@@ -37,8 +36,7 @@ TEST(Data, EncodeMinimal)
   EXPECT_THAT(decoded.getContent(), g::SizeIs(0));
 }
 
-TEST(Data, EncodeFull)
-{
+TEST(Data, EncodeFull) {
   StaticRegion<1024> region;
   Data data = region.create<Data>();
   ASSERT_FALSE(!data);
@@ -100,8 +98,7 @@ TEST(Data, EncodeFull)
   }
 }
 
-TEST(Data, CanSatisfySimple)
-{
+TEST(Data, CanSatisfySimple) {
   StaticRegion<1024> region;
 
   Interest interest = region.create<Interest>();
@@ -132,8 +129,7 @@ TEST(Data, CanSatisfySimple)
   EXPECT_FALSE(data.canSatisfy(interest));
 }
 
-TEST(Data, CanSatisfyImplicitDigest)
-{
+TEST(Data, CanSatisfyImplicitDigest) {
   StaticRegion<1024> region;
 
   Data data = region.create<Data>();

@@ -17,38 +17,31 @@ namespace ndnph {
  */
 class NullKey
   : public PrivateKey
-  , public PublicKey
-{
+  , public PublicKey {
 public:
-  static const NullKey& get()
-  {
+  static const NullKey& get() {
     static NullKey instance;
     return instance;
   }
 
-  size_t getMaxSigLen() const final
-  {
+  size_t getMaxSigLen() const final {
     return 0;
   }
 
-  void updateSigInfo(SigInfo& sigInfo) const final
-  {
+  void updateSigInfo(SigInfo& sigInfo) const final {
     sigInfo.sigType = SigType::Null;
     sigInfo.name = Name();
   }
 
-  ssize_t sign(std::initializer_list<tlv::Value>, uint8_t*) const final
-  {
+  ssize_t sign(std::initializer_list<tlv::Value>, uint8_t*) const final {
     return 0;
   }
 
-  bool matchSigInfo(const SigInfo&) const final
-  {
+  bool matchSigInfo(const SigInfo&) const final {
     return true;
   }
 
-  bool verify(std::initializer_list<tlv::Value>, const uint8_t*, size_t) const final
-  {
+  bool verify(std::initializer_list<tlv::Value>, const uint8_t*, size_t) const final {
     return true;
   }
 };

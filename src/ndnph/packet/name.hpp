@@ -11,19 +11,16 @@ namespace ndnph {
  *
  * This type is immutable, except `decodeFrom()` method.
  */
-class Name : public Printable
-{
+class Name : public Printable {
 public:
   /** @brief Construct referencing TLV-VALUE. */
-  explicit Name(const uint8_t* value = nullptr, size_t length = 0)
-  {
+  explicit Name(const uint8_t* value = nullptr, size_t length = 0) {
     decodeValue(value, length);
   }
 
   /** @brief Construct from TLV-VALUE. */
   template<typename It>
-  explicit Name(Region& region, It first, It last)
-  {
+  explicit Name(Region& region, It first, It last) {
     static_assert(std::is_base_of<std::forward_iterator_tag,
                                   typename std::iterator_traits<It>::iterator_category>::value,
                   "");
@@ -38,8 +35,7 @@ public:
 
   /** @brief Construct from TLV-VALUE. */
   explicit Name(Region& region, std::initializer_list<uint8_t> value)
-    : Name(region, value.begin(), value.end())
-  {}
+    : Name(region, value.begin(), value.end()) {}
 
   /**
    * @brief Parse from URI.
@@ -50,8 +46,7 @@ public:
    * @note This is a not-so-strict parser. It lets some invalid inputs slip through
    *       in exchange for smaller code size. Not recommended on untrusted input.
    */
-  static Name parse(Region& region, const char* uri)
-  {
+  static Name parse(Region& region, const char* uri) {
     size_t uriLen = std::strlen(uri);
     size_t bufLen = 2 * uriLen;
     uint8_t* buf = region.alloc(bufLen);
@@ -75,30 +70,25 @@ public:
   }
 
   /** @brief Return true if Name is non-empty. */
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return m_nComps > 0;
   }
 
-  size_t length() const
-  {
+  size_t length() const {
     return m_length;
   }
 
-  const uint8_t* value() const
-  {
+  const uint8_t* value() const {
     return m_value;
   }
 
   /** @brief Get number of components. */
-  size_t size() const
-  {
+  size_t size() const {
     return m_nComps;
   }
 
   /** @brief Iterator over name components. */
-  class Iterator : public Decoder::Iterator
-  {
+  class Iterator : public Decoder::Iterator {
   public:
     using super = Decoder::Iterator;
     using iterator_category = std::input_iterator_tag;
@@ -110,35 +100,29 @@ public:
     Iterator() = default;
 
     explicit Iterator(const super& inner)
-      : super(inner)
-    {}
+      : super(inner) {}
 
-    reference operator*()
-    {
+    reference operator*() {
       Component comp;
       comp.decodeFrom(super::operator*());
       return comp;
     }
 
-    pointer operator->()
-    {
+    pointer operator->() {
       return pointer(this->operator*());
     }
   };
 
-  Iterator begin() const
-  {
+  Iterator begin() const {
     return Iterator(Decoder(m_value, m_length).begin());
   }
 
-  Iterator end() const
-  {
+  Iterator end() const {
     return Iterator(Decoder(m_value, m_length).end());
   }
 
   /** @brief Access i-th component. */
-  Component operator[](int i) const
-  {
+  Component operator[](int i) const {
     if (i < 0) {
       i += m_nComps;
     }
@@ -155,8 +139,7 @@ public:
    * @param first inclusive first component index; if negative, count from end.
    * @param last exclusive last component index; if non-positive, count from end.
    */
-  Name slice(int first = 0, int last = 0) const
-  {
+  Name slice(int first = 0, int last = 0) const {
     if (first < 0) {
       first += m_nComps;
     }
@@ -179,8 +162,7 @@ public:
    * @brief Get prefix of n components.
    * @param n number of component; if non-positive, count from end.
    */
-  Name getPrefix(int n = 0) const
-  {
+  Name getPrefix(int n = 0) const {
     return slice(0, n);
   }
 
@@ -198,8 +180,7 @@ public:
    * @endcode
    */
   template<typename... C>
-  Name append(Region& region, const C&... comps) const
-  {
+  Name append(Region& region, const C&... comps) const {
     Encoder encoder(region);
     size_t nComps = prependComps(encoder, comps...);
     uint8_t* room = encoder.prependRoom(m_length);
@@ -219,14 +200,12 @@ public:
    * @return new Name that does not reference memory of this Name,
    *         or invalid Name if allocation fails.
    */
-  Name clone(Region& region) const
-  {
+  Name clone(Region& region) const {
     return append(region);
   }
 
   /** @brief Name compare result. */
-  enum CompareResult
-  {
+  enum CompareResult {
     CMP_LT = -2,      ///< lhs is less than, but not a prefix of rhs
     CMP_LPREFIX = -1, ///< lhs is a prefix of rhs
     CMP_EQUAL = 0,    ///< lhs and rhs are equal
@@ -235,8 +214,7 @@ public:
   };
 
   /** @brief Compare with other name. */
-  CompareResult compare(const Name& other) const
-  {
+  CompareResult compare(const Name& other) const {
     size_t commonLength = std::min(m_length, other.m_length);
     if (commonLength > 0) {
       int commonCmp = std::memcmp(m_value, other.m_value, commonLength);
@@ -258,26 +236,22 @@ public:
   }
 
   /** @brief Determine if this name is a prefix of other. */
-  bool isPrefixOf(const Name& other) const
-  {
+  bool isPrefixOf(const Name& other) const {
     auto cmp = compare(other);
     return cmp == CMP_LPREFIX || cmp == CMP_EQUAL;
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     encoder.prependTlv(TT::Name, tlv::Value(m_value, m_length));
   }
 
-  bool decodeFrom(const Decoder::Tlv& d)
-  {
+  bool decodeFrom(const Decoder::Tlv& d) {
     return decodeValue(d.value, d.length);
   }
 
 #ifdef NDNPH_PRINT_ARDUINO
   /** @brief Print name as URI. */
-  size_t printTo(::Print& p) const final
-  {
+  size_t printTo(::Print& p) const final {
     size_t count = 0;
     if (m_nComps == 0) {
       count += p.print('/');
@@ -296,11 +270,9 @@ private:
   explicit Name(const uint8_t* value, size_t length, size_t nComps)
     : m_value(value)
     , m_length(length)
-    , m_nComps(nComps)
-  {}
+    , m_nComps(nComps) {}
 
-  bool decodeValue(const uint8_t* value, size_t length)
-  {
+  bool decodeValue(const uint8_t* value, size_t length) {
     m_value = value;
     if (decodeComps(length)) {
       return true;
@@ -310,8 +282,7 @@ private:
     return false;
   }
 
-  bool decodeComps(size_t length)
-  {
+  bool decodeComps(size_t length) {
     Decoder decoder(m_value, length);
     auto it = decoder.begin(), end = decoder.end();
     for (; it != end; ++it) {
@@ -325,15 +296,13 @@ private:
     return !it.hasError();
   }
 
-  bool isOutOfRange(int i, bool acceptPastEnd = false) const
-  {
+  bool isOutOfRange(int i, bool acceptPastEnd = false) const {
     return i < 0 ||
            (acceptPastEnd ? i > static_cast<int>(m_nComps) : i >= static_cast<int>(m_nComps));
   }
 
   static ssize_t parseUri(uint8_t* buf, size_t bufLen, const char* uri, size_t uriLen,
-                          size_t& nComps)
-  {
+                          size_t& nComps) {
     nComps = 0;
     if (uriLen <= 1) { // empty Name
       return 0;
@@ -359,8 +328,7 @@ private:
   }
 
   template<typename... C>
-  static size_t prependComps(Encoder& encoder, const Component& comp, const C&... rest)
-  {
+  static size_t prependComps(Encoder& encoder, const Component& comp, const C&... rest) {
     size_t nComps = prependComps(encoder, rest...);
     encoder.prepend(comp);
     return 1 + nComps;
@@ -368,8 +336,7 @@ private:
 
   template<typename Convention, typename Arg, typename... C>
   static typename std::enable_if<!std::is_base_of<Component, Convention>::value, size_t>::type
-  prependComps(Encoder& encoder, const Convention&, const Arg& arg, const C&... rest)
-  {
+  prependComps(Encoder& encoder, const Convention&, const Arg& arg, const C&... rest) {
     size_t nComps = prependComps(encoder, rest...);
 
     size_t headroom = encoder.availableHeadroom();
@@ -385,8 +352,7 @@ private:
     return 1 + nComps;
   }
 
-  static size_t prependComps(Encoder&)
-  {
+  static size_t prependComps(Encoder&) {
     return 0;
   }
 
@@ -397,14 +363,12 @@ private:
 };
 
 inline bool
-operator==(const Name& lhs, const Name& rhs)
-{
+operator==(const Name& lhs, const Name& rhs) {
   return lhs.compare(rhs) == Name::CMP_EQUAL;
 }
 
 inline bool
-operator<(const Name& lhs, const Name& rhs)
-{
+operator<(const Name& lhs, const Name& rhs) {
   auto cmp = lhs.compare(rhs);
   return cmp == Name::CMP_LT || cmp == Name::CMP_LPREFIX;
 }
@@ -415,8 +379,7 @@ NDNPH_DECLARE_GT_LE_GE(Name, inline)
 #ifdef NDNPH_PRINT_OSTREAM
 /** @brief Print name as URI. */
 inline std::ostream&
-operator<<(std::ostream& os, const Name& name)
-{
+operator<<(std::ostream& os, const Name& name) {
   if (name.size() == 0) {
     return os << '/';
   }

@@ -5,11 +5,9 @@
 namespace ndnph {
 namespace {
 
-class Target0
-{
+class Target0 {
 public:
-  int sum() const
-  {
+  int sum() const {
     return a1 * 1000 + a4 * 100 + a6 * 10 + a9;
   }
 
@@ -20,12 +18,10 @@ public:
   int a9 = 0;
 };
 
-class Target1 : public Target0
-{
+class Target1 : public Target0 {
 public:
-  bool decodeFrom(const Decoder::Tlv& input)
-  {
-    return EvDecoder::decode(input, { 0xA0 }, EvDecoder::def<0xA1>([this](const Decoder::Tlv& d) {
+  bool decodeFrom(const Decoder::Tlv& input) {
+    return EvDecoder::decode(input, {0xA0}, EvDecoder::def<0xA1>([this](const Decoder::Tlv& d) {
                                EXPECT_EQ(d.type, 0xA1);
                                ASSERT_EQ(d.length, 1);
                                EXPECT_EQ(d.value[0], 0x10);
@@ -37,24 +33,20 @@ public:
   }
 };
 
-class Target2 : public Target0
-{
+class Target2 : public Target0 {
 public:
-  bool decodeFrom(const Decoder::Tlv& input)
-  {
+  bool decodeFrom(const Decoder::Tlv& input) {
     return EvDecoder::decodeEx(
       input, {}, EvDecoder::DefaultUnknownCb(), [](uint32_t type) { return type == 0xA2; },
       EvDecoder::def<0xA1>([this](const Decoder::Tlv&) { ++a1; }));
   }
 };
 
-class Target3 : public Target0
-{
+class Target3 : public Target0 {
 public:
-  bool decodeFrom(const Decoder::Tlv& input)
-  {
+  bool decodeFrom(const Decoder::Tlv& input) {
     return EvDecoder::decodeEx(
-      input, { 0xA0, 0xAA },
+      input, {0xA0, 0xAA},
       [this](const Decoder::Tlv& d, int& currentOrder) {
         unknownCbTypes.push_back(d.type);
         unknownCbOrders.push_back(currentOrder);
@@ -73,8 +65,7 @@ public:
   std::vector<uint32_t> unknownCbOrders;
 };
 
-TEST(EvDecoder, All)
-{
+TEST(EvDecoder, All) {
   auto wire = test::fromHex(
     // ---- Target1
     "A00B A10110 A400 A600 A600 A900" // packet 0

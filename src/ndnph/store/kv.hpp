@@ -7,24 +7,21 @@
 namespace ndnph {
 
 /** @brief File based key-value store. */
-class KvStore
-{
+class KvStore {
 public:
   /** @brief Constructor to use internal FileStore instance. */
   explicit KvStore() = default;
 
   /** @brief Constructor to use existing FileStore instance. */
   explicit KvStore(port::FileStore& fs)
-    : m_fs(&fs)
-  {}
+    : m_fs(&fs) {}
 
   /**
    * @brief Open the FileStore backend.
    * @tparam Arg arguments passed to @c port::FileStore::open() function.
    */
   template<typename... Arg>
-  bool open(Arg&&... arg)
-  {
+  bool open(Arg&&... arg) {
     if (m_fs == nullptr) {
       m_ownFs.reset(new port::FileStore());
       m_fs = m_ownFs.get();
@@ -38,8 +35,7 @@ public:
    * @param region where to allocate memory.
    * @return the value. Empty value upon error.
    */
-  tlv::Value get(const char* key, Region& region)
-  {
+  tlv::Value get(const char* key, Region& region) {
     if (m_fs == nullptr || !checkKey(key)) {
       return tlv::Value();
     }
@@ -70,8 +66,7 @@ public:
    * different instances but using the directory), it is the caller's responsibility to ensure
    * that keys do not conflict among different KvStores.
    */
-  bool set(const char* key, tlv::Value value)
-  {
+  bool set(const char* key, tlv::Value value) {
     if (m_fs == nullptr || !checkKey(key)) {
       return false;
     }
@@ -83,8 +78,7 @@ public:
    * @param key non-empty key, can only contain digits, lower-case letters, and '_'.
    * @return whether success; deleting a non-existent key is considered successful.
    */
-  bool del(const char* key)
-  {
+  bool del(const char* key) {
     if (m_fs == nullptr || !checkKey(key)) {
       return false;
     }
@@ -92,8 +86,7 @@ public:
   }
 
 private:
-  static bool checkKey(const char* key)
-  {
+  static bool checkKey(const char* key) {
     size_t keyLen = 0;
     if (key == nullptr || (keyLen = strlen(key)) == 0) {
       return false;

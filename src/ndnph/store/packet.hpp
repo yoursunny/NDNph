@@ -10,8 +10,7 @@ namespace ndnph {
  * @tparam T packet type, which must be default-constructible and decodable.
  */
 template<typename T>
-class PacketStore : public KvStore
-{
+class PacketStore : public KvStore {
 public:
   using KvStore::KvStore;
 
@@ -21,8 +20,7 @@ public:
    * @param region where to allocate memory.
    * @return the packet. Empty packet upon error.
    */
-  T get(const char* key, Region& region)
-  {
+  T get(const char* key, Region& region) {
     tlv::Value wire = KvStore::get(key, region);
     if (wire.size() == 0) {
       return T();
@@ -43,8 +41,7 @@ public:
    * @return whether success.
    */
   template<typename Encodable>
-  bool set(const char* key, Encodable value, Region& region)
-  {
+  bool set(const char* key, Encodable value, Region& region) {
     ScopedEncoder encoder(region);
     if (!encoder.prepend(value)) {
       return false;

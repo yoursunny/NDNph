@@ -6,8 +6,7 @@
 namespace ndnph {
 
 /** @brief Public key. */
-class PublicKey
-{
+class PublicKey {
 public:
   virtual ~PublicKey() = default;
 

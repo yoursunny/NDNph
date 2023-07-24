@@ -10,8 +10,7 @@ namespace ndnph {
  *
  * These are internal 3-bit representation, not assigned numbers.
  */
-enum class NackReason : uint8_t
-{
+enum class NackReason : uint8_t {
   None = 0,
   Congestion = 1,
   Duplicate = 2,
@@ -20,26 +19,22 @@ enum class NackReason : uint8_t
 };
 
 /** @brief Nack header field. */
-class NackHeader : public RefRegion<detail::InterestObj>
-{
+class NackHeader : public RefRegion<detail::InterestObj> {
 public:
   /** @brief Maximum encoded size. */
   using MaxSize = std::integral_constant<size_t, 3 + 1 + 3 + 1 + 1>;
 
   using RefRegion::RefRegion;
 
-  NackReason getReason() const
-  {
+  NackReason getReason() const {
     return static_cast<NackReason>(obj->nackReason);
   }
 
-  void setReason(NackReason v)
-  {
+  void setReason(NackReason v) {
     obj->nackReason = static_cast<uint8_t>(v);
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     auto reason = getReason();
     encoder.prependTlv(TT::Nack, [reason](Encoder& encoder) {
       if (reason != NackReason::Unspecified) {
@@ -48,11 +43,9 @@ public:
     });
   }
 
-  bool decodeFrom(const Decoder::Tlv& input)
-  {
+  bool decodeFrom(const Decoder::Tlv& input) {
     uint64_t nackReasonV = 0;
-    bool ok =
-      EvDecoder::decode(input, { TT::Nack }, EvDecoder::defNni<TT::NackReason>(&nackReasonV));
+    bool ok = EvDecoder::decode(input, {TT::Nack}, EvDecoder::defNni<TT::NackReason>(&nackReasonV));
     if (ok) {
       obj->nackReason = static_cast<uint8_t>(decodeNackReason(nackReasonV));
     }
@@ -60,13 +53,11 @@ public:
   }
 
 private:
-  static uint64_t encodeNackReason(NackReason v)
-  {
+  static uint64_t encodeNackReason(NackReason v) {
     return static_cast<uint64_t>(v) * 50;
   }
 
-  static NackReason decodeNackReason(uint64_t v)
-  {
+  static NackReason decodeNackReason(uint64_t v) {
     switch (v) {
       case 50:
       case 100:
@@ -79,25 +70,21 @@ private:
 };
 
 /** @brief Nack packet. */
-class Nack : public RefRegion<detail::InterestObj>
-{
+class Nack : public RefRegion<detail::InterestObj> {
 public:
   using RefRegion::RefRegion;
 
   /** @brief Access the Nack header. */
-  NackHeader getHeader() const
-  {
+  NackHeader getHeader() const {
     return NackHeader(obj);
   }
 
-  NackReason getReason() const
-  {
+  NackReason getReason() const {
     return getHeader().getReason();
   }
 
   /** @brief Access the Interest. */
-  Interest getInterest() const
-  {
+  Interest getInterest() const {
     return Interest(obj);
   }
 
@@ -108,8 +95,7 @@ public:
    *      only includes Name, CanBePrefix, MustBeFresh, and Nonce in the encoding.
    *      https://redmine.named-data.net/issues/4535#note-16
    */
-  static Nack create(Interest interest, NackReason reason)
-  {
+  static Nack create(Interest interest, NackReason reason) {
     Region& region = regionOf(interest);
     Nack nack = region.create<Nack>();
     if (nack) {

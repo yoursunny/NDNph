@@ -8,8 +8,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Face, Receive)
-{
+TEST(Face, Receive) {
   MockTransport transport;
   Face face(transport);
   MockPacketHandler h(face, 1);
@@ -18,7 +17,7 @@ TEST(Face, Receive)
 
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
-  interest.setName(Name(region, { 0x08, 0x01, 0x41 }));
+  interest.setName(Name(region, {0x08, 0x01, 0x41}));
   auto matchInterestName = g::Property(&Interest::getName, g::Eq(interest.getName()));
   {
     g::InSequence seq;
@@ -35,7 +34,7 @@ TEST(Face, Receive)
 
   Data data = region.create<Data>();
   ASSERT_FALSE(!data);
-  data.setName(Name(region, { 0x08, 0x01, 0x42 }));
+  data.setName(Name(region, {0x08, 0x01, 0x42}));
   {
     auto matchDataName = g::Property(&Data::getName, g::Eq(data.getName()));
     EXPECT_CALL(h, processData(matchDataName)).WillOnce(g::Return(true));
@@ -62,13 +61,11 @@ TEST(Face, Receive)
   ASSERT_TRUE(transport.receive(lp::encode(nack, lp::PitToken::from4(0xDE249BD0))));
 }
 
-class TestSendHandler : public MockPacketHandler
-{
+class TestSendHandler : public MockPacketHandler {
 public:
   using MockPacketHandler::MockPacketHandler;
 
-  void setupExpect()
-  {
+  void setupExpect() {
     EXPECT_CALL(*this, processInterest(g::Property(&Interest::getName, g::Eq(request.getName()))))
       .WillOnce([this](Interest) {
         send(data.sign(NullKey::get()));
@@ -85,8 +82,7 @@ public:
   Interest interest;
 };
 
-TEST(Face, Send)
-{
+TEST(Face, Send) {
   MockTransport transport;
   Face face(transport);
   TestSendHandler h(face);
@@ -130,8 +126,7 @@ TEST(Face, Send)
   EXPECT_TRUE(transport.receive(lp::encode(h.request, lp::PitToken::from4(0xDE249BD0)), 3202));
 }
 
-TEST(Face, DetachedPacketHandler)
-{
+TEST(Face, DetachedPacketHandler) {
   MockPacketHandler ph;
   EXPECT_THAT(ph.getCurrentPacketInfo(), g::IsNull());
 
@@ -143,8 +138,7 @@ TEST(Face, DetachedPacketHandler)
   EXPECT_FALSE(ph.reply(region, data));
 }
 
-class FaceFragmentationFixture : public BridgeFixture
-{
+class FaceFragmentationFixture : public BridgeFixture {
 public:
   explicit FaceFragmentationFixture()
     : fragRegionA(16384)
@@ -152,8 +146,7 @@ public:
     , fragmenterA(fragRegionA, 1500)
     , fragmenterB(fragRegionB, 1500)
     , reassemblerA(fragRegionA)
-    , reassemblerB(fragRegionB)
-  {
+    , reassemblerB(fragRegionB) {
     faceA.setFragmenter(fragmenterA);
     faceA.setReassembler(reassemblerA);
     faceB.setFragmenter(fragmenterB);
@@ -169,8 +162,7 @@ protected:
   lp::Reassembler reassemblerB;
 };
 
-TEST_F(FaceFragmentationFixture, Fragmentation)
-{
+TEST_F(FaceFragmentationFixture, Fragmentation) {
   MockPacketHandler hA(faceA);
   std::vector<size_t> recvSizes;
   EXPECT_CALL(hA, processData).Times(20).WillRepeatedly([&](Data data) {
@@ -212,30 +204,24 @@ TEST_F(FaceFragmentationFixture, Fragmentation)
   }
 }
 
-class FacePendingFixture : public g::Test
-{
+class FacePendingFixture : public g::Test {
 protected:
-  class Handler : public MockPacketHandler
-  {
+  class Handler : public MockPacketHandler {
   public:
     explicit Handler(Face& face)
       : MockPacketHandler(face)
-      , m_pending(this)
-    {}
+      , m_pending(this) {}
 
     template<typename... Arg>
-    bool send(Arg&&... arg)
-    {
+    bool send(Arg&&... arg) {
       return m_pending.send(std::forward<Arg>(arg)...);
     }
 
-    bool expired() const
-    {
+    bool expired() const {
       return m_pending.expired();
     }
 
-    void setupExpect()
-    {
+    void setupExpect() {
       EXPECT_CALL(*this, processData).WillOnce([this](Data data) {
         matchPitToken = m_pending.matchPitToken();
         matchInterest = m_pending.match(data, interest);
@@ -259,19 +245,16 @@ protected:
 
   explicit FacePendingFixture()
     : face(transport)
-    , h(face)
-  {}
+    , h(face) {}
 
-  void SetUp() override
-  {
+  void SetUp() override {
     interest = cRegion.create<Interest>();
     NDNPH_ASSERT(!!interest);
     data = pRegion.create<Data>();
     NDNPH_ASSERT(!!data);
   }
 
-  void setupRespond(bool withPitToken = true)
-  {
+  void setupRespond(bool withPitToken = true) {
     EXPECT_CALL(transport, doSend).WillOnce([=](std::vector<uint8_t> wire, uint64_t) {
       lp::PacketClassify classify;
       EXPECT_TRUE(Decoder(wire.data(), wire.size()).decode(classify));
@@ -297,8 +280,7 @@ protected:
   Data data;
 };
 
-TEST_F(FacePendingFixture, NormalMatch)
-{
+TEST_F(FacePendingFixture, NormalMatch) {
   interest.setName(Name::parse(cRegion, "/A"));
   interest.setCanBePrefix(true);
   interest.setMustBeFresh(true);
@@ -316,8 +298,7 @@ TEST_F(FacePendingFixture, NormalMatch)
   EXPECT_TRUE(h.matchName);
 }
 
-TEST_F(FacePendingFixture, DigestMatch)
-{
+TEST_F(FacePendingFixture, DigestMatch) {
   auto data1 = pRegion.create<Data>();
   NDNPH_ASSERT(!!data1);
   data1.setName(Name::parse(pRegion, "/A/B"));
@@ -336,8 +317,7 @@ TEST_F(FacePendingFixture, DigestMatch)
   EXPECT_TRUE(h.matchName);
 }
 
-TEST_F(FacePendingFixture, MismatchData)
-{
+TEST_F(FacePendingFixture, MismatchData) {
   interest.setName(Name::parse(cRegion, "/A"));
   data.setName(Name::parse(pRegion, "/B"));
 
@@ -352,8 +332,7 @@ TEST_F(FacePendingFixture, MismatchData)
   EXPECT_FALSE(h.matchName);
 }
 
-TEST_F(FacePendingFixture, MismatchPitToken)
-{
+TEST_F(FacePendingFixture, MismatchPitToken) {
   interest.setName(Name::parse(cRegion, "/A"));
   data.setName(interest.getName());
 
@@ -368,8 +347,7 @@ TEST_F(FacePendingFixture, MismatchPitToken)
   EXPECT_FALSE(h.matchName);
 }
 
-TEST_F(FacePendingFixture, Expire)
-{
+TEST_F(FacePendingFixture, Expire) {
   interest.setName(Name::parse(cRegion, "/A"));
 
   EXPECT_CALL(transport, doSend).Times(1);

@@ -5,8 +5,7 @@
 namespace ndnph {
 
 inline bool
-Face::addHandler(PacketHandler& h, int8_t prio)
-{
+Face::addHandler(PacketHandler& h, int8_t prio) {
   if (h.m_face != nullptr) {
     return false;
   }
@@ -22,8 +21,7 @@ Face::addHandler(PacketHandler& h, int8_t prio)
 }
 
 inline bool
-Face::removeHandler(PacketHandler& h)
-{
+Face::removeHandler(PacketHandler& h) {
   if (h.m_face != this) {
     return false;
   }
@@ -39,8 +37,7 @@ Face::removeHandler(PacketHandler& h)
 }
 
 inline void
-Face::loop()
-{
+Face::loop() {
   m_transport.loop();
   PacketHandler* next = nullptr;
   for (PacketHandler* h = m_handler; h != nullptr; h = next) {
@@ -51,8 +48,7 @@ Face::loop()
 
 template<typename Packet>
 inline bool
-Face::send(Region& region, const Packet& packet, PacketInfo pi)
-{
+Face::send(Region& region, const Packet& packet, PacketInfo pi) {
   auto lpp = lp::encode(packet, pi.pitToken);
   if (m_frag == nullptr) {
     ScopedEncoder encoder(region);
@@ -79,8 +75,7 @@ Face::send(Region& region, const Packet& packet, PacketInfo pi)
 }
 
 inline void
-Face::transportRx(const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
-{
+Face::transportRx(const uint8_t* pkt, size_t pktLen, uint64_t endpointId) {
   region.reset();
   using PT = lp::PacketClassify::Type;
 
@@ -135,8 +130,7 @@ Face::transportRx(const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
 
 template<typename Packet, typename H>
 bool
-Face::process(H processPacket, Packet packet)
-{
+Face::process(H processPacket, Packet packet) {
   bool isAccepted = false;
   PacketHandler* next = nullptr;
   for (PacketHandler* h = m_handler; h != nullptr && !isAccepted; h = next) {

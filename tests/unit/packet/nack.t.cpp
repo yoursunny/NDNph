@@ -6,8 +6,7 @@
 namespace ndnph {
 namespace {
 
-class NackP : public g::TestWithParam<std::tuple<int, NackReason>>
-{};
+class NackP : public g::TestWithParam<std::tuple<int, NackReason>> {};
 
 INSTANTIATE_TEST_SUITE_P(Nack, NackP,
                          g::Values(std::make_tuple(50, NackReason::Congestion),
@@ -18,8 +17,7 @@ INSTANTIATE_TEST_SUITE_P(Nack, NackP,
                                    std::make_tuple(255, NackReason::Unspecified)));
 
 static std::vector<uint8_t>
-makeNackWire(int reasonV)
-{
+makeNackWire(int reasonV) {
   std::vector<uint8_t> wire({
     0x64, 0x13,                         // LpPacket
     0xFD, 0x03, 0x20, 0x00,             // Nack
@@ -31,13 +29,12 @@ makeNackWire(int reasonV)
   if (reasonV >= 0) {
     wire[1] = 0x18;
     wire[5] = 0x05;
-    wire.insert(wire.begin() + 6, { 0xFD, 0x03, 0x21, 0x01, static_cast<uint8_t>(reasonV) });
+    wire.insert(wire.begin() + 6, {0xFD, 0x03, 0x21, 0x01, static_cast<uint8_t>(reasonV)});
   }
   return wire;
 }
 
-TEST_P(NackP, LpDecode)
-{
+TEST_P(NackP, LpDecode) {
   int reasonV = 0;
   NackReason reason{};
   std::tie(reasonV, reason) = GetParam();
@@ -56,8 +53,7 @@ TEST_P(NackP, LpDecode)
   EXPECT_EQ(nack.getInterest().getNonce(), 0xA0A1A2A3);
 }
 
-TEST_P(NackP, LpEncode)
-{
+TEST_P(NackP, LpEncode) {
   int reasonV = 0;
   NackReason reason{};
   std::tie(reasonV, reason) = GetParam();

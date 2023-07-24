@@ -3,8 +3,7 @@
 #include <Arduino.h>
 #include <ArduinoUnit.h>
 
-test(Clock)
-{
+test(Clock) {
   using Clock = ndnph::port::Clock;
   using UnixTime = ndnph::port::UnixTime;
 
@@ -31,10 +30,9 @@ test(Clock)
   }
 }
 
-test(PacketPrint)
-{
+test(PacketPrint) {
   ndnph::StaticRegion<1024> region;
-  ndnph::Name name(region, { 0x08, 0x00, 0x09, 0x01, 0x41, 0x0A, 0x03, 0x2E, 0x42, 0x2E });
+  ndnph::Name name(region, {0x08, 0x00, 0x09, 0x01, 0x41, 0x0A, 0x03, 0x2E, 0x42, 0x2E});
 
   {
     MockPrint os;
@@ -64,14 +62,12 @@ test(PacketPrint)
 }
 
 void
-setup()
-{
+setup() {
   Serial.begin(115200);
   Serial.println();
 }
 
 void
-loop()
-{
+loop() {
   Test::run();
 }

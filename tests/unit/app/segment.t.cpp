@@ -9,15 +9,13 @@ namespace ndnph {
 namespace {
 
 static std::vector<uint8_t>
-makeRandomContent(size_t size)
-{
+makeRandomContent(size_t size) {
   std::vector<uint8_t> content(size);
   port::RandomSource::generate(content.data(), content.size());
   return content;
 }
 
-TEST(Segment, Consumer)
-{
+TEST(Segment, Consumer) {
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
@@ -65,7 +63,7 @@ TEST(Segment, Consumer)
           Data data = region.create<Data>();
           NDNPH_ASSERT(!!data);
           data.setName(nameA1);
-          std::vector<uint8_t> content({ 0xA0, 0xA1 });
+          std::vector<uint8_t> content({0xA0, 0xA1});
           data.setContent(tlv::Value(content.data(), content.size()));
           transport.receive(lp::encode(data.sign(DigestKey::get()), classify.getPitToken()));
           break;
@@ -78,7 +76,7 @@ TEST(Segment, Consumer)
           Data data = region.create<Data>();
           NDNPH_ASSERT(!!data);
           data.setName(nameA0);
-          std::vector<uint8_t> content({ 0xA2, 0xA3 });
+          std::vector<uint8_t> content({0xA2, 0xA3});
           data.setContent(tlv::Value(content.data(), content.size()));
           transport.receive(lp::encode(data.sign(DigestKey::get()), classify.getPitToken()));
           break;
@@ -93,7 +91,7 @@ TEST(Segment, Consumer)
           Data data = region.create<Data>();
           NDNPH_ASSERT(!!data);
           data.setName(nameA1);
-          std::vector<uint8_t> content({ 0xA4, 0xA5 });
+          std::vector<uint8_t> content({0xA4, 0xA5});
           data.setContent(tlv::Value(content.data(), content.size()));
           data.setIsFinalBlock(true);
           transport.receive(lp::encode(data.sign(DigestKey::get()), classify.getPitToken()));
@@ -141,8 +139,7 @@ TEST(Segment, Consumer)
   EXPECT_TRUE(destB.hasError);
 }
 
-TEST(Segment, Producer)
-{
+TEST(Segment, Producer) {
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
@@ -211,11 +208,9 @@ TEST(Segment, Producer)
   testOneInterest("/A/AA/AAA/50=%03", false, nullptr, -1);
 }
 
-class SegmentEndToEndFixture : public BridgeFixture
-{
+class SegmentEndToEndFixture : public BridgeFixture {
 protected:
-  void SetUp() override
-  {
+  void SetUp() override {
     SegmentProducer::Options optsA;
     optsA.contentLen = 256;
     producerA.reset(new SegmentProducer(faceA, optsA));
@@ -238,10 +233,8 @@ protected:
   std::vector<uint8_t> contentA;
 };
 
-TEST_F(SegmentEndToEndFixture, SegmentCallback)
-{
-  struct CtxB
-  {
+TEST_F(SegmentEndToEndFixture, SegmentCallback) {
+  struct CtxB {
     std::vector<uint8_t> content;
     uint64_t segment = 0;
   } ctxB;
@@ -270,8 +263,7 @@ TEST_F(SegmentEndToEndFixture, SegmentCallback)
   EXPECT_EQ(ctxB.content, contentA);
 }
 
-TEST_F(SegmentEndToEndFixture, SaveToNormal)
-{
+TEST_F(SegmentEndToEndFixture, SaveToNormal) {
   std::vector<uint8_t> contentB(contentA.size() + 1);
   SegmentConsumer::SaveDest destB(contentB.data(), contentB.size());
 
@@ -289,8 +281,7 @@ TEST_F(SegmentEndToEndFixture, SaveToNormal)
               g::ElementsAreArray(contentA));
 }
 
-TEST_F(SegmentEndToEndFixture, SaveToTooShort)
-{
+TEST_F(SegmentEndToEndFixture, SaveToTooShort) {
   std::vector<uint8_t> contentB(contentA.size() - 1);
   SegmentConsumer::SaveDest destB(contentB.data(), contentB.size());
 

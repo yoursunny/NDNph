@@ -12,8 +12,7 @@ static FILE* tracerFile = nullptr;
 namespace ndnph {
 namespace {
 
-TEST(Transport, Bridge)
-{
+TEST(Transport, Bridge) {
   BridgeTransport transportA;
   BridgeTransport transportB;
   BridgeTransport transportC;
@@ -54,8 +53,7 @@ TEST(Transport, Bridge)
   fclose(tracerFile);
 }
 
-TEST(Transport, ForceEndpointId)
-{
+TEST(Transport, ForceEndpointId) {
   MockTransport transportA;
   MockTransport transportB;
 
@@ -89,14 +87,12 @@ TEST(Transport, ForceEndpointId)
   TransportTest(faceB, faceA).run().check();
 }
 
-TEST(Transport, Ipv6EndpointIdHelper)
-{
+TEST(Transport, Ipv6EndpointIdHelper) {
   port_transport_socket::Ipv6EndpointIdHelper<15> h;
-  uint8_t addr4[] = { 192, 168, 5, 1 };
+  uint8_t addr4[] = {192, 168, 5, 1};
   uint64_t endpoint4 = h.encode(addr4, sizeof(addr4), 6363);
 
-  struct AddrPort
-  {
+  struct AddrPort {
     uint64_t endpointId;
     std::array<uint8_t, 16> addr;
     uint16_t port;
@@ -146,8 +142,7 @@ TEST(Transport, Ipv6EndpointIdHelper)
   EXPECT_LT(oldMistaken, oldRejected);
 }
 
-TEST(Transport, UdpUnicast)
-{
+TEST(Transport, UdpUnicast) {
   uint16_t freePort = 0;
   {
     sockaddr_in6 laddr{};
@@ -169,7 +164,7 @@ TEST(Transport, UdpUnicast)
   EXPECT_FALSE(transport6.isUp());
   EXPECT_FALSE(transportR.isUp());
 
-  ASSERT_TRUE(transport4.beginTunnel({ 127, 0, 0, 1 }, freePort));
+  ASSERT_TRUE(transport4.beginTunnel({127, 0, 0, 1}, freePort));
   {
     sockaddr_in6 addr6{};
     addr6.sin6_family = AF_INET6;

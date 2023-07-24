@@ -5,12 +5,10 @@
 namespace ndnph {
 namespace {
 
-class MyItem
-{
+class MyItem {
 public:
   explicit MyItem(uint32_t x = 0)
-    : x(x)
-  {}
+    : x(x) {}
 
   MyItem(MyItem&&) = default;
   MyItem(const MyItem&) = delete;
@@ -22,8 +20,7 @@ public:
 };
 
 void
-testSimpleQueue(SimpleQueue<MyItem>& queue)
-{
+testSimpleQueue(SimpleQueue<MyItem>& queue) {
   EXPECT_EQ(queue.capacity(), 4);
   EXPECT_EQ(queue.size(), 0);
   EXPECT_EQ(queue.available(), 4);
@@ -60,14 +57,12 @@ testSimpleQueue(SimpleQueue<MyItem>& queue)
   EXPECT_EQ(queue.available(), 4);
 }
 
-TEST(SimpleQueue, Static)
-{
+TEST(SimpleQueue, Static) {
   StaticSimpleQueue<MyItem, 4> queue;
   testSimpleQueue(queue);
 }
 
-TEST(SimpleQueue, Dynamic)
-{
+TEST(SimpleQueue, Dynamic) {
   DynamicSimpleQueue<MyItem> queue(4);
   testSimpleQueue(queue);
 }

@@ -7,16 +7,14 @@ namespace ndnph {
 
 /** @brief Generic non-thread-safe queue. */
 template<typename T>
-class SimpleQueue
-{
+class SimpleQueue {
 public:
   static_assert(std::is_default_constructible<T>::value, "");
   static_assert(std::is_move_assignable<T>::value, "");
   static_assert(std::is_move_constructible<T>::value, "");
   using Item = T;
 
-  bool push(Item item)
-  {
+  bool push(Item item) {
     size_t newTail = nextIndex(m_tail);
     if (newTail == m_head) {
       return false;
@@ -27,8 +25,7 @@ public:
     return true;
   }
 
-  std::tuple<Item, bool> pop()
-  {
+  std::tuple<Item, bool> pop() {
     if (m_head == m_tail) {
       return std::make_tuple(T(), false);
     }
@@ -38,18 +35,15 @@ public:
     return std::make_tuple(std::move(item), true);
   }
 
-  size_t capacity() const
-  {
+  size_t capacity() const {
     return m_cap1 - 1;
   }
 
-  size_t size() const
-  {
+  size_t size() const {
     return (m_tail - m_head + m_cap1) % m_cap1;
   }
 
-  size_t available() const
-  {
+  size_t available() const {
     return capacity() - size();
   }
 
@@ -61,17 +55,14 @@ protected:
    */
   explicit SimpleQueue(Item* arr, size_t cap)
     : m_arr(arr)
-    , m_cap1(cap + 1)
-  {}
+    , m_cap1(cap + 1) {}
 
-  Item* getArray()
-  {
+  Item* getArray() {
     return m_arr;
   }
 
 private:
-  size_t nextIndex(size_t i) const
-  {
+  size_t nextIndex(size_t i) const {
     return (i + 1) % m_cap1;
   }
 
@@ -87,12 +78,10 @@ private:
  * @tparam C capacity.
  */
 template<typename T, size_t C>
-class StaticSimpleQueue : public SimpleQueue<T>
-{
+class StaticSimpleQueue : public SimpleQueue<T> {
 public:
   explicit StaticSimpleQueue()
-    : SimpleQueue<T>(m_array, C)
-  {}
+    : SimpleQueue<T>(m_array, C) {}
 
 private:
   T m_array[C + 1];
@@ -100,15 +89,12 @@ private:
 
 /** @brief SimpleQueue with dynamically allocated memory. */
 template<typename T>
-class DynamicSimpleQueue : public SimpleQueue<T>
-{
+class DynamicSimpleQueue : public SimpleQueue<T> {
 public:
   explicit DynamicSimpleQueue(size_t capacity)
-    : SimpleQueue<T>(new T[capacity + 1], capacity)
-  {}
+    : SimpleQueue<T>(new T[capacity + 1], capacity) {}
 
-  ~DynamicSimpleQueue()
-  {
+  ~DynamicSimpleQueue() {
     delete[] this->getArray();
   }
 };

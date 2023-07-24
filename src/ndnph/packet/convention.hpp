@@ -10,15 +10,13 @@ namespace ndnph {
 namespace convention {
 
 /** @brief Indicate that TLV-VALUE should be a random number. */
-class RandomValue
-{
+class RandomValue {
 public:
   /**
    * @brief Generate TLV-VALUE.
    * @return whether success and the number.
    */
-  std::pair<bool, uint64_t> toNumber() const
-  {
+  std::pair<bool, uint64_t> toNumber() const {
     uint64_t value = 0;
     bool ok = port::RandomSource::generate(reinterpret_cast<uint8_t*>(&value), sizeof(value));
     return std::make_pair(ok, value);
@@ -26,11 +24,9 @@ public:
 };
 
 /** @brief Indicate that TLV-VALUE should be a timestamp. */
-class TimeValue
-{
+class TimeValue {
 public:
-  enum Unit
-  {
+  enum Unit {
     Seconds = 1000000,
     Milliseconds = 1000,
     Microseconds = 1,
@@ -45,15 +41,13 @@ public:
   explicit TimeValue(uint64_t t = 0, uint64_t unit = Microseconds, bool allowFallback = false)
     : m_t(t)
     , m_unit(unit)
-    , m_allowFallback(allowFallback)
-  {}
+    , m_allowFallback(allowFallback) {}
 
   /**
    * @brief Generate TLV-VALUE.
    * @return whether success and the number.
    */
-  std::pair<bool, uint64_t> toNumber() const
-  {
+  std::pair<bool, uint64_t> toNumber() const {
     uint64_t t = m_t;
     if (t == 0) {
       t = port::UnixTime::now();
@@ -77,41 +71,33 @@ private:
 namespace detail {
 
 template<uint16_t tlvType>
-class TypedDigest
-{
+class TypedDigest {
 public:
-  static Component create(Region& region, const uint8_t digest[NDNPH_SHA256_LEN])
-  {
+  static Component create(Region& region, const uint8_t digest[NDNPH_SHA256_LEN]) {
     return Component(region, tlvType, NDNPH_SHA256_LEN, digest);
   }
 
-  static bool match(const Component& comp)
-  {
+  static bool match(const Component& comp) {
     return comp.type() == tlvType && comp.length() == NDNPH_SHA256_LEN;
   }
 
-  static const uint8_t* parse(const Component& comp)
-  {
+  static const uint8_t* parse(const Component& comp) {
     return comp.value();
   }
 };
 
 template<uint16_t tlvType>
-class TypedString
-{
+class TypedString {
 public:
-  static Component create(Region& region, const char* s)
-  {
+  static Component create(Region& region, const char* s) {
     return Component(region, tlvType, std::strlen(s), reinterpret_cast<const uint8_t*>(s));
   }
 
-  static bool match(const Component& comp)
-  {
+  static bool match(const Component& comp) {
     return comp.type() == tlvType;
   }
 
-  static const char* parse(const Component& comp, Region& region)
-  {
+  static const char* parse(const Component& comp, Region& region) {
     uint8_t* room = region.alloc(comp.length() + 1);
     if (room == nullptr) {
       return nullptr;
@@ -122,12 +108,10 @@ public:
 };
 
 template<uint16_t tlvType>
-class TypedNumber
-{
+class TypedNumber {
 public:
   /** @brief Create with specified value. */
-  static Component create(Region& region, uint64_t value)
-  {
+  static Component create(Region& region, uint64_t value) {
     return Component::from(region, tlvType, tlv::NNI(value));
   }
 
@@ -139,8 +123,7 @@ public:
    * encoding error. This condition rarely occurs on a correctly integrated system.
    */
   template<typename G>
-  static Component create(Region& region, const G& gen, decltype(&G::toNumber) = nullptr)
-  {
+  static Component create(Region& region, const G& gen, decltype(&G::toNumber) = nullptr) {
     bool ok = false;
     uint64_t value = 0;
     std::tie(ok, value) = gen.toNumber();
@@ -150,19 +133,16 @@ public:
     return create(region, value);
   }
 
-  static bool match(const Component& comp)
-  {
+  static bool match(const Component& comp) {
     return parseImpl(comp).first;
   }
 
-  static uint64_t parse(const Component& comp)
-  {
+  static uint64_t parse(const Component& comp) {
     return parseImpl(comp).second;
   }
 
 private:
-  static std::pair<bool, uint64_t> parseImpl(const Component& comp)
-  {
+  static std::pair<bool, uint64_t> parseImpl(const Component& comp) {
     Decoder::Tlv d;
     uint64_t value = 0;
     bool ok = comp.type() == tlvType && Decoder::readTlv(d, comp.tlv(), comp.tlv() + comp.size()) &&

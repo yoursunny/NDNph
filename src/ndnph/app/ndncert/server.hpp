@@ -13,8 +13,7 @@ namespace server {
 class ChallengeRequest;
 class ChallengeResponse;
 
-struct ChallengeResult
-{
+struct ChallengeResult {
   bool success = false;
   bool decrementRetry = false;
   const char* challengeStatus = "";
@@ -27,8 +26,7 @@ struct ChallengeResult
  * Subclass instance may store internal state in member fields.
  * An instance can only handle one challenge session at a time.
  */
-class Challenge
-{
+class Challenge {
 public:
   virtual ~Challenge() = default;
 
@@ -51,16 +49,14 @@ public:
 using ChallengeList = std::array<Challenge*, detail::MaxChallenges::value>;
 
 /** @brief CA profile packet. */
-class CaProfile : public packet_struct::CaProfile
-{
+class CaProfile : public packet_struct::CaProfile {
 public:
   /**
    * @brief Build CA profile packet.
    * @param signer private key corresponding to @c cert .
    * @return an Encodable object, or a falsy value upon failure.
    */
-  Data::Signed toData(Region& region, const EcPrivateKey& signer) const
-  {
+  Data::Signed toData(Region& region, const EcPrivateKey& signer) const {
     Encoder encoder(region);
     encoder.prepend([this](Encoder& encoder) { encoder.prependTlv(TT::CaPrefix, prefix); },
                     [](Encoder& encoder) { encoder.prependTlv(TT::CaInfo); },
@@ -86,12 +82,10 @@ public:
 };
 
 /** @brief NEW request packet. */
-class NewRequest : public packet_struct::NewRequest
-{
+class NewRequest : public packet_struct::NewRequest {
 public:
   /** @brief Determine whether @p name is a valid NEW request packet name. */
-  static bool isName(const CaProfile& profile, const Name& name)
-  {
+  static bool isName(const CaProfile& profile, const Name& name) {
     return name.size() == profile.prefix.size() + 3 && profile.prefix.isPrefixOf(name) &&
            name[-3] == getCaComponent() && name[-2] == getNewComponent() &&
            name[-1].is<convention::ParamsDigest>();
@@ -103,8 +97,7 @@ public:
    * @return whether success.
    */
   bool fromInterest(Region& region, const Interest& interest, const CaProfile& profile,
-                    detail::ISigPolicy& signingPolicy)
-  {
+                    detail::ISigPolicy& signingPolicy) {
     return isName(profile, interest.getName()) &&
            EvDecoder::decodeValue(interest.getAppParameters().makeDecoder(),
                                   EvDecoder::def<TT::EcdhPub>(&ecdhPub),
@@ -122,8 +115,7 @@ public:
 };
 
 /** @brief NEW response packet. */
-class NewResponse : public packet_struct::NewResponse
-{
+class NewResponse : public packet_struct::NewResponse {
 public:
   /**
    * @brief Build NEW response packet.
@@ -133,8 +125,7 @@ public:
    * @return an Encodable object, or a falsy value upon failure.
    */
   Data::Signed toData(Region& region, const Interest& newRequest, const ChallengeList& challenges,
-                      const EcPrivateKey& signer) const
-  {
+                      const EcPrivateKey& signer) const {
     Encoder encoder(region);
     encoder.prepend(
       [this](Encoder& encoder) { encoder.prependTlv(TT::EcdhPub, ecdhPub); },
@@ -164,12 +155,10 @@ public:
 };
 
 /** @brief CHALLENGE request packet. */
-class ChallengeRequest : public packet_struct::ChallengeRequest<Challenge>
-{
+class ChallengeRequest : public packet_struct::ChallengeRequest<Challenge> {
 public:
   /** @brief Determine whether @p name is a valid CHALLENGE request packet name. */
-  static bool isName(const CaProfile& profile, const Name& name)
-  {
+  static bool isName(const CaProfile& profile, const Name& name) {
     return name.size() == profile.prefix.size() + 4 && profile.prefix.isPrefixOf(name) &&
            name[-4] == getCaComponent() && name[-3] == getChallengeComponent() &&
            name[-2].type() == TT::GenericNameComponent &&
@@ -181,8 +170,7 @@ public:
    * @brief Extract requestId from Interest name.
    * @return requestId, or nullptr if @p name is not a valid CHALLENGE request packet name.
    */
-  static const uint8_t* parseName(const CaProfile& profile, const Name& name)
-  {
+  static const uint8_t* parseName(const CaProfile& profile, const Name& name) {
     return isName(profile, name) ? name[-2].value() : nullptr;
   }
 
@@ -194,8 +182,7 @@ public:
   bool fromInterest(Region& region, const Interest& interest, const CaProfile& profile,
                     const uint8_t* requestId, detail::SessionKey& sessionKey,
                     const EcPublicKey& verifier, const ChallengeList& challenges,
-                    detail::ISigPolicy& signingPolicy)
-  {
+                    detail::ISigPolicy& signingPolicy) {
     const uint8_t* actualRequestId = parseName(profile, interest.getName());
     if (actualRequestId == nullptr ||
         !std::equal(requestId, requestId + detail::RequestIdLen::value, actualRequestId) ||
@@ -229,8 +216,7 @@ public:
 };
 
 /** @brief CHALLENGE response packet. */
-class ChallengeResponse : public packet_struct::ChallengeResponse
-{
+class ChallengeResponse : public packet_struct::ChallengeResponse {
 public:
   /**
    * @brief Build CHALLENGE response packet.
@@ -239,8 +225,7 @@ public:
    * @return an Encodable object, or a falsy value upon failure.
    */
   Data::Signed toData(Region& region, const Interest& challengeRequest, const uint8_t* requestId,
-                      detail::SessionKey& sessionKey, const EcPrivateKey& signer) const
-  {
+                      detail::SessionKey& sessionKey, const EcPrivateKey& signer) const {
     Encoder encoder(region);
     switch (status) {
       case Status::FAILURE:
@@ -281,8 +266,7 @@ public:
 };
 
 inline Data::Signed
-makeError(Region& region, const Interest& interest, uint8_t errorCode, const EcPrivateKey& signer)
-{
+makeError(Region& region, const Interest& interest, uint8_t errorCode, const EcPrivateKey& signer) {
   Encoder encoder(region);
   encoder.prepend(tlv::NniElement<>(TT::ErrorCode, errorCode),
                   [](Encoder& encoder) { encoder.prependTlv(TT::ErrorInfo); });
@@ -299,8 +283,7 @@ makeError(Region& region, const Interest& interest, uint8_t errorCode, const EcP
 }
 
 /** @brief Server session logic. */
-class Session
-{
+class Session {
 public:
   explicit Session(const CaProfile& profile, const EcPrivateKey& signer,
                    const ChallengeList& challenges)
@@ -308,8 +291,7 @@ public:
     , m_profile(profile)
     , m_signer(signer)
     , m_challenges(challenges)
-    , m_signingPolicy(detail::makeISigPolicy())
-  {
+    , m_signingPolicy(detail::makeISigPolicy()) {
     NDNPH_ASSERT(m_challengeRegion != nullptr);
     for (Challenge* ch : challenges) {
       if (ch != nullptr) {
@@ -318,8 +300,7 @@ public:
     }
   }
 
-  Data::Signed handleNewRequest(Region& packetRegion, const Interest& interest)
-  {
+  Data::Signed handleNewRequest(Region& packetRegion, const Interest& interest) {
     if (!m_newRequest.fromInterest(m_region, interest, m_profile, m_signingPolicy)) {
       NDNPH_NDNCERT_LOG("NewRequest parse error");
       return makeError(packetRegion, interest, ErrorCode::BadParameterFormat, m_signer);
@@ -342,8 +323,7 @@ public:
     return m_newResponse.toData(packetRegion, interest, m_challenges, m_signer);
   }
 
-  Data::Signed handleChallengeRequest(Region& packetRegion, const Interest& interest)
-  {
+  Data::Signed handleChallengeRequest(Region& packetRegion, const Interest& interest) {
     m_challengeRegion->reset();
     Challenge* prevChallenge = m_challengeRequest.challenge;
     if (!m_challengeRequest.fromInterest(*m_challengeRegion, interest, m_profile,
@@ -401,13 +381,11 @@ public:
                                       m_signer);
   }
 
-  const Name& getIssuedCertName() const
-  {
+  const Name& getIssuedCertName() const {
     return m_challengeResponse.issuedCertName;
   }
 
-  const Data& getIssuedCert() const
-  {
+  const Data& getIssuedCert() const {
     return m_issuedCert;
   }
 
@@ -427,11 +405,9 @@ private:
 };
 
 /** @brief Server application. */
-class Server : public PacketHandler
-{
+class Server : public PacketHandler {
 public:
-  struct Options
-  {
+  struct Options {
     /** @brief Face for communication. */
     Face& face;
 
@@ -449,12 +425,10 @@ public:
     : PacketHandler(opts.face)
     , m_profile(opts.profile)
     , m_challenges(opts.challenges)
-    , m_signer(opts.signer)
-  {}
+    , m_signer(opts.signer) {}
 
 private:
-  bool processInterest(Interest interest) final
-  {
+  bool processInterest(Interest interest) final {
     StaticRegion<1024> packetRegion;
     const Name& interestName = interest.getName();
     if (NewRequest::isName(m_profile, interestName)) {
@@ -479,28 +453,23 @@ private:
 };
 
 /** @brief The "nop" challenge where the server would approve every request. */
-class NopChallenge : public Challenge
-{
+class NopChallenge : public Challenge {
 public:
-  tlv::Value getId() const override
-  {
+  tlv::Value getId() const override {
     return challenge_consts::nop();
   }
 
-  int getTimeLimit() const override
-  {
+  int getTimeLimit() const override {
     return 60000;
   }
 
-  int getRetryLimit() const override
-  {
+  int getRetryLimit() const override {
     return 1;
   }
 
   void clear() override {}
 
-  ChallengeResult process(Region&, const ChallengeRequest&) override
-  {
+  ChallengeResult process(Region&, const ChallengeRequest&) override {
     ChallengeResult result;
     result.success = true;
     return result;
@@ -508,31 +477,25 @@ public:
 };
 
 /** @brief The "possession" challenge where client must present an existing certificate. */
-class PossessionChallenge : public Challenge
-{
+class PossessionChallenge : public Challenge {
 public:
-  tlv::Value getId() const override
-  {
+  tlv::Value getId() const override {
     return challenge_consts::possession();
   }
 
-  int getTimeLimit() const override
-  {
+  int getTimeLimit() const override {
     return 60000;
   }
 
-  int getRetryLimit() const override
-  {
+  int getRetryLimit() const override {
     return 1;
   }
 
-  void clear() override
-  {
+  void clear() override {
     m_cert = tlv::Value();
   }
 
-  ChallengeResult process(Region&, const ChallengeRequest& request) override
-  {
+  ChallengeResult process(Region&, const ChallengeRequest& request) override {
     tlv::Value proof = request.params.get(challenge_consts::proof());
     if (!proof) {
       return process0(request);
@@ -545,8 +508,7 @@ public:
   }
 
 private:
-  ChallengeResult process0(const ChallengeRequest& request)
-  {
+  ChallengeResult process0(const ChallengeRequest& request) {
     m_cert = request.params.get(challenge_consts::issuedcert());
 
     StaticRegion<2048> temp;
@@ -575,9 +537,8 @@ private:
     return result;
   }
 
-  bool process1(tlv::Value proof)
-  {
-    return m_pub.verify({ tlv::Value(m_nonce, sizeof(m_nonce)) }, proof.begin(), proof.size());
+  bool process1(tlv::Value proof) {
+    return m_pub.verify({tlv::Value(m_nonce, sizeof(m_nonce))}, proof.begin(), proof.size());
   }
 
 private:

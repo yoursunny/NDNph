@@ -6,30 +6,25 @@
 namespace ndnph {
 
 /** @brief Region-based memory allocator thats owns memory of NDNph objects. */
-class Region
-{
+class Region {
 public:
-  enum
-  {
+  enum {
     ALIGNMENT = sizeof(void*),
   };
 
   template<typename T>
-  static constexpr T sizeofAligned(T size)
-  {
+  static constexpr T sizeofAligned(T size) {
     return size % ALIGNMENT == 0 ? size : (size | (ALIGNMENT - 1)) + 1;
   }
 
   explicit Region(uint8_t* buf, size_t cap)
     : m_begin(buf)
-    , m_end(buf + cap)
-  {
+    , m_end(buf + cap) {
     reset();
   }
 
   /** @brief Allocate a buffer with no alignment requirement. */
-  uint8_t* alloc(size_t size)
-  {
+  uint8_t* alloc(size_t size) {
     if (available() < size) {
       return nullptr;
     }
@@ -38,8 +33,7 @@ public:
   }
 
   /** @brief Allocate a region aligned to multiple of sizeof(void*). */
-  uint8_t* allocA(size_t size)
-  {
+  uint8_t* allocA(size_t size) {
     uint8_t* room = alignUp(m_left);
     if (m_right - room < static_cast<ssize_t>(size)) {
       return nullptr;
@@ -54,8 +48,7 @@ public:
    *              or back part of last buffer from allocA(), and has been freed.
    * @retval false [first, last) cannot be freed.
    */
-  bool free(const uint8_t* first, const uint8_t* last)
-  {
+  bool free(const uint8_t* first, const uint8_t* last) {
     if (first == m_right && last <= m_end) {
       m_right = const_cast<uint8_t*>(last);
       return true;
@@ -67,15 +60,13 @@ public:
     return false;
   }
 
-  bool free(const uint8_t* ptr, size_t size)
-  {
+  bool free(const uint8_t* ptr, size_t size) {
     return free(ptr, ptr + size);
   }
 
   /** @brief Allocate and create an item, and return its pointer. */
   template<typename T, typename... Arg>
-  T* make(Arg&&... arg)
-  {
+  T* make(Arg&&... arg) {
     // Region allocator would not `delete` created objects, so it's safe to
     // create trivially destructible objects only.
     static_assert(std::is_trivially_destructible<T>::value, "");
@@ -96,8 +87,7 @@ public:
    *          Using the reference in that case would cause segmentation fault.
    */
   template<typename RefType, typename... Arg>
-  RefType create(Arg&&... arg)
-  {
+  RefType create(Arg&&... arg) {
     using ObjType = typename RefType::ObjType;
     auto obj = make<ObjType>(*this, std::forward<Arg>(arg)...);
     return obj == nullptr ? RefType() : RefType(obj);
@@ -107,39 +97,33 @@ public:
    * @brief Discard allocated items.
    * @post Allocated items are invalidated.
    */
-  void reset()
-  {
+  void reset() {
     m_left = m_begin;
     m_right = m_end;
   }
 
   /** @brief Compute remaining space for alloc(). */
-  size_t available() const
-  {
+  size_t available() const {
     return m_right - m_left;
   }
 
   /** @brief Compute remaining space for allocA(). */
-  size_t availableA() const
-  {
+  size_t availableA() const {
     return std::max<ssize_t>(0, m_right - alignUp(m_left));
   }
 
   /** @brief Compute utilized space. */
-  size_t size() const
-  {
+  size_t size() const {
     return m_end - m_begin - available();
   }
 
 protected:
-  uint8_t* getArray()
-  {
+  uint8_t* getArray() {
     return m_begin;
   }
 
 private:
-  static uint8_t* alignUp(uint8_t* ptr)
-  {
+  static uint8_t* alignUp(uint8_t* ptr) {
     return reinterpret_cast<uint8_t*>(
       sizeofAligned(reinterpret_cast<uintptr_t>(reinterpret_cast<void*>(ptr))));
   }
@@ -156,12 +140,10 @@ private:
  * @tparam C capacity.
  */
 template<int C>
-class StaticRegion : public Region
-{
+class StaticRegion : public Region {
 public:
   StaticRegion()
-    : Region(m_array, sizeof(m_array))
-  {}
+    : Region(m_array, sizeof(m_array)) {}
 
   ~StaticRegion() = default;
 
@@ -170,30 +152,25 @@ private:
 };
 
 /** @brief Region with dynamically allocated memory. */
-class DynamicRegion : public Region
-{
+class DynamicRegion : public Region {
 public:
   DynamicRegion(size_t capacity)
-    : Region(new uint8_t[capacity], capacity)
-  {}
+    : Region(new uint8_t[capacity], capacity) {}
 
-  ~DynamicRegion()
-  {
+  ~DynamicRegion() {
     delete[] getArray();
   }
 };
 
 /** @brief Compute total size of several sub Regions of given capacity. */
 constexpr size_t
-sizeofSubRegions(size_t capacity, size_t count = 1)
-{
+sizeofSubRegions(size_t capacity, size_t count = 1) {
   return count * (Region::sizeofAligned(capacity) + Region::sizeofAligned(sizeof(Region)));
 }
 
 /** @brief Create Region inside a parent Region. */
 inline Region*
-makeSubRegion(Region& parent, size_t capacity)
-{
+makeSubRegion(Region& parent, size_t capacity) {
   uint8_t* room = parent.allocA(capacity);
   if (room == nullptr) {
     return nullptr;
@@ -202,15 +179,13 @@ makeSubRegion(Region& parent, size_t capacity)
 }
 
 /** @brief Base class of an object associated with a Region. */
-class WithRegion
-{
+class WithRegion {
 public:
   WithRegion(WithRegion&&) = default;
 
 protected:
   explicit WithRegion(Region& region)
-    : region(region)
-  {}
+    : region(region) {}
 
   WithRegion(const WithRegion&) = delete;
   WithRegion& operator=(const WithRegion&) = delete;
@@ -218,35 +193,29 @@ protected:
 protected:
   Region& region;
 
-  friend Region& regionOf(const WithRegion* obj)
-  {
+  friend Region& regionOf(const WithRegion* obj) {
     return obj->region;
   }
 };
 
 /** @brief Base class of an object allocated in a Region. */
-class InRegion : public WithRegion
-{
+class InRegion : public WithRegion {
 protected:
   explicit InRegion(Region& region)
-    : WithRegion(region)
-  {}
+    : WithRegion(region) {}
 };
 
 /** @brief Base class of an object referencing an InRegion object. */
 template<typename Obj>
-class RefRegion
-{
+class RefRegion {
 public:
   using ObjType = Obj;
   static_assert(std::is_base_of<InRegion, ObjType>::value, "");
 
   explicit RefRegion(ObjType* obj = nullptr)
-    : obj(obj)
-  {}
+    : obj(obj) {}
 
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return obj != nullptr;
   }
 
@@ -256,8 +225,7 @@ protected:
 protected:
   ObjType* obj = nullptr;
 
-  friend Region& regionOf(const RefRegion<Obj>& ref)
-  {
+  friend Region& regionOf(const RefRegion<Obj>& ref) {
     return regionOf(ref.obj);
   }
 };

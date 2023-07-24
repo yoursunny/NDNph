@@ -7,8 +7,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Interest, EncodeMinimal)
-{
+TEST(Interest, EncodeMinimal) {
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
@@ -17,7 +16,7 @@ TEST(Interest, EncodeMinimal)
   EXPECT_FALSE(interest.getMustBeFresh());
   EXPECT_FALSE(!!interest.getFwHint());
   {
-    std::set<uint32_t> nonces({ interest.getNonce() });
+    std::set<uint32_t> nonces({interest.getNonce()});
     DynamicRegion region2(4096);
     for (int i = 0; i < 4; ++i) {
       Interest interest2 = region.create<Interest>();
@@ -52,8 +51,7 @@ TEST(Interest, EncodeMinimal)
   EXPECT_EQ(decoded.getNonce(), 0xA0A1A2A3);
 }
 
-TEST(Interest, EncodeFull)
-{
+TEST(Interest, EncodeFull) {
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
@@ -103,9 +101,8 @@ TEST(Interest, EncodeFull)
   EXPECT_EQ(decoded.getHopLimit(), 5);
 }
 
-TEST(Interest, EncodeParameterizedReplace)
-{
-  std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });
+TEST(Interest, EncodeParameterizedReplace) {
+  std::vector<uint8_t> appParamsV({0xC0, 0xC1});
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
@@ -125,9 +122,8 @@ TEST(Interest, EncodeParameterizedReplace)
   EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(2));
 }
 
-TEST(Interest, EncodeParameterizedAppend)
-{
-  std::vector<uint8_t> appParamsV({ 0xC0, 0xC1 });
+TEST(Interest, EncodeParameterizedAppend) {
+  std::vector<uint8_t> appParamsV({0xC0, 0xC1});
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
@@ -147,8 +143,7 @@ TEST(Interest, EncodeParameterizedAppend)
   EXPECT_THAT(decoded.getAppParameters(), g::SizeIs(2));
 }
 
-TEST(Interest, EncodeSignedBadPlaceholder)
-{
+TEST(Interest, EncodeSignedBadPlaceholder) {
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
@@ -163,8 +158,7 @@ TEST(Interest, EncodeSignedBadPlaceholder)
   }
 }
 
-TEST(Interest, EncodeSignedReplace)
-{
+TEST(Interest, EncodeSignedReplace) {
   StaticRegion<1024> region;
   Interest interest = region.create<Interest>();
   ASSERT_FALSE(!interest);
@@ -172,8 +166,8 @@ TEST(Interest, EncodeSignedReplace)
 
   Interest decoded = region.create<Interest>();
   std::vector<uint8_t> signedPortion(
-    { 0x65, 0x01, 0x41, 0x66, 0x01, 0x42, 0x24, 0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10 });
-  std::vector<uint8_t> sig({ 0xF0, 0xF1, 0xF2, 0xF3 });
+    {0x65, 0x01, 0x41, 0x66, 0x01, 0x42, 0x24, 0x00, 0x2C, 0x03, 0x1B, 0x01, 0x10});
+  std::vector<uint8_t> sig({0xF0, 0xF1, 0xF2, 0xF3});
   {
     g::InSequence seq;
     MockPrivateKey<32> key;
@@ -210,8 +204,7 @@ TEST(Interest, EncodeSignedReplace)
 template<typename MakePolicy>
 void
 testSigPolicy(MakePolicy makePolicy, bool canDetectReorder = true,
-              bool canDetectDuplicateLater = true)
-{
+              bool canDetectDuplicateLater = true) {
   DynamicRegion region(4096);
   auto policyS = makePolicy();
   auto policyV = makePolicy();
@@ -242,28 +235,23 @@ testSigPolicy(MakePolicy makePolicy, bool canDetectReorder = true,
   EXPECT_EQ(policyV.check(*si0), !canDetectDuplicateLater);
 }
 
-TEST(InterestSigPolicy, Nonce)
-{
+TEST(InterestSigPolicy, Nonce) {
   testSigPolicy([] { return isig::makePolicy(isig::Nonce<>()); }, false);
 }
 
-TEST(InterestSigPolicy, Nonce1)
-{
+TEST(InterestSigPolicy, Nonce1) {
   testSigPolicy([] { return isig::makePolicy(isig::Nonce<1, 1>()); }, false, false);
 }
 
-TEST(InterestSigPolicy, Time)
-{
+TEST(InterestSigPolicy, Time) {
   testSigPolicy([] { return isig::makePolicy(isig::Time<>()); });
 }
 
-TEST(InterestSigPolicy, SeqNum)
-{
+TEST(InterestSigPolicy, SeqNum) {
   testSigPolicy([] { return isig::makePolicy(isig::SeqNum()); });
 }
 
-TEST(InterestSigPolicy, All)
-{
+TEST(InterestSigPolicy, All) {
   testSigPolicy([] { return isig::makePolicy(isig::Nonce<>(), isig::Time<>(), isig::SeqNum()); });
 }
 

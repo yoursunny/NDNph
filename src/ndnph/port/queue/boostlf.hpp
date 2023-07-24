@@ -10,18 +10,15 @@ namespace port_queue_boostlf {
 
 /** @brief Generic thread-safe queue, implemented with Boost Lockfree library. */
 template<typename T, size_t capacity>
-class SafeQueue
-{
+class SafeQueue {
 public:
   using Item = T;
 
-  bool push(Item item)
-  {
+  bool push(Item item) {
     return m_queue.push(item);
   }
 
-  std::tuple<Item, bool> pop()
-  {
+  std::tuple<Item, bool> pop() {
     Item item;
     bool ok = m_queue.pop(item);
     return std::make_tuple(std::move(item), ok);

@@ -10,9 +10,8 @@ namespace rdr {
 
 /** @brief Return '32=metadata' component. */
 inline Component
-getMetadataComponent()
-{
-  static const uint8_t tlv[]{ 0x20, 0x08, 'm', 'e', 't', 'a', 'd', 'a', 't', 'a' };
+getMetadataComponent() {
+  static const uint8_t tlv[]{0x20, 0x08, 'm', 'e', 't', 'a', 'd', 'a', 't', 'a'};
   static Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
@@ -22,8 +21,7 @@ getMetadataComponent()
  * @return enclosed versioned name, or a falsy value upon failure.
  */
 inline Name
-parseMetadata(Data data)
-{
+parseMetadata(Data data) {
   if (!data) {
     return Name();
   }
@@ -39,8 +37,7 @@ parseMetadata(Data data)
 namespace detail {
 
 inline Name
-stripMetadataComponent(Name rdrPrefix)
-{
+stripMetadataComponent(Name rdrPrefix) {
   return rdrPrefix[-1] == getMetadataComponent() ? rdrPrefix.getPrefix(-1) : rdrPrefix;
 }
 
@@ -54,11 +51,9 @@ stripMetadataComponent(Name rdrPrefix)
  * When a new version becomes available, application shall invoke @c SegmentProducer::setContent
  * and @c RdrMetadataProducer::setDatasetPrefix with the same prefix.
  */
-class RdrMetadataProducer : public PacketHandler
-{
+class RdrMetadataProducer : public PacketHandler {
 public:
-  struct Options
-  {
+  struct Options {
     /**
      * @brief Initial version number.
      *
@@ -88,8 +83,7 @@ public:
     , m_rdrPrefix(detail::stripMetadataComponent(rdrPrefix))
     , m_signer(opts.signer)
     , m_version(opts.initialVersion)
-    , m_freshness(std::max<uint32_t>(opts.freshnessPeriod, 1))
-  {
+    , m_freshness(std::max<uint32_t>(opts.freshnessPeriod, 1)) {
     if (m_version + 1 == 0) {
       port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_version), sizeof(m_version));
       m_version = m_version & ~0xFFFFFFFF;
@@ -102,22 +96,19 @@ public:
                             .initialVersion = std::numeric_limits<uint64_t>::max(),
                             .freshnessPeriod = 1,
                             .signer = DigestKey::get(),
-                          })
-  {}
+                          }) {}
 
   /**
    * @brief Set the dataset prefix.
    * @param datasetPrefix the dataset prefix to appear in RDR metadata packet.
    */
-  void setDatasetPrefix(Name datasetPrefix)
-  {
+  void setDatasetPrefix(Name datasetPrefix) {
     m_datasetPrefix = datasetPrefix;
     ++m_version;
   }
 
 private:
-  bool processInterest(Interest interest) final
-  {
+  bool processInterest(Interest interest) final {
     const Name& interestName = interest.getName();
     if (!m_datasetPrefix || interestName.getPrefix(-1) != m_rdrPrefix ||
         interestName[-1] != getMetadataComponent() || !interest.getCanBePrefix() ||
@@ -147,8 +138,7 @@ private:
    *
    * Subclass can override this method to add extensions in the Content.
    */
-  virtual void prepareRdrContent(Encoder& encoder, const Name& datasetPrefix)
-  {
+  virtual void prepareRdrContent(Encoder& encoder, const Name& datasetPrefix) {
     encoder.prepend(datasetPrefix);
   }
 
@@ -164,13 +154,11 @@ private:
  * @brief Consumer of RDR metadata packet.
  * @sa https://redmine.named-data.net/projects/ndn-tlv/wiki/RDR
  */
-class RdrMetadataConsumer : public PacketHandler
-{
+class RdrMetadataConsumer : public PacketHandler {
 public:
   using Callback = void (*)(void* ctx, Data data);
 
-  struct Options
-  {
+  struct Options {
     const PublicKey& verifier;
     uint16_t interestLifetime;
   };
@@ -179,18 +167,15 @@ public:
     : PacketHandler(face, 0x60)
     , m_pending(this)
     , m_verifier(opts.verifier)
-    , m_interestLifetime(opts.interestLifetime)
-  {}
+    , m_interestLifetime(opts.interestLifetime) {}
 
   explicit RdrMetadataConsumer(Face& face)
     : RdrMetadataConsumer(face, Options{
                                   .verifier = NullKey::get(),
                                   .interestLifetime = 1000,
-                                })
-  {}
+                                }) {}
 
-  void start(Name rdrPrefix, Callback cb, void* ctx = nullptr)
-  {
+  void start(Name rdrPrefix, Callback cb, void* ctx = nullptr) {
     invokeCallback(Data());
 
     m_rdrPrefix = detail::stripMetadataComponent(rdrPrefix);
@@ -211,23 +196,20 @@ public:
   }
 
 private:
-  void invokeCallback(Data data)
-  {
+  void invokeCallback(Data data) {
     if (m_cb != nullptr) {
       m_cb(m_ctx, std::move(data));
       m_cb = nullptr;
     }
   }
 
-  void loop() final
-  {
+  void loop() final {
     if (m_pending.expired()) {
       invokeCallback(Data());
     }
   }
 
-  bool processData(Data data) final
-  {
+  bool processData(Data data) final {
     if (!m_pending.match(data, m_rdrPrefix) || data.getName().size() != m_rdrPrefix.size() + 3 ||
         data.getName()[m_rdrPrefix.size()] != getMetadataComponent()) {
       return false;

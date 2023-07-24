@@ -16,8 +16,7 @@ using PubLen = port::Ec::Curve::PubLen;
 
 /** @brief Return EC P-256 SPKI except the key. */
 inline tlv::Value
-getSpkiHeader()
-{
+getSpkiHeader() {
   static const uint8_t bytes[] = {
     0x30, 0x59,                                                 // SEQUENCE
     0x30, 0x13,                                                 // . SEQUENCE
@@ -31,8 +30,7 @@ getSpkiHeader()
 
 /** @brief Return '1.2.840.10045.2.1 ecPublicKey' OID bytes. */
 inline tlv::Value
-getOid()
-{
+getOid() {
   static const tlv::Value value(getSpkiHeader().begin() + 4, 9);
   return value;
 }
@@ -42,8 +40,7 @@ getOid()
  * @return pointer to the raw key, or nullptr on failure.
  */
 inline const uint8_t*
-findPublicKeyInCertificate(const Data& data)
-{
+findPublicKeyInCertificate(const Data& data) {
   if (!certificate::isCertificate(data)) {
     return nullptr;
   }
@@ -65,14 +62,12 @@ findPublicKeyInCertificate(const Data& data)
 } // namespace detail
 
 /** @brief EC public key. */
-class EcPublicKey : public detail::NamedPublicKey<SigType::Sha256WithEcdsa>
-{
+class EcPublicKey : public detail::NamedPublicKey<SigType::Sha256WithEcdsa> {
 public:
   using KeyLen = detail::PubLen;
 
   /** @brief Determine if this key is non-empty. */
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return m_key != nullptr;
   }
 
@@ -82,8 +77,7 @@ public:
    * @param raw raw key bits; will be copied.
    * @return whether success.
    */
-  bool import(const Name& name, const uint8_t raw[KeyLen::value])
-  {
+  bool import(const Name& name, const uint8_t raw[KeyLen::value]) {
     if (!certificate::isKeyName(name)) {
       return false;
     }
@@ -105,8 +99,7 @@ public:
    * @param data certificate; it can be freed after this operation.
    * @return whether success.
    */
-  bool import(Region& region, const Data& data)
-  {
+  bool import(Region& region, const Data& data) {
     const uint8_t* raw = detail::findPublicKeyInCertificate(data);
     if (raw == nullptr) {
       return false;
@@ -132,8 +125,7 @@ public:
    */
   template<typename Signer>
   Data::Signed buildCertificate(Region& region, const Name& name, const ValidityPeriod& validity,
-                                const Signer& signer) const
-  {
+                                const Signer& signer) const {
     return detail::buildCertificate(region, name, validity, signer, [&](Data& data) {
       auto spkiHdr = detail::getSpkiHeader();
       size_t spkiLen = spkiHdr.size() + KeyLen::value;
@@ -159,8 +151,8 @@ public:
    *         are kept alive.
    */
   template<typename Signer>
-  Data::Signed selfSign(Region& region, const ValidityPeriod& validity, const Signer& signer) const
-  {
+  Data::Signed selfSign(Region& region, const ValidityPeriod& validity,
+                        const Signer& signer) const {
     Name certName = certificate::makeCertName(region, getName(), certificate::getIssuerSelf());
     return buildCertificate(region, certName, validity, signer);
   }
@@ -171,8 +163,7 @@ public:
    * @retval false error or signature is incorrect.
    */
   bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
-              size_t sigLen) const final
-  {
+              size_t sigLen) const final {
     if (m_key == nullptr) {
       return false;
     }
@@ -186,15 +177,13 @@ private:
 };
 
 /** @brief EC private key. */
-class EcPrivateKey : public detail::NamedPrivateKey<SigType::Sha256WithEcdsa>
-{
+class EcPrivateKey : public detail::NamedPrivateKey<SigType::Sha256WithEcdsa> {
 public:
   using KeyLen = detail::PvtLen;
   using MaxSigLen = port::Ec::Curve::MaxSigLen;
 
   /** @brief Determine if this key is non-empty. */
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return m_key != nullptr;
   }
 
@@ -202,8 +191,7 @@ public:
    * @brief Import a private key from raw key bits.
    * @return whether success.
    */
-  bool import(const Name& name, const uint8_t raw[KeyLen::value])
-  {
+  bool import(const Name& name, const uint8_t raw[KeyLen::value]) {
     if (!certificate::isKeyName(name)) {
       return false;
     }
@@ -218,13 +206,11 @@ public:
     return true;
   }
 
-  size_t getMaxSigLen() const final
-  {
+  size_t getMaxSigLen() const final {
     return MaxSigLen::value;
   }
 
-  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final
-  {
+  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final {
     if (m_key == nullptr) {
       return -1;
     }
@@ -244,24 +230,21 @@ private:
  * @return whether success.
  */
 inline bool
-generateRaw(uint8_t pvt[EcPrivateKey::KeyLen::value], uint8_t pub[EcPublicKey::KeyLen::value])
-{
+generateRaw(uint8_t pvt[EcPrivateKey::KeyLen::value], uint8_t pub[EcPublicKey::KeyLen::value]) {
   return port::Ec::generateKey(pvt, pub);
 }
 
 namespace detail {
 
 /** @brief Key pair stored in KeyChain. */
-struct StoredKeyPair
-{
+struct StoredKeyPair {
   uint8_t pvt[PvtLen::value];
   uint8_t pub[PubLen::value];
 };
 
 inline bool
 generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, KeyChain* keyChain,
-         const char* id)
-{
+         const char* id) {
   Name keyName = certificate::toKeyName(region, name, true);
   if (!keyName) {
     return false;
@@ -290,8 +273,7 @@ generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, 
  * @return whether success.
  */
 inline bool
-generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub)
-{
+generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub) {
   return detail::generate(region, name, pvt, pub, nullptr, nullptr);
 }
 
@@ -307,8 +289,7 @@ generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub)
  */
 inline bool
 generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, KeyChain& keyChain,
-         const char* id)
-{
+         const char* id) {
   return detail::generate(region, name, pvt, pub, &keyChain, id);
 }
 
@@ -317,8 +298,7 @@ generate(Region& region, const Name& name, EcPrivateKey& pvt, EcPublicKey& pub, 
  * @return whether success.
  */
 inline bool
-load(KeyChain& keyChain, const char* id, Region& region, EcPrivateKey& pvt, EcPublicKey& pub)
-{
+load(KeyChain& keyChain, const char* id, Region& region, EcPrivateKey& pvt, EcPublicKey& pub) {
   tlv::Value storedObject = keyChain.keys.get(id, region);
   if (storedObject.size() < sizeof(detail::StoredKeyPair)) {
     return false;
@@ -336,8 +316,7 @@ load(KeyChain& keyChain, const char* id, Region& region, EcPrivateKey& pvt, EcPu
  * It is unnecessary to call this function before EcPublicKey::import().
  */
 inline bool
-isCertificate(const Data& data)
-{
+isCertificate(const Data& data) {
   return detail::findPublicKeyInCertificate(data) != nullptr;
 }
 

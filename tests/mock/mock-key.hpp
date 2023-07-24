@@ -8,13 +8,11 @@
 
 namespace ndnph {
 
-class MockKeyBase
-{
+class MockKeyBase {
 protected:
   ~MockKeyBase() = default;
 
-  static std::vector<uint8_t> gather(std::initializer_list<tlv::Value> chunks)
-  {
+  static std::vector<uint8_t> gather(std::initializer_list<tlv::Value> chunks) {
     std::vector<uint8_t> joined;
     for (const auto& chunk : chunks) {
       std::copy(chunk.begin(), chunk.end(), std::back_inserter(joined));
@@ -26,18 +24,15 @@ protected:
 template<int L>
 class MockPrivateKey
   : public PrivateKey
-  , public MockKeyBase
-{
+  , public MockKeyBase {
 public:
-  size_t getMaxSigLen() const final
-  {
+  size_t getMaxSigLen() const final {
     return L;
   }
 
   MOCK_METHOD(void, updateSigInfo, (SigInfo&), (const, final));
 
-  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final
-  {
+  ssize_t sign(std::initializer_list<tlv::Value> chunks, uint8_t* sig) const final {
     return doSign(gather(chunks), sig);
   }
 
@@ -46,14 +41,12 @@ public:
 
 class MockPublicKey
   : public PublicKey
-  , public MockKeyBase
-{
+  , public MockKeyBase {
 public:
   MOCK_METHOD(bool, matchSigInfo, (const SigInfo&), (const, final));
 
   bool verify(std::initializer_list<tlv::Value> chunks, const uint8_t* sig,
-              size_t length) const final
-  {
+              size_t length) const final {
     return doVerify(gather(chunks), std::vector<uint8_t>(sig, sig + length));
   }
 

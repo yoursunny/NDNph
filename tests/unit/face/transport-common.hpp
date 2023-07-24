@@ -9,22 +9,18 @@
 namespace ndnph {
 namespace {
 
-class TransportTest
-{
+class TransportTest {
 public:
-  class TxHandler : public PacketHandler
-  {
+  class TxHandler : public PacketHandler {
   public:
     TxHandler(Face& face)
-      : PacketHandler(face)
-    {}
+      : PacketHandler(face) {}
 
-    void sendOne(uint32_t i)
-    {
+    void sendOne(uint32_t i) {
       StaticRegion<1024> region;
       Interest interest = region.create<Interest>();
       ASSERT_FALSE(!interest);
-      interest.setName(Name(region, { 0x08, 0x01, 0x41 }));
+      interest.setName(Name(region, {0x08, 0x01, 0x41}));
       interest.setNonce(i);
 
       bool ok = send(interest);
@@ -40,16 +36,13 @@ public:
     size_t nSendFailure = 0;
   };
 
-  class RxHandler : public PacketHandler
-  {
+  class RxHandler : public PacketHandler {
   public:
     RxHandler(Face& face)
-      : PacketHandler(face)
-    {}
+      : PacketHandler(face) {}
 
   private:
-    bool processInterest(Interest interest) final
-    {
+    bool processInterest(Interest interest) final {
       EXPECT_EQ(received.count(interest.getNonce()), 0);
       received.insert(interest.getNonce());
       return true;
@@ -64,11 +57,9 @@ public:
     , faceB(faceB)
     , txA(faceA)
     , rxB(faceB)
-    , nPkts(nPkts)
-  {}
+    , nPkts(nPkts) {}
 
-  TransportTest& run(uint32_t opDelayMillis = 1, uint32_t endDelayMillis = 100)
-  {
+  TransportTest& run(uint32_t opDelayMillis = 1, uint32_t endDelayMillis = 100) {
     std::chrono::milliseconds opDelay(opDelayMillis);
     std::chrono::milliseconds endDelay(endDelayMillis);
     std::atomic_bool continueB(true);
@@ -96,8 +87,7 @@ public:
     return *this;
   }
 
-  void check(double threshold = 0.9)
-  {
+  void check(double threshold = 0.9) {
     EXPECT_GT(txA.nSendSuccess, nPkts * threshold);
     EXPECT_EQ(txA.nSendSuccess + txA.nSendFailure, nPkts);
     EXPECT_LE(rxB.received.size(), txA.nSendSuccess);

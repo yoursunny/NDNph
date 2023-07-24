@@ -9,11 +9,9 @@
 namespace ndnph {
 namespace detail {
 
-class UtcTimezone
-{
+class UtcTimezone {
 public:
-  UtcTimezone()
-  {
+  UtcTimezone() {
     const char* tz = getenv("TZ");
     if (tz == nullptr || strlen(tz) >= sizeof(m_tz)) {
       m_tz[0] = '\0';
@@ -23,8 +21,7 @@ public:
     setenv("TZ", "UTC", 1);
   }
 
-  ~UtcTimezone()
-  {
+  ~UtcTimezone() {
     if (m_tz[0] != '\0') {
       setenv("TZ", m_tz, 1);
     }
@@ -37,25 +34,21 @@ private:
 } // namespace detail
 
 /** @brief ValidityPeriod of a certificate. */
-class ValidityPeriod
-{
+class ValidityPeriod {
 public:
   /** @brief Get a very long ValidityPeriod. */
-  static ValidityPeriod getMax()
-  {
+  static ValidityPeriod getMax() {
     return ValidityPeriod(540109800, MAX_TIME);
   }
 
   /** @brief Get a ValidityPeriod from now until @p seconds later. */
-  static ValidityPeriod secondsFromNow(uint64_t seconds)
-  {
+  static ValidityPeriod secondsFromNow(uint64_t seconds) {
     time_t now = port::UnixTime::now() / 1000000;
     return ValidityPeriod(now, now + seconds);
   }
 
   /** @brief Get a ValidityPeriod from now until @p days later. */
-  static ValidityPeriod daysFromNow(uint64_t days)
-  {
+  static ValidityPeriod daysFromNow(uint64_t days) {
     return secondsFromNow(86400 * days);
   }
 
@@ -63,36 +56,30 @@ public:
 
   explicit ValidityPeriod(time_t notBefore, time_t notAfter)
     : notBefore(notBefore)
-    , notAfter(notAfter)
-  {}
+    , notAfter(notAfter) {}
 
   /** @brief Determine whether the timestamp (in seconds) is within validity period. */
-  bool includes(time_t t)
-  {
+  bool includes(time_t t) {
     return notBefore <= t && t <= notAfter;
   }
 
   /** @brief Determine whether the Unix timestamp (in microseconds) is within validity period. */
-  bool includesUnix(uint64_t t = port::UnixTime::now())
-  {
+  bool includesUnix(uint64_t t = port::UnixTime::now()) {
     return includes(t / 1000000);
   }
 
   /** @brief Calculate the intersection of this and @p other ValidityPeriod. */
-  ValidityPeriod intersect(const ValidityPeriod& other) const
-  {
+  ValidityPeriod intersect(const ValidityPeriod& other) const {
     return ValidityPeriod(std::max(notBefore, other.notBefore), std::min(notAfter, other.notAfter));
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     encoder.prependTlv(TT::ValidityPeriod, TimestampEncoder(TT::NotBefore, notBefore),
                        TimestampEncoder(TT::NotAfter, notAfter));
   }
 
-  bool decodeFrom(const Decoder::Tlv& input)
-  {
-    return EvDecoder::decode(input, { TT::ValidityPeriod },
+  bool decodeFrom(const Decoder::Tlv& input) {
+    return EvDecoder::decode(input, {TT::ValidityPeriod},
                              EvDecoder::def<TT::NotBefore>([this](const Decoder::Tlv& d) {
                                return decodeTimestamp(d, &notBefore);
                              }),
@@ -104,19 +91,16 @@ public:
 private:
   static constexpr time_t MAX_TIME =
     sizeof(time_t) <= 4 ? std::numeric_limits<time_t>::max() : 253402300799;
-  static constexpr const char* const TIMESTAMP_FMT = "%04d%02d%02dT%02d%02d%02d";
+  static const constexpr char* const TIMESTAMP_FMT = "%04d%02d%02dT%02d%02d%02d";
   static constexpr size_t TIMESTAMP_LEN = 15;
 
-  class TimestampEncoder
-  {
+  class TimestampEncoder {
   public:
     explicit TimestampEncoder(uint32_t tlvType, time_t t)
       : tlvType(tlvType)
-      , t(t)
-    {}
+      , t(t) {}
 
-    void encodeTo(Encoder& encoder) const
-    {
+    void encodeTo(Encoder& encoder) const {
       struct tm* m = gmtime(&t);
       if (m == nullptr) {
         encoder.setError();
@@ -135,8 +119,7 @@ private:
     time_t t = 0;
   };
 
-  static bool decodeTimestamp(const Decoder::Tlv& d, time_t* v)
-  {
+  static bool decodeTimestamp(const Decoder::Tlv& d, time_t* v) {
     if (d.length != TIMESTAMP_LEN) {
       return false;
     }
@@ -170,8 +153,7 @@ public:
 };
 
 inline bool
-operator==(const ValidityPeriod& lhs, const ValidityPeriod& rhs)
-{
+operator==(const ValidityPeriod& lhs, const ValidityPeriod& rhs) {
   return lhs.notBefore == rhs.notBefore && lhs.notAfter == rhs.notAfter;
 }
 
@@ -179,8 +161,7 @@ NDNPH_DECLARE_NE(ValidityPeriod, inline)
 
 /** @brief Compute the intersection of two ValidityPeriods. */
 inline ValidityPeriod
-operator&&(const ValidityPeriod& lhs, const ValidityPeriod& rhs)
-{
+operator&&(const ValidityPeriod& lhs, const ValidityPeriod& rhs) {
   ValidityPeriod intersection;
   intersection.notBefore = std::max(lhs.notBefore, rhs.notBefore);
   intersection.notAfter = std::min(lhs.notAfter, rhs.notAfter);

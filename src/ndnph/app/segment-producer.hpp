@@ -6,11 +6,9 @@
 
 namespace ndnph {
 
-class SegmentProducerBase : public PacketHandler
-{
+class SegmentProducerBase : public PacketHandler {
 public:
-  struct Options
-  {
+  struct Options {
     const PrivateKey& signer = DigestKey::get();
 
     /** @brief Maximum Content TLV-VALUE in each segment. */
@@ -39,12 +37,10 @@ public:
    */
   explicit SegmentProducerBase(Face& face, Options opts)
     : PacketHandler(face)
-    , m_opts(std::move(opts))
-  {}
+    , m_opts(std::move(opts)) {}
 
   explicit SegmentProducerBase(Face& face)
-    : SegmentProducerBase(face, Options())
-  {}
+    : SegmentProducerBase(face, Options()) {}
 
   /**
    * @brief Set or change served content.
@@ -53,8 +49,7 @@ public:
    * @param size content size.
    * @note All arguments must be kept alive until setContent() is called again.
    */
-  void setContent(Name prefix, const uint8_t* content, size_t size)
-  {
+  void setContent(Name prefix, const uint8_t* content, size_t size) {
     m_prefix = prefix;
     m_content = content;
     m_size = size;
@@ -75,14 +70,12 @@ protected:
  * @tparam regionCap encoding region capacity.
  */
 template<typename SegmentConvention = convention::Segment, size_t regionCap = 2048>
-class BasicSegmentProducer : public SegmentProducerBase
-{
+class BasicSegmentProducer : public SegmentProducerBase {
 public:
   using SegmentProducerBase::SegmentProducerBase;
 
 private:
-  bool processInterest(Interest interest) final
-  {
+  bool processInterest(Interest interest) final {
     if (!m_prefix || m_content == nullptr) {
       return false;
     }
@@ -104,8 +97,7 @@ private:
     return false;
   }
 
-  bool replySegment(uint64_t segment)
-  {
+  bool replySegment(uint64_t segment) {
     if (segment > m_lastSegment) {
       return true;
     }

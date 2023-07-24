@@ -13,8 +13,7 @@ namespace ndnph {
  * After sending a probe Interest, responses to previous Interests are no longer accepted.
  * Therefore, interval must be greater than RTT, otherwise this client cannot receive any Data.
  */
-class PingClient : public PacketHandler
-{
+class PingClient : public PacketHandler {
 public:
   /**
    * @brief Constructor.
@@ -26,25 +25,21 @@ public:
     : PacketHandler(face)
     , m_prefix(std::move(prefix))
     , m_interval(interval)
-    , m_next(port::Clock::add(port::Clock::now(), interval))
-  {
+    , m_next(port::Clock::add(port::Clock::now(), interval)) {
     port::RandomSource::generate(reinterpret_cast<uint8_t*>(&m_seqNum), sizeof(m_seqNum));
   }
 
-  struct Counters
-  {
+  struct Counters {
     uint32_t nTxInterests = 0;
     uint32_t nRxData = 0;
   };
 
-  Counters readCounters() const
-  {
+  Counters readCounters() const {
     return m_cnt;
   }
 
 private:
-  void loop() final
-  {
+  void loop() final {
     auto now = port::Clock::now();
     if (port::Clock::isBefore(now, m_next)) {
       return;
@@ -53,8 +48,7 @@ private:
     m_next = port::Clock::add(now, m_interval);
   }
 
-  bool sendInterest()
-  {
+  bool sendInterest() {
     StaticRegion<1024> region;
     Component seqNumComp = Component::from(region, TT::GenericNameComponent, tlv::NNI8(++m_seqNum));
     NDNPH_ASSERT(!!seqNumComp);
@@ -73,8 +67,7 @@ private:
     return true;
   }
 
-  bool processData(Data data) final
-  {
+  bool processData(Data data) final {
     const Name& dataName = data.getName();
     if (!m_prefix.isPrefixOf(dataName) || m_prefix.size() + 1 != dataName.size()) {
       return false;

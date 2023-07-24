@@ -8,20 +8,17 @@
 
 namespace ndnph {
 
-class BridgeFixture : public g::Test
-{
+class BridgeFixture : public g::Test {
 public:
   explicit BridgeFixture()
     : faceA(transportA)
-    , faceB(transportB)
-  {
+    , faceB(transportB) {
     transportA.begin(transportB);
   }
 
   template<typename InitB, typename CondB, typename FinalB = void (*)()>
   void runInThreads(
-    const InitB& initB, const CondB& condB, const FinalB& finalB = [] {})
-  {
+    const InitB& initB, const CondB& condB, const FinalB& finalB = [] {}) {
     std::atomic_bool stopA(false);
     std::thread threadA([&] {
       while (!stopA) {

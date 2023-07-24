@@ -10,11 +10,9 @@ namespace port_timingsafe_default {
  * @brief Timing safe equality comparison.
  * @sa https://codahale.com/a-lesson-in-timing-attacks/
  */
-class TimingSafeEqual
-{
+class TimingSafeEqual {
 public:
-  bool operator()(const uint8_t* a, size_t aLen, const uint8_t* b, size_t bLen) const
-  {
+  bool operator()(const uint8_t* a, size_t aLen, const uint8_t* b, size_t bLen) const {
     if (aLen != bLen) {
       return false;
     }

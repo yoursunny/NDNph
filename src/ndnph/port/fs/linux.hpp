@@ -12,11 +12,9 @@ namespace ndnph {
 namespace port_fs_linux {
 namespace detail {
 
-class Mkdirp
-{
+class Mkdirp {
 public:
-  bool create(const char* path)
-  {
+  bool create(const char* path) {
     size_t pathLen = strlen(path);
     if (pathLen <= 1 || pathLen >= sizeof(m_path) - 1 || path[pathLen - 1] == '/') {
       return false;
@@ -25,8 +23,7 @@ public:
   }
 
 private:
-  bool createDir(const char* path, int up)
-  {
+  bool createDir(const char* path, int up) {
     const char* dir = toDirname(path, up);
     if (::stat(dir, &m_stat) == 0) {
       return S_ISDIR(m_stat.st_mode);
@@ -41,8 +38,7 @@ private:
     return ::mkdir(dir, 0700) == 0;
   }
 
-  const char* toDirname(const char* path, int up)
-  {
+  const char* toDirname(const char* path, int up) {
     strncpy(m_path, path, sizeof(m_path));
     char* dir = m_path;
     for (int i = 0; i < up; ++i) {
@@ -56,20 +52,16 @@ private:
   struct stat m_stat;
 };
 
-class FdCloser
-{
+class FdCloser {
 public:
   explicit FdCloser(int fd = -1)
-    : m_fd(fd)
-  {}
+    : m_fd(fd) {}
 
-  ~FdCloser()
-  {
+  ~FdCloser() {
     close();
   }
 
-  FdCloser& operator=(int fd)
-  {
+  FdCloser& operator=(int fd) {
     if (fd != m_fd) {
       close();
       m_fd = fd;
@@ -77,13 +69,11 @@ public:
     return *this;
   }
 
-  operator int() const
-  {
+  operator int() const {
     return m_fd;
   }
 
-  void close()
-  {
+  void close() {
     if (m_fd >= 0) {
       ::close(m_fd);
       m_fd = -1;
@@ -97,15 +87,13 @@ private:
 } // namespace detail
 
 /** @brief File storage on Linux filesystem. */
-class FileStore
-{
+class FileStore {
 public:
   /**
    * @brief Open @p path directory as FileStore, creating directories as necessary.
    * @return whether success.
    */
-  bool open(const char* path)
-  {
+  bool open(const char* path) {
     if (!detail::Mkdirp().create(path)) {
       return false;
     }
@@ -118,8 +106,7 @@ public:
    * @brief Read content of @p filename file into @p buffer .
    * @return total file size; negative upon error.
    */
-  int read(const char* filename, uint8_t* buffer, size_t count)
-  {
+  int read(const char* filename, uint8_t* buffer, size_t count) {
     detail::FdCloser fd(::openat(m_dfd, filename, O_RDONLY));
     if (fd < 0) {
       if (errno == ENOENT) {
@@ -142,8 +129,7 @@ public:
    * @brief Write @p buffer into @p filename file.
    * @return whether success.
    */
-  bool write(const char* filename, const uint8_t* buffer, size_t count)
-  {
+  bool write(const char* filename, const uint8_t* buffer, size_t count) {
     detail::FdCloser fd(::openat(m_dfd, filename, O_WRONLY | O_CREAT, 0600));
     ssize_t nWrite = ::write(fd, buffer, count);
     return static_cast<size_t>(nWrite) == count;
@@ -153,8 +139,7 @@ public:
    * @brief Delete @p filename file.
    * @return whether success.
    */
-  bool unlink(const char* filename)
-  {
+  bool unlink(const char* filename) {
     int res = ::unlinkat(m_dfd, filename, 0);
     return res == 0 || errno == ENOENT;
   }

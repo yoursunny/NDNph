@@ -10,37 +10,31 @@ namespace ndnph {
 namespace port_clock_chrono {
 
 /** @brief Clock implemented with std::chrono. */
-class Clock
-{
+class Clock {
 public:
   Clock() = delete;
 
   using Time = std::chrono::steady_clock::time_point;
 
-  static Time now()
-  {
+  static Time now() {
     return std::chrono::steady_clock::now();
   }
 
-  static Time add(Time t, int ms)
-  {
+  static Time add(Time t, int ms) {
     return Time(t.time_since_epoch() +
                 std::chrono::duration_cast<std::chrono::steady_clock::duration>(
                   std::chrono::milliseconds(ms)));
   }
 
-  static int sub(Time a, Time b)
-  {
+  static int sub(Time a, Time b) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(a - b).count();
   }
 
-  static bool isBefore(Time a, Time b)
-  {
+  static bool isBefore(Time a, Time b) {
     return a < b;
   }
 
-  static void sleep(int ms)
-  {
+  static void sleep(int ms) {
 #ifdef NDNPH_PORT_CHRONO_BUSY_SLEEP
     Time end = add(now(), ms);
     while (isBefore(now(), end)) {

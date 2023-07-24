@@ -7,12 +7,10 @@
 namespace ndnph {
 
 /** @brief TLV encoder that accepts items in reverse order. */
-class Encoder
-{
+class Encoder {
 public:
   /** @brief Create over given buffer. */
-  explicit Encoder(uint8_t* buf, size_t capacity)
-  {
+  explicit Encoder(uint8_t* buf, size_t capacity) {
     init(buf, capacity);
   }
 
@@ -22,39 +20,33 @@ public:
    * After encoding, unused space can be released with trim().
    */
   explicit Encoder(Region& region)
-    : m_region(&region)
-  {
+    : m_region(&region) {
     size_t capacity = region.available();
     init(region.alloc(capacity), capacity);
   }
 
   /** @brief Return true if no errors were encountered, such as running out of space. */
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return m_pos != nullptr;
   }
 
   /** @brief Get output begin. */
-  const uint8_t* begin() const
-  {
+  const uint8_t* begin() const {
     return m_pos;
   }
 
   /** @brief Get output end. */
-  const uint8_t* end() const
-  {
+  const uint8_t* end() const {
     return m_pos == nullptr ? nullptr : m_end;
   }
 
   /** @brief Get output size. */
-  size_t size() const
-  {
+  size_t size() const {
     return m_pos == nullptr ? 0 : m_end - m_pos;
   }
 
   /** @brief Get available headroom. */
-  size_t availableHeadroom() const
-  {
+  size_t availableHeadroom() const {
     return m_pos == nullptr ? 0 : m_pos - m_buf;
   }
 
@@ -63,8 +55,7 @@ public:
    *
    * This function has no effect if Encoder was not created from a Region.
    */
-  void trim() const
-  {
+  void trim() const {
     if (m_region == nullptr) {
       return;
     }
@@ -78,8 +69,7 @@ public:
    *
    * This function has no effect if Encoder was not created from a Region.
    */
-  void discard()
-  {
+  void discard() {
     if (m_region == nullptr || m_buf == nullptr) {
       return;
     }
@@ -88,8 +78,7 @@ public:
   }
 
   /** @brief Reset front to given position. */
-  void resetFront(uint8_t* pos)
-  {
+  void resetFront(uint8_t* pos) {
     m_pos = pos;
   }
 
@@ -98,8 +87,7 @@ public:
    * @return room to write object.
    * @retval nullptr no room available.
    */
-  uint8_t* prependRoom(size_t size)
-  {
+  uint8_t* prependRoom(size_t size) {
     if (m_pos == nullptr || m_pos - m_buf < static_cast<ssize_t>(size)) {
       m_pos = nullptr;
     } else {
@@ -112,8 +100,7 @@ public:
    * @brief Prepend TLV-TYPE and TLV-LENGTH.
    * @return whether success.
    */
-  bool prependTypeLength(uint32_t type, size_t length)
-  {
+  bool prependTypeLength(uint32_t type, size_t length) {
     size_t sizeT = tlv::sizeofVarNum(type);
     size_t sizeL = tlv::sizeofVarNum(length);
     uint8_t* room = prependRoom(sizeT + sizeL);
@@ -133,15 +120,13 @@ public:
    * @return whether success.
    */
   template<typename First, typename... Arg>
-  bool prepend(const First& first, const Arg&... arg)
-  {
+  bool prepend(const First& first, const Arg&... arg) {
     prepend(arg...);
     prependOne(first);
     return !!*this;
   }
 
-  enum OmitEmptyTag
-  {
+  enum OmitEmptyTag {
     NoOmitEmpty = 0,
     OmitEmpty = 1,
   };
@@ -155,8 +140,7 @@ public:
    * @return whether success.
    */
   template<typename... Arg>
-  bool prependTlv(uint32_t type, OmitEmptyTag omitEmpty, const Arg&... arg)
-  {
+  bool prependTlv(uint32_t type, OmitEmptyTag omitEmpty, const Arg&... arg) {
     uint8_t* after = m_pos;
     bool ok = prepend(arg...);
     size_t length = after - m_pos;
@@ -169,44 +153,37 @@ public:
   /** @brief Prepend TLV, measuring TLV-LENGTH automatically. */
   template<typename First, typename... Arg>
   typename std::enable_if<!std::is_same<First, OmitEmptyTag>::value, bool>::type prependTlv(
-    uint32_t type, const First& first, const Arg&... arg)
-  {
+    uint32_t type, const First& first, const Arg&... arg) {
     return prependTlv(type, NoOmitEmpty, first, arg...);
   }
 
   /** @brief Prepend TLV with zero TLV-LENGTH. */
-  bool prependTlv(uint32_t type)
-  {
+  bool prependTlv(uint32_t type) {
     return prependTypeLength(type, 0);
   }
 
   /** @brief Indicate an error has occurred. */
-  void setError()
-  {
+  void setError() {
     m_pos = nullptr;
   }
 
 private:
-  void init(uint8_t* buf, size_t capacity)
-  {
+  void init(uint8_t* buf, size_t capacity) {
     m_buf = buf;
     m_pos = m_end = buf + capacity;
   }
 
-  bool prepend()
-  {
+  bool prepend() {
     return true;
   }
 
   template<typename T>
-  void prependOne(const T& encodeFunc, decltype(&T::operator()) = nullptr)
-  {
+  void prependOne(const T& encodeFunc, decltype(&T::operator()) = nullptr) {
     encodeFunc(*this);
   }
 
   template<typename T>
-  void prependOne(const T& encodable, decltype(&T::encodeTo) = nullptr)
-  {
+  void prependOne(const T& encodable, decltype(&T::encodeTo) = nullptr) {
     encodable.encodeTo(*this);
   }
 
@@ -218,13 +195,11 @@ private:
 };
 
 /** @brief Encoder that auto-discards upon destruction. */
-class ScopedEncoder : public Encoder
-{
+class ScopedEncoder : public Encoder {
 public:
   using Encoder::Encoder;
 
-  ~ScopedEncoder()
-  {
+  ~ScopedEncoder() {
     discard();
   }
 };

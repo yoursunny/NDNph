@@ -3,21 +3,21 @@ on:
   push:
   pull_request:
   workflow_dispatch:
-
+permissions: {}
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends lcov libboost-dev libmbedtls-dev ninja-build
+          sudo apt-get install --no-install-recommends clang-15 clang-format-15 lcov libboost-dev libmbedtls-dev lld-15 llvm-15 ninja-build
           sudo pip install meson
       - name: Download VPP
         uses: actions/checkout@v3
         with:
           repository: FDio/vpp
-          ref: v22.10
+          ref: v23.06
           path: vpp
       - name: Install libmemif
         run: |
@@ -51,7 +51,7 @@ jobs:
           fi
       - name: Build and test with LLVM
         run: |
-          LDFLAGS='-fuse-ld=lld-11 -L/usr/local/lib' meson setup --native-file mk/native-llvm.ini --buildtype debugoptimized -Db_ndebug=true -Dwerror=true -Dunittest=enabled -Dprograms=enabled build.llvm
+          LDFLAGS='-fuse-ld=lld-15 -L/usr/local/lib' meson setup --native-file mk/native-llvm.ini --buildtype debugoptimized -Db_ndebug=true -Dwerror=true -Dunittest=enabled -Dprograms=enabled build.llvm
           cd build.llvm
           if ! meson test; then
             cat meson-logs/testlog.txt && false
@@ -61,7 +61,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: build.coverage/coverage.lcov
   arduino:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: arduino/setup-arduino-cli@v1
       - id: cores

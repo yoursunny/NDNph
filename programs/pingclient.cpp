@@ -9,8 +9,7 @@ ndnph::Face& face = ndnph::cli::openUplink();
 std::unique_ptr<ndnph::PingClient> client;
 
 static bool
-parseArgs(int argc, char** argv)
-{
+parseArgs(int argc, char** argv) {
   int interval = 1000;
 
   int c;
@@ -37,8 +36,7 @@ parseArgs(int argc, char** argv)
 }
 
 int
-main(int argc, char** argv)
-{
+main(int argc, char** argv) {
   if (!parseArgs(argc, argv)) {
     fprintf(stderr, "ndnph-pingclient [-i INTERVAL] PREFIX\n"
                     "  PREFIX should have 'ping' suffix to interact with ndn-tools ndnpingserver.\n"

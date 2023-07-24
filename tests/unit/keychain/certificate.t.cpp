@@ -5,8 +5,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Certificate, Naming)
-{
+TEST(Certificate, Naming) {
   StaticRegion<1024> region;
   Name subjectName = Name::parse(region, "/s");
   Name keyName = Name::parse(region, "/s/KEY/k");

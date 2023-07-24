@@ -8,8 +8,7 @@ namespace {
 
 using KvStoreFixture = TempDirFixture;
 
-TEST_F(KvStoreFixture, Simple)
-{
+TEST_F(KvStoreFixture, Simple) {
   KvStore store;
   bool ok = store.open((tempDir + "/sub/dir").data());
   ASSERT_TRUE(ok);

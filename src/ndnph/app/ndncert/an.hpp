@@ -9,8 +9,7 @@ namespace ndncert {
 
 /** @brief TLV-TYPE assigned numbers. */
 namespace TT {
-enum
-{
+enum {
   CaPrefix = 0x81,
   CaInfo = 0x83,
   ParameterKey = 0x85,
@@ -43,53 +42,47 @@ using namespace ndnph::TT;
 
 /** @brief Return 'CA' component. */
 inline Component
-getCaComponent()
-{
-  static const uint8_t tlv[]{ 0x08, 0x02, 'C', 'A' };
+getCaComponent() {
+  static const uint8_t tlv[]{0x08, 0x02, 'C', 'A'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Return 'INFO' component. */
 inline Component
-getInfoComponent()
-{
-  static const uint8_t tlv[]{ 0x08, 0x04, 'I', 'N', 'F', 'O' };
+getInfoComponent() {
+  static const uint8_t tlv[]{0x08, 0x04, 'I', 'N', 'F', 'O'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Return 'PROBE' component. */
 inline Component
-getProbeComponent()
-{
-  static const uint8_t tlv[]{ 0x08, 0x05, 'P', 'R', 'O', 'B', 'E' };
+getProbeComponent() {
+  static const uint8_t tlv[]{0x08, 0x05, 'P', 'R', 'O', 'B', 'E'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Return 'NEW' component. */
 inline Component
-getNewComponent()
-{
-  static const uint8_t tlv[]{ 0x08, 0x03, 'N', 'E', 'W' };
+getNewComponent() {
+  static const uint8_t tlv[]{0x08, 0x03, 'N', 'E', 'W'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Return 'CHALLENGE' component. */
 inline Component
-getChallengeComponent()
-{
-  static const uint8_t tlv[]{ 0x08, 0x09, 'C', 'H', 'A', 'L', 'L', 'E', 'N', 'G', 'E' };
+getChallengeComponent() {
+  static const uint8_t tlv[]{0x08, 0x09, 'C', 'H', 'A', 'L', 'L', 'E', 'N', 'G', 'E'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Status assigned numbers. */
 namespace Status {
-enum
-{
+enum {
   BEFORE_CHALLENGE = 0,
   CHALLENGE = 1,
   PENDING = 2,
@@ -100,8 +93,7 @@ enum
 
 /** @brief ErrorCode assigned numbers. */
 namespace ErrorCode {
-enum
-{
+enum {
   BadInterestFormat = 1,
   BadParameterFormat = 2,
   BadSignature = 3,
@@ -117,36 +109,31 @@ enum
 namespace challenge_consts {
 
 inline tlv::Value
-nop()
-{
+nop() {
   static auto v = tlv::Value::fromString("nop");
   return v;
 }
 
 inline tlv::Value
-possession()
-{
+possession() {
   static auto v = tlv::Value::fromString("possession");
   return v;
 }
 
 inline tlv::Value
-issuedcert()
-{
+issuedcert() {
   static auto v = tlv::Value::fromString("issued-cert");
   return v;
 }
 
 inline tlv::Value
-nonce()
-{
+nonce() {
   static auto v = tlv::Value::fromString("nonce");
   return v;
 }
 
 inline tlv::Value
-proof()
-{
+proof() {
   static auto v = tlv::Value::fromString("proof");
   return v;
 }

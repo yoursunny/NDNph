@@ -13,21 +13,18 @@ namespace ndnph {
  *
  * This type is immutable, except `decodeFrom()` method.
  */
-class Component : public Printable
-{
+class Component : public Printable {
 public:
   explicit Component() = default;
 
   /** @brief Construct from T-L-V. */
   explicit Component(Region& region, uint16_t type, size_t length, const uint8_t* value)
     : Component(region.alloc(computeSize(type, length)), computeSize(type, length), type, length,
-                value)
-  {}
+                value) {}
 
   /** @brief Construct GenericNameComponent from L-V. */
   explicit Component(Region& region, size_t length, const uint8_t* value)
-    : Component(region, TT::GenericNameComponent, length, value)
-  {}
+    : Component(region, TT::GenericNameComponent, length, value) {}
 
   /**
    * @brief Construct from T-L-V into provided buffer.
@@ -41,8 +38,7 @@ public:
   explicit Component(uint8_t* buf, size_t bufLen, uint16_t type, size_t length,
                      const uint8_t* value, bool writeFromBack = false)
     : m_type(type)
-    , m_length(length)
-  {
+    , m_length(length) {
     size_t sizeofTlv = computeSize(type, length);
     if (buf == nullptr || bufLen < sizeofTlv) {
       m_type = 0;
@@ -65,8 +61,7 @@ public:
   }
 
   /** @brief Construct from const TLV buffer. */
-  static Component constant(const uint8_t* tlv, size_t size)
-  {
+  static Component constant(const uint8_t* tlv, size_t size) {
     Component comp;
     Decoder(tlv, size).decode(comp);
     return comp;
@@ -77,8 +72,7 @@ public:
    * @tparam Arg any Encodable type.
    */
   template<typename... Arg>
-  static Component from(Region& region, uint16_t type, const Arg&... arg)
-  {
+  static Component from(Region& region, uint16_t type, const Arg&... arg) {
     Encoder encoder(region);
     Decoder::Tlv d;
     Component comp;
@@ -100,13 +94,11 @@ public:
    * @note This is a not-so-strict parser. It lets some invalid inputs slip through
    *       in exchange for smaller code size. Not recommended on untrusted input.
    */
-  static Component parse(Region& region, const char* uri)
-  {
+  static Component parse(Region& region, const char* uri) {
     return parse(region, uri, std::strlen(uri));
   }
 
-  static Component parse(Region& region, const char* uri, size_t uriLen)
-  {
+  static Component parse(Region& region, const char* uri, size_t uriLen) {
     size_t bufLen = 8 + uriLen;
     uint8_t* buf = region.alloc(bufLen);
     if (buf == nullptr) {
@@ -118,14 +110,12 @@ public:
   }
 
   /** @brief Parse from URI into provided buffer. */
-  static Component parse(uint8_t* buf, size_t bufLen, const char* uri)
-  {
+  static Component parse(uint8_t* buf, size_t bufLen, const char* uri) {
     return parse(buf, bufLen, uri, std::strlen(uri));
   }
 
   static Component parse(uint8_t* buf, size_t bufLen, const char* uri, size_t uriLen,
-                         bool writeFromBack = false)
-  {
+                         bool writeFromBack = false) {
     const char* uriEnd = uri + uriLen;
     const char* posEqual = std::find(uri, uriEnd, '=');
     uint16_t type = TT::GenericNameComponent;
@@ -144,38 +134,31 @@ public:
   }
 
   /** @brief Return true if Component is valid. */
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return m_type != 0;
   }
 
-  uint16_t type() const
-  {
+  uint16_t type() const {
     return m_type;
   }
 
-  size_t length() const
-  {
+  size_t length() const {
     return m_length;
   }
 
-  const uint8_t* value() const
-  {
+  const uint8_t* value() const {
     return m_value;
   }
 
-  const uint8_t* tlv() const
-  {
+  const uint8_t* tlv() const {
     return m_tlv;
   }
 
-  size_t size() const
-  {
+  size_t size() const {
     return m_value - m_tlv + m_length;
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     if (m_type == 0) {
       encoder.setError();
       return;
@@ -183,8 +166,7 @@ public:
     encoder.prepend(tlv::Value(m_tlv, size()));
   }
 
-  bool decodeFrom(const Decoder::Tlv& d)
-  {
+  bool decodeFrom(const Decoder::Tlv& d) {
     if (d.type == 0 || d.type > 0xFFFF) {
       return false;
     }
@@ -196,8 +178,7 @@ public:
   }
 
 #ifdef NDNPH_PRINT_ARDUINO
-  size_t printTo(::Print& p) const final
-  {
+  size_t printTo(::Print& p) const final {
     size_t count = 0;
     printImpl([&](const char* str) { count += p.print(str); });
     return count;
@@ -205,25 +186,21 @@ public:
 #endif
 
   template<typename Convention>
-  bool is() const
-  {
+  bool is() const {
     return Convention::match(*this);
   }
 
   template<typename Convention, typename... Arg>
-  auto as(Arg&&... arg) const -> decltype(Convention::parse(*this, std::forward<Arg>(arg)...))
-  {
+  auto as(Arg&&... arg) const -> decltype(Convention::parse(*this, std::forward<Arg>(arg)...)) {
     return Convention::parse(*this, std::forward<Arg>(arg)...);
   }
 
 private:
-  static constexpr size_t computeSize(uint16_t type, size_t length)
-  {
+  static constexpr size_t computeSize(uint16_t type, size_t length) {
     return tlv::sizeofVarNum(type) + tlv::sizeofVarNum(length) + length;
   }
 
-  static ssize_t parseUriValue(uint8_t* buf, size_t bufLen, const char* uri, const char* uriEnd)
-  {
+  static ssize_t parseUriValue(uint8_t* buf, size_t bufLen, const char* uri, const char* uriEnd) {
     if (std::count(uri, uriEnd, '.') == uriEnd - uri && uriEnd - uri >= 3) {
       uri += 3;
     }
@@ -234,7 +211,7 @@ private:
       }
 
       if (*uri == '%' && uri + 3 <= uriEnd) {
-        char hex[] = { uri[1], uri[2], 0 };
+        char hex[] = {uri[1], uri[2], 0};
         buf[j] = std::strtoul(hex, nullptr, 16);
         uri += 3;
       } else {
@@ -245,8 +222,7 @@ private:
   }
 
   template<typename F>
-  void printImpl(const F& output) const
-  {
+  void printImpl(const F& output) const {
     char buf[7];
     snprintf(buf, sizeof(buf), "%d=", static_cast<int>(m_type));
     output(buf);
@@ -268,8 +244,7 @@ private:
   }
 
 #ifdef NDNPH_PRINT_OSTREAM
-  friend std::ostream& operator<<(std::ostream& os, const Component& comp)
-  {
+  friend std::ostream& operator<<(std::ostream& os, const Component& comp) {
     comp.printImpl([&os](const char* str) { os << str; });
     return os;
   }
@@ -283,8 +258,7 @@ private:
 };
 
 inline bool
-operator==(const Component& lhs, const Component& rhs)
-{
+operator==(const Component& lhs, const Component& rhs) {
   return lhs.size() == rhs.size() && std::equal(lhs.tlv(), lhs.tlv() + lhs.size(), rhs.tlv());
 }
 

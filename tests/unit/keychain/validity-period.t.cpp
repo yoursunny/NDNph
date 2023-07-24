@@ -5,8 +5,7 @@
 namespace ndnph {
 namespace {
 
-TEST(ValidityPeriod, Normal)
-{
+TEST(ValidityPeriod, Normal) {
   auto wire = test::fromHex("FD00FD26"
                             "FD00FE0F 323031383131313354303835383439" // 20181113T085849
                             "FD00FF0F 323032303130313154313633383033" // 20201011T163803
@@ -28,8 +27,7 @@ TEST(ValidityPeriod, Normal)
   EXPECT_EQ(decoded.notAfter, 1602434283);
 }
 
-TEST(ValidityPeriod, DecodeBadLength)
-{
+TEST(ValidityPeriod, DecodeBadLength) {
   auto wire = test::fromHex("FD00FD25"
                             "FD00FE0F 323031383131313354303835383439" // 20181113T085849
                             "FD00FF0E 3230323031303131543136333830"   // 20201011T16380
@@ -38,8 +36,7 @@ TEST(ValidityPeriod, DecodeBadLength)
   EXPECT_FALSE(Decoder(wire.data(), wire.size()).decode(vp));
 }
 
-TEST(ValidityPeriod, DecodeBadValue)
-{
+TEST(ValidityPeriod, DecodeBadValue) {
   auto wire = test::fromHex("FD00FD25"
                             "FD00FE0F 323031383131313341303835383439" // 20181113A085849
                             "FD00FF0E 323032303130313154313633383033" // 20201011T163803
@@ -48,8 +45,7 @@ TEST(ValidityPeriod, DecodeBadValue)
   EXPECT_FALSE(Decoder(wire.data(), wire.size()).decode(vp));
 }
 
-TEST(ValidityPeriod, Includes)
-{
+TEST(ValidityPeriod, Includes) {
   ValidityPeriod vp(1542099529, 1602434283);
   EXPECT_FALSE(vp.includes(1083820612));
   EXPECT_FALSE(vp.includes(1542099528));
@@ -65,8 +61,7 @@ TEST(ValidityPeriod, Includes)
   EXPECT_FALSE(vp.includes(1927427784));
 }
 
-TEST(ValidityPeriod, Intersect)
-{
+TEST(ValidityPeriod, Intersect) {
   ValidityPeriod vp1(1542099529, 1602434283);
   ValidityPeriod vp2(1543017600, 1609372800);
   EXPECT_EQ((vp1 && vp2).notBefore, 1543017600);

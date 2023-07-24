@@ -20,8 +20,7 @@ ndnph::EcPrivateKey possessionPvt;
 bool running = true;
 
 static bool
-parseArgs(int argc, char** argv)
-{
+parseArgs(int argc, char** argv) {
   int c;
   while ((c = getopt(argc, argv, "P:i:E:")) != -1) {
     switch (c) {
@@ -44,8 +43,7 @@ parseArgs(int argc, char** argv)
 }
 
 static bool
-loadCaProfile()
-{
+loadCaProfile() {
   std::ifstream f(profileFilename, std::ios_base::in | std::ios_base::binary);
   if (!f.good()) {
     return false;
@@ -68,8 +66,7 @@ loadCaProfile()
 }
 
 static void
-clientCallback(void*, ndnph::Data cert)
-{
+clientCallback(void*, ndnph::Data cert) {
   running = false;
   if (!cert) {
     exit(1);
@@ -78,8 +75,7 @@ clientCallback(void*, ndnph::Data cert)
 }
 
 int
-main(int argc, char** argv)
-{
+main(int argc, char** argv) {
   if (!parseArgs(argc, argv)) {
     fprintf(stderr, "ndnph-ndncertclient -P CA-PROFILE -i IDENTITY-ID [-E POSSESSION-ID]\n"
                     "  CA-PROFILE is a CA profile filename.\n"

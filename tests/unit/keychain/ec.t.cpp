@@ -9,8 +9,7 @@ namespace {
 
 using EcKeyFixture = TempDirFixture;
 
-TEST_F(EcKeyFixture, SignVerify)
-{
+TEST_F(EcKeyFixture, SignVerify) {
   KeyChain keyChain;
   ASSERT_TRUE(keyChain.open(tempDir.data()));
 
@@ -54,8 +53,7 @@ TEST_F(EcKeyFixture, SignVerify)
   testSignVerify<Data>(pvtA, pubA1, pvtB1, pubB1, true);
 }
 
-TEST(EcKey, BadPrivate)
-{
+TEST(EcKey, BadPrivate) {
   StaticRegion<1024> region;
   Name name = certificate::toKeyName(region, Name::parse(region, "/KA"));
   std::vector<uint8_t> fakeKey(EcPrivateKey::KeyLen::value);
@@ -66,8 +64,7 @@ TEST(EcKey, BadPrivate)
   EXPECT_EQ(key.sign({}, sig.data()), -1);
 }
 
-TEST(EcKey, BadPublic)
-{
+TEST(EcKey, BadPublic) {
   StaticRegion<1024> region;
   Name name = certificate::toKeyName(region, Name::parse(region, "/KA"));
   std::vector<uint8_t> fakeKey(EcPublicKey::KeyLen::value);

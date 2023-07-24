@@ -2,8 +2,7 @@
 #define NDNPH_PORT_TRANSPORT_MEMIF_HPP
 
 #include "../../face/transport-rxqueue.hpp"
-extern "C"
-{
+extern "C" {
 #include <libmemif.h>
 }
 
@@ -33,19 +32,16 @@ namespace port_transport_memif {
  * Current implementation only allows one memif transport per control socket name.
  * It is compatible with NDN-DPDK dataplane, but has no management integration.
  */
-class MemifTransport : public virtual Transport
-{
+class MemifTransport : public virtual Transport {
 public:
-  enum class Role
-  {
+  enum class Role {
     CLIENT = 0,
     SERVER = 1,
   };
 
   using DefaultDataroom = std::integral_constant<uint16_t, 2048>;
 
-  struct Options
-  {
+  struct Options {
     Role role;
     const char* socketName;
     uint32_t id;
@@ -59,8 +55,7 @@ public:
    * @param id interface ID.
    * @param dataroom maximum dataroom; 0 means library default.
    */
-  bool begin(const char* socketName, uint32_t id, uint16_t dataroom = 0)
-  {
+  bool begin(const char* socketName, uint32_t id, uint16_t dataroom = 0) {
     Options opts{};
     opts.socketName = socketName;
     opts.id = id;
@@ -69,8 +64,7 @@ public:
   }
 
   /** @brief Start transport with advanced options. */
-  bool begin(Options opts)
-  {
+  bool begin(Options opts) {
     end();
     if (opts.socketName == nullptr || opts.dataroom > 0x8000) {
       return false;
@@ -116,8 +110,7 @@ public:
   }
 
   /** @brief Stop transport. */
-  bool end()
-  {
+  bool end() {
     if (m_conn != nullptr) {
       int err = memif_delete(&m_conn);
       if (err != MEMIF_ERR_SUCCESS) {
@@ -139,19 +132,16 @@ public:
   }
 
   /** @brief Return actual dataroom. */
-  uint16_t getDataroom() const
-  {
+  uint16_t getDataroom() const {
     return m_dataroom;
   }
 
 private:
-  bool doIsUp() const final
-  {
+  bool doIsUp() const final {
     return m_isUp;
   }
 
-  void doLoop() final
-  {
+  void doLoop() final {
     if (m_sock == nullptr) {
       return;
     }
@@ -162,8 +152,7 @@ private:
     }
   }
 
-  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t) final
-  {
+  bool doSend(const uint8_t* pkt, size_t pktLen, uint64_t) final {
     if (!m_isUp) {
 #ifdef NDNPH_MEMIF_DEBUG
       fprintf(stderr, "MemifTransport send drop=transport-disconnected\n");
@@ -200,8 +189,7 @@ private:
     return true;
   }
 
-  static int handleConnect(memif_conn_handle_t conn, void* self0)
-  {
+  static int handleConnect(memif_conn_handle_t conn, void* self0) {
     MemifTransport* self = reinterpret_cast<MemifTransport*>(self0);
     NDNPH_ASSERT(self->m_conn == conn);
     self->m_isUp = true;
@@ -216,8 +204,7 @@ private:
     return 0;
   }
 
-  static int handleDisconnect(memif_conn_handle_t conn, void* self0)
-  {
+  static int handleDisconnect(memif_conn_handle_t conn, void* self0) {
     MemifTransport* self = reinterpret_cast<MemifTransport*>(self0);
     NDNPH_ASSERT(self->m_conn == conn);
     self->m_isUp = false;
@@ -227,8 +214,7 @@ private:
     return 0;
   }
 
-  static int handleInterrupt(memif_conn_handle_t conn, void* self0, uint16_t qid)
-  {
+  static int handleInterrupt(memif_conn_handle_t conn, void* self0, uint16_t qid) {
     MemifTransport* self = reinterpret_cast<MemifTransport*>(self0);
     NDNPH_ASSERT(self->m_conn == conn);
 

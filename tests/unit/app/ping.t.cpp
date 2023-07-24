@@ -11,8 +11,7 @@
 namespace ndnph {
 namespace {
 
-TEST(Ping, Client)
-{
+TEST(Ping, Client) {
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
@@ -56,8 +55,7 @@ TEST(Ping, Client)
   EXPECT_EQ(cnt.nRxData, cnt.nTxInterests - 2);
 }
 
-TEST(Ping, Server)
-{
+TEST(Ping, Server) {
   g::NiceMock<MockTransport> transport;
   Face face(transport);
 
@@ -97,8 +95,7 @@ TEST(Ping, Server)
 
 using PingEndToEndFixture = BridgeFixture;
 
-TEST_F(PingEndToEndFixture, EndToEnd)
-{
+TEST_F(PingEndToEndFixture, EndToEnd) {
   StaticRegion<1024> region;
   PingServer serverA(Name::parse(region, "/ping"), faceA);
   PingClient clientB(Name::parse(region, "/ping"), faceB, 10);

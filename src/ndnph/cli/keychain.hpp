@@ -10,8 +10,7 @@ namespace cli {
 
 /** @brief Open KeyChain according to `NDNPH_KEYCHAIN` environ. */
 inline KeyChain&
-openKeyChain()
-{
+openKeyChain() {
   static KeyChain keyChain;
   static bool ready = false;
   if (!ready) {
@@ -32,8 +31,7 @@ openKeyChain()
 
 /** @brief Check KeyChain object ID has the proper format. */
 inline std::string
-checkKeyChainId(const std::string& id)
-{
+checkKeyChainId(const std::string& id) {
   bool ok = std::all_of(id.begin(), id.end(), [](char ch) {
     return static_cast<bool>(std::islower(ch)) || static_cast<bool>(std::isdigit(ch));
   });
@@ -49,8 +47,7 @@ checkKeyChainId(const std::string& id)
 
 /** @brief Load a key from the KeyChain. */
 inline void
-loadKey(Region& region, const std::string& id, EcPrivateKey& pvt, EcPublicKey& pub)
-{
+loadKey(Region& region, const std::string& id, EcPrivateKey& pvt, EcPublicKey& pub) {
   if (!ec::load(openKeyChain(), id.data(), region, pvt, pub)) {
     fprintf(stderr, "ndnph::cli::loadKey(%s) not found in KeyChain\n", id.data());
     exit(1);
@@ -59,8 +56,7 @@ loadKey(Region& region, const std::string& id, EcPrivateKey& pvt, EcPublicKey& p
 
 /** @brief Load a certificate from the KeyChain. */
 inline Data
-loadCertificate(Region& region, const std::string& id)
-{
+loadCertificate(Region& region, const std::string& id) {
   auto cert = openKeyChain().certs.get(id.data(), region);
   if (!cert) {
     fprintf(stderr, "ndnph::cli::loadCertificate(%s) not found in KeyChain\n", id.data());
@@ -71,8 +67,7 @@ loadCertificate(Region& region, const std::string& id)
 
 /** @brief Load a certificate in binary format from input stream. */
 inline Data
-inputCertificate(Region& region, EcPublicKey* pub = nullptr, std::istream& is = std::cin)
-{
+inputCertificate(Region& region, EcPublicKey* pub = nullptr, std::istream& is = std::cin) {
   auto data = region.create<Data>();
   if (!data || !input(region, data, is) ||
       !(pub == nullptr ? certificate::isCertificate(data) : pub->import(region, data))) {

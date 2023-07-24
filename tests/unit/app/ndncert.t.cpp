@@ -8,16 +8,13 @@ namespace ndnph {
 namespace ndncert {
 namespace {
 
-class NdncertFixture : public BridgeFixture
-{
+class NdncertFixture : public BridgeFixture {
 protected:
   NdncertFixture()
     : sRegion(4096)
-    , cRegion(4096)
-  {}
+    , cRegion(4096) {}
 
-  void SetUp() override
-  {
+  void SetUp() override {
     DynamicRegion packetRegion(4096);
 
     sProfile.prefix = Name::parse(sRegion, "/authority");
@@ -39,8 +36,7 @@ protected:
     ASSERT_TRUE(ec::generate(cRegion, cName, cPvt, cPub));
   }
 
-  static void clientCallback(void* ctx, Data cert)
-  {
+  static void clientCallback(void* ctx, Data cert) {
     auto self = reinterpret_cast<NdncertFixture*>(ctx);
     if (!!cert) {
       EXPECT_TRUE(ec::isCertificate(cert));
@@ -50,8 +46,7 @@ protected:
     }
   }
 
-  void executeWorkflow(server::ChallengeList sChallenges, client::ChallengeList cChallenges)
-  {
+  void executeWorkflow(server::ChallengeList sChallenges, client::ChallengeList cChallenges) {
     server::NopChallenge sNopChallenge;
     Server server(Server::Options{
       .face = faceA,
@@ -88,16 +83,14 @@ protected:
   std::string cIssuedCertName;
 };
 
-TEST_F(NdncertFixture, WorkflowNop)
-{
+TEST_F(NdncertFixture, WorkflowNop) {
   server::NopChallenge sNopChallenge;
   client::NopChallenge cNopChallenge;
-  executeWorkflow({ &sNopChallenge }, { &cNopChallenge });
+  executeWorkflow({&sNopChallenge}, {&cNopChallenge});
   EXPECT_THAT(cIssuedCertName, g::StartsWith(test::toString(cPub.getName())));
 }
 
-TEST_F(NdncertFixture, WorkflowPossession)
-{
+TEST_F(NdncertFixture, WorkflowPossession) {
   DynamicRegion oRegion(4095);
   EcPrivateKey oRootPvt;
   EcPublicKey oRootPub;
@@ -113,7 +106,7 @@ TEST_F(NdncertFixture, WorkflowPossession)
 
   server::PossessionChallenge sPossessionChallenge;
   client::PossessionChallenge cPossessionChallenge(oUserCert, oUserPvt);
-  executeWorkflow({ &sPossessionChallenge }, { &cPossessionChallenge });
+  executeWorkflow({&sPossessionChallenge}, {&cPossessionChallenge});
   EXPECT_THAT(cIssuedCertName, g::StartsWith(test::toString(cPub.getName())));
 }
 

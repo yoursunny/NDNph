@@ -9,11 +9,9 @@ namespace ndnph {
 class PacketHandler;
 
 /** @brief Network layer face. */
-class Face : public WithRegion
-{
+class Face : public WithRegion {
 public:
-  struct PacketInfo
-  {
+  struct PacketInfo {
     uint64_t endpointId = 0;
     lp::PitToken pitToken;
   };
@@ -31,20 +29,17 @@ public:
    */
   explicit Face(Region& region, Transport& transport)
     : WithRegion(region)
-    , m_transport(transport)
-  {
+    , m_transport(transport) {
     m_transport.setRxCallback(transportRx, this);
   }
 
   explicit Face(Transport& transport)
-    : Face(*new OwnRegion(), transport)
-  {
+    : Face(*new OwnRegion(), transport) {
     m_ownRegion.reset(static_cast<OwnRegion*>(&region));
   }
 
   /** @brief Access the underlying transport. */
-  Transport& getTransport() const
-  {
+  Transport& getTransport() const {
     return m_transport;
   }
 
@@ -55,8 +50,7 @@ public:
    * If fragmentation is disabled (this function has not been invoked), the face would attempt to
    * transmit each outgoing packet in full. Oversized packets may be rejected by the transport.
    */
-  void setFragmenter(lp::Fragmenter& frag)
-  {
+  void setFragmenter(lp::Fragmenter& frag) {
     m_frag = &frag;
   }
 
@@ -67,8 +61,7 @@ public:
    * If reassembly is disabled (this function has not been invoked), the face would drop
    * incoming fragments.
    */
-  void setReassembler(lp::Reassembler& reass)
-  {
+  void setReassembler(lp::Reassembler& reass) {
     m_reass = &reass;
   }
 
@@ -88,8 +81,7 @@ public:
    */
   void loop();
 
-  const PacketInfo* getCurrentPacketInfo() const
-  {
+  const PacketInfo* getCurrentPacketInfo() const {
     return m_currentPacketInfo;
   }
 
@@ -101,17 +93,14 @@ public:
   bool send(Region& region, const Packet& packet, PacketInfo pi);
 
 private:
-  class ScopedCurrentPacketInfo
-  {
+  class ScopedCurrentPacketInfo {
   public:
     explicit ScopedCurrentPacketInfo(Face& face, PacketInfo& pi)
-      : m_face(face)
-    {
+      : m_face(face) {
       m_face.m_currentPacketInfo = &pi;
     }
 
-    ~ScopedCurrentPacketInfo()
-    {
+    ~ScopedCurrentPacketInfo() {
       m_face.m_currentPacketInfo = nullptr;
     }
 
@@ -119,8 +108,7 @@ private:
     Face& m_face;
   };
 
-  static void transportRx(void* self, const uint8_t* pkt, size_t pktLen, uint64_t endpointId)
-  {
+  static void transportRx(void* self, const uint8_t* pkt, size_t pktLen, uint64_t endpointId) {
     reinterpret_cast<Face*>(self)->transportRx(pkt, pktLen, endpointId);
   }
 

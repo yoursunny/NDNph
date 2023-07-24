@@ -7,11 +7,9 @@
 
 namespace ndnph {
 
-class SegmentConsumerBase : public PacketHandler
-{
+class SegmentConsumerBase : public PacketHandler {
 public:
-  struct Options
-  {
+  struct Options {
     const PublicKey& verifier = NullKey::get();
 
     /** @brief Maximum retransmission of an Interest, not counting initial Interest. */
@@ -29,12 +27,10 @@ public:
   explicit SegmentConsumerBase(Face& face, Options opts)
     : PacketHandler(face)
     , m_opts(std::move(opts))
-    , m_pending(this)
-  {}
+    , m_pending(this) {}
 
   explicit SegmentConsumerBase(Face& face)
-    : SegmentConsumerBase(face, Options())
-  {}
+    : SegmentConsumerBase(face, Options()) {}
 
   /**
    * @brief Callback upon segment arrival.
@@ -54,29 +50,24 @@ public:
    *
    * This should be invoked before @c start() .
    */
-  void setSegmentCallback(SegmentCallback cb, void* ctx)
-  {
+  void setSegmentCallback(SegmentCallback cb, void* ctx) {
     m_cb = cb;
     m_cbCtx = ctx;
   }
 
   /** @brief Destination and context of saving accumulated payload. */
-  class SaveDest
-  {
+  class SaveDest {
   public:
     explicit SaveDest(uint8_t* output, size_t limit)
       : output(output)
-      , limit(limit)
-    {}
+      , limit(limit) {}
 
-    static void accumulate(void* self0, uint64_t, Data data)
-    {
+    static void accumulate(void* self0, uint64_t, Data data) {
       reinterpret_cast<SaveDest*>(self0)->accumulate(data);
     }
 
   private:
-    void accumulate(Data data)
-    {
+    void accumulate(Data data) {
       if (hasError || !data) {
         hasError = true;
         return;
@@ -106,8 +97,7 @@ public:
    * This should be invoked before @c start() .
    * This cannot be used together with SegmentCallback.
    */
-  void saveTo(SaveDest& dest)
-  {
+  void saveTo(SaveDest& dest) {
     setSegmentCallback(SaveDest::accumulate, &dest);
   }
 
@@ -116,8 +106,7 @@ public:
    *
    * If another fetching is in progress, it will be aborted. The callback will not be invoked.
    */
-  void start(Name prefix)
-  {
+  void start(Name prefix) {
     m_prefix = prefix;
     m_running = true;
     m_segment = 0;
@@ -130,20 +119,17 @@ public:
    *
    * The callback will not be invoked.
    */
-  void stop()
-  {
+  void stop() {
     m_running = false;
   }
 
   /** @brief Determine whether fetching is in progress (not completed or failed). */
-  bool isRunning() const
-  {
+  bool isRunning() const {
     return m_running;
   }
 
 protected:
-  void invokeCallback(Data data)
-  {
+  void invokeCallback(Data data) {
     if (m_cb != nullptr) {
       m_cb(m_cbCtx, m_segment, data);
     }
@@ -166,14 +152,12 @@ protected:
  * @tparam regionCap encoding region capacity.
  */
 template<typename SegmentConvention = convention::Segment, size_t regionCap = 1024>
-class BasicSegmentConsumer : public SegmentConsumerBase
-{
+class BasicSegmentConsumer : public SegmentConsumerBase {
 public:
   using SegmentConsumerBase::SegmentConsumerBase;
 
 private:
-  void loop() final
-  {
+  void loop() final {
     if (!m_running || !m_pending.expired()) {
       return;
     }
@@ -191,8 +175,7 @@ private:
     m_pending.send(interest, m_opts.retxDelay);
   }
 
-  bool processData(Data data) final
-  {
+  bool processData(Data data) final {
     StaticRegion<regionCap> region;
     Name interestName = m_prefix.append(region, SegmentConvention(), m_segment);
     if (!m_pending.match(data, interestName, false) || !data.verify(m_opts.verifier)) {

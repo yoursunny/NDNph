@@ -7,16 +7,14 @@ namespace ndnph {
 namespace port_fs_null {
 
 /** @brief File storage stub. */
-class FileStore
-{
+class FileStore {
 public:
   /**
    * @brief Open the storage.
    *
    * Each port may have different arguments to this function.
    */
-  bool open()
-  {
+  bool open() {
     return false;
   }
 
@@ -27,8 +25,7 @@ public:
    * @param count buffer size.
    * @return file size, 0 if the file does not exist, or negative for other errors.
    */
-  int read(const char* filename, uint8_t* buffer, size_t count)
-  {
+  int read(const char* filename, uint8_t* buffer, size_t count) {
     (void)filename;
     (void)buffer;
     (void)count;
@@ -42,8 +39,7 @@ public:
    * @param count buffer size; file will be truncated to this size.
    * @return whether success.
    */
-  bool write(const char* filename, const uint8_t* buffer, size_t count)
-  {
+  bool write(const char* filename, const uint8_t* buffer, size_t count) {
     (void)filename;
     (void)buffer;
     (void)count;
@@ -55,8 +51,7 @@ public:
    * @param filename file name; directories are not supported.
    * @return whether success; deleting a non-existent file is considered successful.
    */
-  bool unlink(const char* filename)
-  {
+  bool unlink(const char* filename) {
     (void)filename;
     return true;
   }

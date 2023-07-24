@@ -7,22 +7,18 @@
 namespace ndnph {
 namespace port_ec_mbed {
 
-class EcContext
-{
+class EcContext {
 public:
-  explicit EcContext(const mbedtls_ecp_keypair& key)
-  {
+  explicit EcContext(const mbedtls_ecp_keypair& key) {
     mbedtls_ecdsa_init(&m_ctx);
     m_hasError = mbedtls_ecdsa_from_keypair(&m_ctx, &key) != 0;
   }
 
-  ~EcContext()
-  {
+  ~EcContext() {
     mbedtls_ecdsa_free(&m_ctx);
   }
 
-  mbedtls_ecdsa_context* get()
-  {
+  mbedtls_ecdsa_context* get() {
     return m_hasError ? nullptr : &m_ctx;
   }
 
@@ -31,17 +27,14 @@ private:
   bool m_hasError = false;
 };
 
-class EcKeyBase
-{
+class EcKeyBase {
 protected:
-  EcKeyBase()
-  {
+  EcKeyBase() {
     mbedtls_ecp_keypair_init(&keypair);
     mbedtls_ecp_group_copy(&keypair.grp, mbedtls::P256::group());
   }
 
-  ~EcKeyBase()
-  {
+  ~EcKeyBase() {
     mbedtls_ecp_keypair_free(&keypair);
   }
 
@@ -53,17 +46,14 @@ protected:
   mbedtls_ecp_keypair keypair;
 };
 
-class EcPvt : public EcKeyBase
-{
+class EcPvt : public EcKeyBase {
 public:
-  bool import(const uint8_t* bits)
-  {
+  bool import(const uint8_t* bits) {
     return mbedtls_mpi_read_binary(&this->keypair.d, bits, mbedtls::P256::PvtLen::value) == 0 &&
            mbedtls_ecp_check_privkey(&this->keypair.grp, &this->keypair.d) == 0;
   }
 
-  ssize_t sign(const uint8_t* digest, uint8_t* sig) const
-  {
+  ssize_t sign(const uint8_t* digest, uint8_t* sig) const {
     EcContext context(this->keypair);
     auto ctx = context.get();
     if (ctx == nullptr) {
@@ -78,18 +68,15 @@ public:
   }
 };
 
-class EcPub : public EcKeyBase
-{
+class EcPub : public EcKeyBase {
 public:
-  bool import(const uint8_t* bits)
-  {
+  bool import(const uint8_t* bits) {
     return mbedtls_ecp_point_read_binary(&this->keypair.grp, &this->keypair.Q, bits,
                                          mbedtls::P256::PubLen::value) == 0 &&
            mbedtls_ecp_check_pubkey(&this->keypair.grp, &this->keypair.Q) == 0;
   }
 
-  bool verify(const uint8_t* digest, const uint8_t* sig, size_t sigLen) const
-  {
+  bool verify(const uint8_t* digest, const uint8_t* sig, size_t sigLen) const {
     EcContext context(this->keypair);
     auto ctx = context.get();
     if (ctx == nullptr) {
@@ -100,11 +87,9 @@ public:
   }
 };
 
-class EcKeyGen : public EcKeyBase
-{
+class EcKeyGen : public EcKeyBase {
 public:
-  bool generate(uint8_t* pvtBits, uint8_t* pubBits)
-  {
+  bool generate(uint8_t* pvtBits, uint8_t* pubBits) {
     size_t pubLen;
     return mbedtls_ecp_gen_keypair(&this->keypair.grp, &this->keypair.d, &this->keypair.Q,
                                    mbedtls::rng, nullptr) == 0 &&
@@ -116,15 +101,13 @@ public:
   }
 };
 
-class Ec
-{
+class Ec {
 public:
   using Curve = mbedtls::P256;
   using PrivateKey = EcPvt;
   using PublicKey = EcPub;
 
-  static bool generateKey(uint8_t* pvt, uint8_t* pub)
-  {
+  static bool generateKey(uint8_t* pvt, uint8_t* pub) {
     return EcKeyGen().generate(pvt, pub);
   }
 };

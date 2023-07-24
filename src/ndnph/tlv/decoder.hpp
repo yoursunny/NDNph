@@ -7,16 +7,13 @@
 namespace ndnph {
 
 /** @brief TLV decoder. */
-class Decoder
-{
+class Decoder {
 public:
   /** @brief Decoded TLV. */
-  class Tlv
-  {
+  class Tlv {
   public:
     /** @brief Whether this TLV is valid (e.g. not dereferenced from past-end Iterator). */
-    explicit operator bool() const
-    {
+    explicit operator bool() const {
       return size != 0;
     }
 
@@ -28,14 +25,12 @@ public:
      * @post target may contain reference to the decoder's underlying input buffer.
      */
     template<typename T>
-    bool decode(T& target) const
-    {
+    bool decode(T& target) const {
       return *this && target.decodeFrom(*this);
     }
 
     /** @brief Create Decoder over TLV-VALUE. */
-    Decoder vd() const
-    {
+    Decoder vd() const {
       return Decoder(value, length);
     }
 
@@ -48,8 +43,7 @@ public:
     size_t size = 0;
   };
 
-  static bool readTlv(Tlv& d, const uint8_t* input, const uint8_t* end)
-  {
+  static bool readTlv(Tlv& d, const uint8_t* input, const uint8_t* end) {
     if (input == end) {
       d = Tlv{};
       return true;
@@ -72,8 +66,7 @@ public:
   }
 
   /** @brief Iterator over TLV elements. */
-  class Iterator
-  {
+  class Iterator {
   public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = const Tlv;
@@ -85,14 +78,12 @@ public:
 
     explicit Iterator(const uint8_t* pos, const uint8_t* end)
       : m_pos(pos)
-      , m_end(end)
-    {
+      , m_end(end) {
       tryRead();
     }
 
     /** @brief Whether a decoding error has occurred. */
-    bool hasError() const
-    {
+    bool hasError() const {
       return m_pos == nullptr;
     }
 
@@ -101,15 +92,13 @@ public:
      *
      * Incrementing past-end iterator is allowed and has no effect.
      */
-    Iterator& operator++()
-    {
+    Iterator& operator++() {
       m_pos = m_tlv.value + m_tlv.length;
       tryRead();
       return *this;
     }
 
-    Iterator operator++(int)
-    {
+    Iterator operator++(int) {
       Iterator copy(*this);
       ++*this;
       return copy;
@@ -120,26 +109,22 @@ public:
      *
      * Dereferencing past-end iterator is allowed and returns empty Decoder::Tlv.
      */
-    reference operator*()
-    {
+    reference operator*() {
       return m_tlv;
     }
 
-    pointer operator->()
-    {
+    pointer operator->() {
       return &m_tlv;
     }
 
-    friend bool operator==(const Iterator& lhs, const Iterator& rhs)
-    {
+    friend bool operator==(const Iterator& lhs, const Iterator& rhs) {
       return (lhs.m_end - lhs.m_pos) == (rhs.m_end - rhs.m_pos);
     }
 
     NDNPH_DECLARE_NE(Iterator, friend)
 
   private:
-    void tryRead()
-    {
+    void tryRead() {
       if (readTlv(m_tlv, m_pos, m_end)) {
         return;
       }
@@ -155,16 +140,13 @@ public:
 
   explicit Decoder(const uint8_t* input, size_t count)
     : m_begin(input)
-    , m_end(input + count)
-  {}
+    , m_end(input + count) {}
 
-  Iterator begin() const
-  {
+  Iterator begin() const {
     return Iterator(m_begin, m_end);
   }
 
-  Iterator end() const
-  {
+  Iterator end() const {
     return Iterator(m_end, m_end);
   }
 
@@ -173,8 +155,7 @@ public:
    * @sa Decoder::Tlv::decode
    */
   template<typename T>
-  bool decode(T& target) const
-  {
+  bool decode(T& target) const {
     return begin()->decode(target);
   }
 

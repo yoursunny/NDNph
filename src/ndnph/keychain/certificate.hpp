@@ -10,42 +10,37 @@ namespace certificate {
 
 /** @brief Return 'KEY' component. */
 inline Component
-getKeyComponent()
-{
-  static const uint8_t tlv[]{ 0x08, 0x03, 'K', 'E', 'Y' };
+getKeyComponent() {
+  static const uint8_t tlv[]{0x08, 0x03, 'K', 'E', 'Y'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Return 'NDNph' component as default issuerId. */
 inline Component
-getIssuerDefault()
-{
-  static const uint8_t tlv[]{ 0x08, 0x05, 'N', 'D', 'N', 'p', 'h' };
+getIssuerDefault() {
+  static const uint8_t tlv[]{0x08, 0x05, 'N', 'D', 'N', 'p', 'h'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Return 'self' component as self-signed issuerId. */
 inline Component
-getIssuerSelf()
-{
-  static const uint8_t tlv[]{ 0x08, 0x04, 's', 'e', 'l', 'f' };
+getIssuerSelf() {
+  static const uint8_t tlv[]{0x08, 0x04, 's', 'e', 'l', 'f'};
   static const Component comp = Component::constant(tlv, sizeof(tlv));
   return comp;
 }
 
 /** @brief Determine if the input is a key name. */
 inline bool
-isKeyName(const Name& name)
-{
+isKeyName(const Name& name) {
   return name[-2] == getKeyComponent();
 }
 
 /** @brief Determine if the input is a certificate name. */
 inline bool
-isCertName(const Name& name)
-{
+isCertName(const Name& name) {
   return name[-4] == getKeyComponent();
 }
 
@@ -58,8 +53,7 @@ isCertName(const Name& name)
  * @return subject name, or an empty name upon failure.
  */
 inline Name
-toSubjectName(Region& region, const Name& input, bool mustCopy = false)
-{
+toSubjectName(Region& region, const Name& input, bool mustCopy = false) {
   Name result;
   if (isKeyName(input)) {
     result = input.getPrefix(-2);
@@ -85,8 +79,7 @@ toSubjectName(Region& region, const Name& input, bool mustCopy = false)
  *         If @p input does not contain keyId component, it is randomly generated.
  */
 inline Name
-toKeyName(Region& region, const Name& input, bool mustCopy = false)
-{
+toKeyName(Region& region, const Name& input, bool mustCopy = false) {
   Name result;
   if (isKeyName(input)) {
     result = input;
@@ -115,8 +108,7 @@ toKeyName(Region& region, const Name& input, bool mustCopy = false)
  *         If @p input does not contain version component, it is set to current timestamp.
  */
 inline Name
-toCertName(Region& region, const Name& input, bool mustCopy = false)
-{
+toCertName(Region& region, const Name& input, bool mustCopy = false) {
   if (isCertName(input)) {
     if (mustCopy) {
       return input.clone(region);
@@ -141,8 +133,7 @@ toCertName(Region& region, const Name& input, bool mustCopy = false)
  * @return key name, or an empty name upon failure.
  */
 inline Name
-makeKeyName(Region& region, const Name& input, const Component& keyId)
-{
+makeKeyName(Region& region, const Name& input, const Component& keyId) {
   return toSubjectName(region, input).append(region, getKeyComponent(), keyId);
 }
 
@@ -155,8 +146,8 @@ makeKeyName(Region& region, const Name& input, const Component& keyId)
  * @return certificate name, or an empty name upon failure.
  */
 inline Name
-makeCertName(Region& region, const Name& input, const Component& issuerId, const Component& version)
-{
+makeCertName(Region& region, const Name& input, const Component& issuerId,
+             const Component& version) {
   return toKeyName(region, input).append(region, issuerId, version);
 }
 
@@ -169,22 +160,19 @@ makeCertName(Region& region, const Name& input, const Component& issuerId, const
  * @return certificate name, or an empty name upon failure.
  */
 inline Name
-makeCertName(Region& region, const Name& input, const Component& issuerId, uint64_t version = 0)
-{
+makeCertName(Region& region, const Name& input, const Component& issuerId, uint64_t version = 0) {
   return toKeyName(region, input)
     .append(region, issuerId, convention::Version(), convention::TimeValue(version));
 }
 
 /** @brief Determine if the Data packet is a certificate. */
 inline bool
-isCertificate(const Data& data)
-{
+isCertificate(const Data& data) {
   return data && data.getContentType() == ContentType::Key && isCertName(data.getName());
 }
 
 inline Name
-getIssuer(const Data& data)
-{
+getIssuer(const Data& data) {
   const DSigInfo* sigInfo = data.getSigInfo();
   if (sigInfo != nullptr) {
     return sigInfo->name;
@@ -193,8 +181,7 @@ getIssuer(const Data& data)
 }
 
 inline ValidityPeriod
-getValidity(const Data& data)
-{
+getValidity(const Data& data) {
   ValidityPeriod vp;
 
   const DSigInfo* sigInfo = data.getSigInfo();
@@ -218,8 +205,7 @@ namespace detail {
 template<typename Signer, typename Modify>
 Data::Signed
 buildCertificate(Region& region, const Name& name, const ValidityPeriod& validity,
-                 const Signer& signer, const Modify& modify)
-{
+                 const Signer& signer, const Modify& modify) {
   auto data = region.create<Data>();
   if (!data) {
     return Data::Signed();

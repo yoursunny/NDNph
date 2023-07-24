@@ -12,8 +12,7 @@ namespace ndnph {
 namespace detail {
 
 inline bool
-encodeFwHint(Encoder& encoder, const Name& fwHint)
-{
+encodeFwHint(Encoder& encoder, const Name& fwHint) {
   if (!fwHint) {
     return false;
   }
@@ -21,14 +20,12 @@ encodeFwHint(Encoder& encoder, const Name& fwHint)
 }
 
 inline bool
-decodeFwHint(const Decoder::Tlv& d, Name* target)
-{
-  return EvDecoder::decode(d, { TT::ForwardingHint }, EvDecoder::def<TT::Name>(target));
+decodeFwHint(const Decoder::Tlv& d, Name* target) {
+  return EvDecoder::decode(d, {TT::ForwardingHint}, EvDecoder::def<TT::Name>(target));
 }
 
 /** @brief Fields in parameterized/signed Interest. */
-struct InterestParams
-{
+struct InterestParams {
   tlv::Value appParameters;
   ISigInfo sigInfo;
   tlv::Value sigValue;
@@ -37,20 +34,17 @@ struct InterestParams
 };
 
 /** @brief Fields in Interest or Nack. */
-class InterestObj : public InRegion
-{
+class InterestObj : public InRegion {
 public:
   explicit InterestObj(Region& region)
     : InRegion(region)
     , canBePrefix(false)
     , mustBeFresh(false)
-    , nackReason(0)
-  {
+    , nackReason(0) {
     port::RandomSource::generate(reinterpret_cast<uint8_t*>(&nonce), sizeof(nonce));
   }
 
-  enum
-  {
+  enum {
     DefaultLifetime = 4000,
     MaxHopLimit = 0xFF,
   };
@@ -67,51 +61,42 @@ public:
   uint8_t nackReason : 3;
 };
 
-class InterestRefBase : public RefRegion<InterestObj>
-{
+class InterestRefBase : public RefRegion<InterestObj> {
 public:
   using RefRegion::RefRegion;
 
-  const Name& getName() const
-  {
+  const Name& getName() const {
     return obj->name;
   }
 
-  bool getCanBePrefix() const
-  {
+  bool getCanBePrefix() const {
     return obj->canBePrefix;
   }
 
-  bool getMustBeFresh() const
-  {
+  bool getMustBeFresh() const {
     return obj->mustBeFresh;
   }
 
-  const Name& getFwHint() const
-  {
+  const Name& getFwHint() const {
     return obj->fwHint;
   }
 
-  uint32_t getNonce() const
-  {
+  uint32_t getNonce() const {
     return obj->nonce;
   }
 
-  uint16_t getLifetime() const
-  {
+  uint16_t getLifetime() const {
     return obj->lifetime;
   }
 
-  uint8_t getHopLimit() const
-  {
+  uint8_t getHopLimit() const {
     return obj->hopLimit;
   }
 
 protected:
   ~InterestRefBase() = default;
 
-  void encodeMiddle(Encoder& encoder) const
-  {
+  void encodeMiddle(Encoder& encoder) const {
     encoder.prepend(
       [this](Encoder& encoder) {
         if (obj->canBePrefix) {
@@ -137,8 +122,7 @@ protected:
       });
   }
 
-  static int findParamsDigest(const Name& name)
-  {
+  static int findParamsDigest(const Name& name) {
     int pos = -1;
     for (const auto& comp : name) {
       ++pos;
@@ -150,18 +134,15 @@ protected:
   }
 };
 
-class ParameterizedInterestRef : public InterestRefBase
-{
+class ParameterizedInterestRef : public InterestRefBase {
 public:
   explicit ParameterizedInterestRef() = default;
 
   explicit ParameterizedInterestRef(InterestObj* interest, tlv::Value appParameters)
     : InterestRefBase(interest)
-    , m_appParameters(std::move(appParameters))
-  {}
+    , m_appParameters(std::move(appParameters)) {}
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     if (obj == nullptr) {
       encoder.setError();
       return;
@@ -173,8 +154,7 @@ public:
 protected:
   ~ParameterizedInterestRef() = default;
 
-  void encodeName(Encoder& encoder, const tlv::Value& params) const
-  {
+  void encodeName(Encoder& encoder, const tlv::Value& params) const {
     port::Sha256 hash;
     hash.update(params.begin(), params.size());
     uint8_t digestComp[34];
@@ -199,14 +179,12 @@ protected:
     encoder.prependTlv(TT::Name, prefix, tlv::Value(digestComp, sizeof(digestComp)), suffix);
   }
 
-  void encodeAppParameters(Encoder& encoder) const
-  {
+  void encodeAppParameters(Encoder& encoder) const {
     encoder.prependTlv(TT::AppParameters, m_appParameters);
   }
 
   template<typename Fn>
-  void encodeImpl(Encoder& encoder, const Fn& encodeParams) const
-  {
+  void encodeImpl(Encoder& encoder, const Fn& encodeParams) const {
     tlv::Value params;
     encoder.prependTlv(
       TT::Interest, [this, &params](Encoder& encoder) { encodeName(encoder, params); },
@@ -225,22 +203,19 @@ protected:
   tlv::Value m_appParameters;
 };
 
-class SignedInterestRef : public ParameterizedInterestRef
-{
+class SignedInterestRef : public ParameterizedInterestRef {
 public:
   explicit SignedInterestRef() = default;
 
   explicit SignedInterestRef(InterestObj* interest, tlv::Value appParameters, const PrivateKey& key,
                              ISigInfo sigInfo)
     : ParameterizedInterestRef(interest, std::move(appParameters))
-    , m_key(&key)
-  {
+    , m_key(&key) {
     key.updateSigInfo(sigInfo);
     m_sigInfo = std::move(sigInfo);
   }
 
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     if (m_key == nullptr) {
       encoder.setError();
       return;
@@ -269,7 +244,7 @@ public:
     }
 
     tlv::Value signedPortion(encoder.begin(), afterSignedPortion);
-    ssize_t sigLen = m_key->sign({ signedName, signedPortion }, sigBuf);
+    ssize_t sigLen = m_key->sign({signedName, signedPortion}, sigBuf);
     if (sigLen < 0) {
       encoder.setError();
       return;
@@ -306,43 +281,35 @@ private:
 /** @brief Interest packet. */
 class Interest
   : public Printable
-  , public detail::InterestRefBase
-{
+  , public detail::InterestRefBase {
 public:
   using InterestRefBase::InterestRefBase;
 
-  void setName(const Name& v)
-  {
+  void setName(const Name& v) {
     obj->name = v;
   }
 
-  void setCanBePrefix(bool v)
-  {
+  void setCanBePrefix(bool v) {
     obj->canBePrefix = v;
   }
 
-  void setMustBeFresh(bool v)
-  {
+  void setMustBeFresh(bool v) {
     obj->mustBeFresh = v;
   }
 
-  void setFwHint(const Name& v)
-  {
+  void setFwHint(const Name& v) {
     obj->fwHint = v;
   }
 
-  void setNonce(uint32_t v)
-  {
+  void setNonce(uint32_t v) {
     obj->nonce = v;
   }
 
-  void setLifetime(uint16_t v)
-  {
+  void setLifetime(uint16_t v) {
     obj->lifetime = v;
   }
 
-  void setHopLimit(uint8_t v)
-  {
+  void setHopLimit(uint8_t v) {
     obj->hopLimit = v;
   }
 
@@ -351,8 +318,7 @@ public:
    * @pre only available on decoded packet.
    * @note To create Interest packet with AppParameters, use parameterize().
    */
-  tlv::Value getAppParameters() const
-  {
+  tlv::Value getAppParameters() const {
     if (obj->params == nullptr) {
       return tlv::Value();
     }
@@ -363,14 +329,12 @@ public:
    * @brief Retrieve SignatureInfo.
    * @pre only available on decoded packet.
    */
-  const ISigInfo* getSigInfo() const
-  {
+  const ISigInfo* getSigInfo() const {
     return obj->params == nullptr ? nullptr : &obj->params->sigInfo;
   }
 
   /** @brief Encode the Interest without AppParameters. */
-  void encodeTo(Encoder& encoder) const
-  {
+  void encodeTo(Encoder& encoder) const {
     encoder.prependTlv(TT::Interest, obj->name,
                        [this](Encoder& encoder) { encodeMiddle(encoder); });
   }
@@ -379,19 +343,16 @@ public:
   using Signed = detail::SignedInterestRef;
 
   /** @brief Result of Interest::parameterize operation. */
-  class Parameterized : public detail::ParameterizedInterestRef
-  {
+  class Parameterized : public detail::ParameterizedInterestRef {
   public:
     using detail::ParameterizedInterestRef::ParameterizedInterestRef;
 
-    Signed sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const
-    {
+    Signed sign(const PrivateKey& key, ISigInfo sigInfo = ISigInfo()) const {
       return Signed(obj, m_appParameters, key, std::move(sigInfo));
     }
 
     template<typename ISigPolicy>
-    Signed sign(const PrivateKey& key, Region& region, ISigPolicy& policy) const
-    {
+    Signed sign(const PrivateKey& key, Region& region, ISigPolicy& policy) const {
       ISigInfo si;
       if (!policy.create(region, si)) {
         return Signed();
@@ -410,8 +371,7 @@ public:
    * @note Unrecognized fields found during decoding are not preserved in encoding output.
    * @note This method does not set sigValue. Packet is not verifiable after this operation.
    */
-  Parameterized parameterize(tlv::Value appParameters) const
-  {
+  Parameterized parameterize(tlv::Value appParameters) const {
     return Parameterized(obj, std::move(appParameters));
   }
 
@@ -427,16 +387,14 @@ public:
    * call sign() on its return value.
    */
   template<typename... Arg>
-  Signed sign(Arg&&... arg) const
-  {
+  Signed sign(Arg&&... arg) const {
     return parameterize(tlv::Value()).sign(std::forward<Arg>(arg)...);
   }
 
   /** @brief Decode packet. */
-  bool decodeFrom(const Decoder::Tlv& input)
-  {
+  bool decodeFrom(const Decoder::Tlv& input) {
     return EvDecoder::decode(
-      input, { TT::Interest }, EvDecoder::def<TT::Name>(&obj->name),
+      input, {TT::Interest}, EvDecoder::def<TT::Name>(&obj->name),
       EvDecoder::def<TT::CanBePrefix>([this](const Decoder::Tlv&) { setCanBePrefix(true); }),
       EvDecoder::def<TT::MustBeFresh>([this](const Decoder::Tlv&) { setMustBeFresh(true); }),
       EvDecoder::def<TT::ForwardingHint>(
@@ -470,8 +428,7 @@ public:
    * This is useful for obtaining an Interest packet in decoded state from the result of signing.
    */
   template<typename Encodable>
-  bool decodeFrom(Encodable&& encodable)
-  {
+  bool decodeFrom(Encodable&& encodable) {
     if (obj == nullptr) {
       return false;
     }
@@ -491,8 +448,7 @@ public:
    * This method only works on decoded packet.
    * It's unnecessary to call this method if you are going to use verify().
    */
-  bool checkDigest() const
-  {
+  bool checkDigest() const {
     if (obj->params == nullptr) {
       return false;
     }
@@ -517,8 +473,7 @@ public:
    * This method only works on decoded packet. It does not work on packet that
    * has been modified or (re-)signed.
    */
-  bool verify(const PublicKey& key) const
-  {
+  bool verify(const PublicKey& key) const {
     if (!checkDigest()) {
       return false;
     }
@@ -528,19 +483,17 @@ public:
     }
     auto signedName = obj->name.getPrefix(-1);
     return key.verify(
-      { tlv::Value(signedName.value(), signedName.length()), obj->params->signedParams },
+      {tlv::Value(signedName.value(), signedName.length()), obj->params->signedParams},
       obj->params->sigValue.begin(), obj->params->sigValue.size());
   }
 
   template<typename DataT>
-  [[deprecated]] bool match(const DataT& data) const
-  {
+  [[deprecated]] bool match(const DataT& data) const {
     return data.canSatisfy(*this);
   }
 
 #ifdef NDNPH_PRINT_ARDUINO
-  size_t printTo(::Print& p) const final
-  {
+  size_t printTo(::Print& p) const final {
     size_t count = 0;
     count += p.print(getName());
     if (getCanBePrefix()) {
@@ -556,8 +509,7 @@ public:
 
 #ifdef NDNPH_PRINT_OSTREAM
 inline std::ostream&
-operator<<(std::ostream& os, const Interest& interest)
-{
+operator<<(std::ostream& os, const Interest& interest) {
   os << interest.getName();
   if (interest.getCanBePrefix()) {
     os << "[P]";
