@@ -218,7 +218,7 @@ private:
     MemifTransport* self = reinterpret_cast<MemifTransport*>(self0);
     NDNPH_ASSERT(self->m_conn == conn);
 
-    std::array<memif_buffer_t, NDNPH_MEMIF_RXBURST> burst;
+    std::array<memif_buffer_t, NDNPH_MEMIF_RXBURST> burst{};
     uint16_t nRx = 0;
     int err = memif_rx_burst(conn, qid, burst.data(), burst.size(), &nRx);
     if (err != MEMIF_ERR_SUCCESS) {
