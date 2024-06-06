@@ -17,7 +17,7 @@ NDNph can also work independently on Linux and other platforms.
 Packet encoding and decoding
 
 * Interest and Data
-  * [v0.3](https://named-data.net/doc/NDN-packet-spec/0.3/) format only
+  * [v0.3](https://docs.named-data.net/NDN-packet-spec/0.3/) format only
   * TLV evolvability: yes
   * forwarding hint: yes, limited to one name
 * [NDNLPv2](https://redmine.named-data.net/projects/nfd/wiki/NDNLPv2)
@@ -26,7 +26,7 @@ Packet encoding and decoding
   * PIT token: yes
   * congestion mark: no
   * link layer reliability: no
-* Signed Interest: [v0.3 format](https://named-data.net/doc/NDN-packet-spec/0.3/signed-interest.html)
+* Signed Interest: [v0.3 format](https://docs.named-data.net/NDN-packet-spec/0.3/signed-interest.html)
 * Naming Convention: [rev3 format](https://named-data.net/publications/techreports/ndn-tr-22-3-ndn-memo-naming-conventions/)
 
 Transports
@@ -36,14 +36,14 @@ Transports
 
 KeyChain
 
-* Crypto: using [Mbed TLS](https://github.com/ARMmbed/mbedtls) library
+* Crypto: using [Mbed TLS](https://github.com/Mbed-TLS/mbedtls) library
   * SHA256: yes
   * ECDSA: P-256 curve only
   * HMAC-SHA256: yes
   * RSA: no
   * Ed25519: no
   * Null: yes
-* [NDN certificates](https://named-data.net/doc/ndn-cxx/0.8.0/specs/certificate.html): basic support
+* [NDN certificates](https://docs.named-data.net/NDN-packet-spec/0.3/certificate.html): basic support
 * Persistent key and certificate storage: binary files
 * Trust schema: no
 
@@ -65,9 +65,9 @@ For Linux,
    * C++ compiler such as GCC, install Ubuntu package `build-essential`
    * [Meson](https://mesonbuild.com/), install pip package `meson`
    * [Ninja build system](https://ninja-build.org/), install Ubuntu package `ninja-build`
-   * [Mbed TLS](https://github.com/ARMmbed/mbedtls) 2.16+, install from source or Ubuntu 20.04 package `libmbedtls-dev`
+   * [Mbed TLS](https://github.com/ARMmbed/mbedtls) 2.16+ or 3.x, install from source or Ubuntu package `libmbedtls-dev`
    * [Boost](https://www.boost.org/) header-only libraries, install Ubuntu package `libboost-dev`
-   * [libmemif](https://s3-docs.fd.io/vpp/22.06/interfacing/libmemif/) 4.0, install from VPP 22.06 source
+   * [libmemif](https://s3-docs.fd.io/vpp/22.06/interfacing/libmemif/) 4.0, install from VPP 22.06+ source
    * Note: all dependencies are optional, but omitting a dependency may necessitate extra porting work
 2. Create build directory: `meson setup build`
 3. Enter build directory and execute build: `meson compile -C build`

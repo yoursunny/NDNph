@@ -15,6 +15,12 @@
 #error MBEDTLS_ECDSA_DETERMINISTIC must be declared
 #endif
 
+#if MBEDTLS_VERSION_MAJOR >= 3
+#define NDNPH_MBEDTLS_RET2(func) func
+#else
+#define NDNPH_MBEDTLS_RET2(func) func##_ret
+#endif
+
 namespace ndnph {
 /** @brief Wrappers of Mbed TLS crypto library. */
 namespace mbedtls {
@@ -31,7 +37,7 @@ class Sha256 {
 public:
   explicit Sha256() {
     mbedtls_sha256_init(&m_ctx);
-    m_ok = mbedtls_sha256_starts_ret(&m_ctx, 0) == 0;
+    m_ok = NDNPH_MBEDTLS_RET2(mbedtls_sha256_starts)(&m_ctx, 0) == 0;
   }
 
   ~Sha256() {
@@ -39,11 +45,11 @@ public:
   }
 
   void update(const uint8_t* chunk, size_t size) {
-    m_ok = m_ok && mbedtls_sha256_update_ret(&m_ctx, chunk, size) == 0;
+    m_ok = m_ok && NDNPH_MBEDTLS_RET2(mbedtls_sha256_update)(&m_ctx, chunk, size) == 0;
   }
 
   bool final(uint8_t digest[NDNPH_SHA256_LEN]) {
-    m_ok = m_ok && mbedtls_sha256_finish_ret(&m_ctx, digest) == 0;
+    m_ok = m_ok && NDNPH_MBEDTLS_RET2(mbedtls_sha256_finish)(&m_ctx, digest) == 0;
     return m_ok;
   }
 

@@ -142,7 +142,7 @@ protected:
    */
   explicit DynamicRxQueueMixin(size_t bufLen = DEFAULT_BUFLEN)
     : m_region(sizeofSubRegions(bufLen, NDNPH_TRANSPORT_RXQUEUELEN)) {
-    this->initAllocBuffers([=] { return makeSubRegion(m_region, bufLen); });
+    this->initAllocBuffers([this, bufLen] { return makeSubRegion(m_region, bufLen); });
   }
 
 private:

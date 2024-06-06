@@ -4,6 +4,12 @@
 #include "../mbed-common.hpp"
 #include <mbedtls/ecdsa.h>
 
+#if MBEDTLS_VERSION_MAJOR >= 3
+#define NDNPH_MBEDTLS_PVT3(mem) MBEDTLS_PRIVATE(mem)
+#else
+#define NDNPH_MBEDTLS_PVT3(mem) mem
+#endif
+
 namespace ndnph {
 namespace port_ec_mbed {
 
@@ -31,7 +37,7 @@ class EcKeyBase {
 protected:
   EcKeyBase() {
     mbedtls_ecp_keypair_init(&keypair);
-    mbedtls_ecp_group_copy(&keypair.grp, mbedtls::P256::group());
+    mbedtls_ecp_group_copy(&keypair.NDNPH_MBEDTLS_PVT3(grp), mbedtls::P256::group());
   }
 
   ~EcKeyBase() {
@@ -49,8 +55,10 @@ protected:
 class EcPvt : public EcKeyBase {
 public:
   bool import(const uint8_t* bits) {
-    return mbedtls_mpi_read_binary(&this->keypair.d, bits, mbedtls::P256::PvtLen::value) == 0 &&
-           mbedtls_ecp_check_privkey(&this->keypair.grp, &this->keypair.d) == 0;
+    return mbedtls_mpi_read_binary(&this->keypair.NDNPH_MBEDTLS_PVT3(d), bits,
+                                   mbedtls::P256::PvtLen::value) == 0 &&
+           mbedtls_ecp_check_privkey(&this->keypair.NDNPH_MBEDTLS_PVT3(grp),
+                                     &this->keypair.NDNPH_MBEDTLS_PVT3(d)) == 0;
   }
 
   ssize_t sign(const uint8_t* digest, uint8_t* sig) const {
@@ -62,6 +70,9 @@ public:
 
     size_t sigLen;
     return mbedtls_ecdsa_write_signature(ctx, MBEDTLS_MD_SHA256, digest, NDNPH_SHA256_LEN, sig,
+#if MBEDTLS_VERSION_MAJOR >= 3
+                                         mbedtls::P256::MaxSigLen::value,
+#endif
                                          &sigLen, nullptr, nullptr) == 0
              ? sigLen
              : -1;
@@ -71,9 +82,11 @@ public:
 class EcPub : public EcKeyBase {
 public:
   bool import(const uint8_t* bits) {
-    return mbedtls_ecp_point_read_binary(&this->keypair.grp, &this->keypair.Q, bits,
+    return mbedtls_ecp_point_read_binary(&this->keypair.NDNPH_MBEDTLS_PVT3(grp),
+                                         &this->keypair.NDNPH_MBEDTLS_PVT3(Q), bits,
                                          mbedtls::P256::PubLen::value) == 0 &&
-           mbedtls_ecp_check_pubkey(&this->keypair.grp, &this->keypair.Q) == 0;
+           mbedtls_ecp_check_pubkey(&this->keypair.NDNPH_MBEDTLS_PVT3(grp),
+                                    &this->keypair.NDNPH_MBEDTLS_PVT3(Q)) == 0;
   }
 
   bool verify(const uint8_t* digest, const uint8_t* sig, size_t sigLen) const {
@@ -91,12 +104,14 @@ class EcKeyGen : public EcKeyBase {
 public:
   bool generate(uint8_t* pvtBits, uint8_t* pubBits) {
     size_t pubLen;
-    return mbedtls_ecp_gen_keypair(&this->keypair.grp, &this->keypair.d, &this->keypair.Q,
-                                   mbedtls::rng, nullptr) == 0 &&
-           mbedtls_mpi_write_binary(&this->keypair.d, pvtBits, mbedtls::P256::PvtLen::value) == 0 &&
-           mbedtls_ecp_point_write_binary(&this->keypair.grp, &this->keypair.Q,
-                                          MBEDTLS_ECP_PF_UNCOMPRESSED, &pubLen, pubBits,
-                                          mbedtls::P256::PubLen::value) == 0 &&
+    return mbedtls_ecp_gen_keypair(
+             &this->keypair.NDNPH_MBEDTLS_PVT3(grp), &this->keypair.NDNPH_MBEDTLS_PVT3(d),
+             &this->keypair.NDNPH_MBEDTLS_PVT3(Q), mbedtls::rng, nullptr) == 0 &&
+           mbedtls_mpi_write_binary(&this->keypair.NDNPH_MBEDTLS_PVT3(d), pvtBits,
+                                    mbedtls::P256::PvtLen::value) == 0 &&
+           mbedtls_ecp_point_write_binary(
+             &this->keypair.NDNPH_MBEDTLS_PVT3(grp), &this->keypair.NDNPH_MBEDTLS_PVT3(Q),
+             MBEDTLS_ECP_PF_UNCOMPRESSED, &pubLen, pubBits, mbedtls::P256::PubLen::value) == 0 &&
            pubLen == mbedtls::P256::PubLen::value;
   }
 };

@@ -47,11 +47,14 @@ TEST(Data, EncodeFull) {
                   "finalblock=1A03080142"
                   "content=1502C0C1"
                   "siginfo=160A sigtype=1B0110 keylocator=1C05070308014B sigvalue=1704F0F1F2F3");
+  EXPECT_EQ(wire.size(), 56);
+  const uint8_t* wire0 = wire.data();
+
   data.setName(Name::parse(region, "/A/B"));
   data.setContentType(0x01);
   data.setFreshnessPeriod(500);
   data.setIsFinalBlock(true);
-  data.setContent(tlv::Value(&wire[36], 2));
+  data.setContent(tlv::Value(&wire0[36], 2));
   auto keyLocatorName = Name::parse(region, "/K");
   {
     ScopedEncoder encoder(region);
@@ -62,8 +65,8 @@ TEST(Data, EncodeFull) {
         sigInfo.sigType = 0x10;
         sigInfo.name = keyLocatorName;
       });
-      EXPECT_CALL(key, doSign(g::ElementsAreArray(&wire[12], &wire[50]), g::_))
-        .WillOnce(g::DoAll(g::SetArrayArgument<1>(&wire[52], &wire[56]), g::Return(4)));
+      EXPECT_CALL(key, doSign(g::ElementsAreArray(&wire0[12], &wire0[50]), g::_))
+        .WillOnce(g::DoAll(g::SetArrayArgument<1>(&wire0[52], &wire0[56]), g::Return(4)));
       ASSERT_TRUE(encoder.prepend(lp::encode(data.sign(key), lp::PitToken::from4(0xB0B1B2B3))));
     }
     EXPECT_THAT(std::vector<uint8_t>(encoder.begin(), encoder.end()), g::ElementsAreArray(wire));
@@ -85,8 +88,8 @@ TEST(Data, EncodeFull) {
 
   {
     MockPublicKey key;
-    EXPECT_CALL(key, doVerify(g::ElementsAreArray(&wire[12], &wire[50]),
-                              g::ElementsAreArray(&wire[52], &wire[56])))
+    EXPECT_CALL(key, doVerify(g::ElementsAreArray(&wire0[12], &wire0[50]),
+                              g::ElementsAreArray(&wire0[52], &wire0[56])))
       .WillOnce(g::Return(true));
     EXPECT_TRUE(decoded.verify(key));
   }

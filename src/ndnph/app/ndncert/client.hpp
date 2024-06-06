@@ -177,7 +177,7 @@ public:
     NDNPH_ASSERT(challenge != nullptr);
     Encoder encoder(region);
     encoder.prepend(
-      [=](Encoder& encoder) { encoder.prependTlv(TT::SelectedChallenge, challenge->getId()); },
+      [this](Encoder& encoder) { encoder.prependTlv(TT::SelectedChallenge, challenge->getId()); },
       params);
     encoder.trim();
     if (!encoder) {

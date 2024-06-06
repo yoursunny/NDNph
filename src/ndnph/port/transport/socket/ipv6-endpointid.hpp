@@ -18,6 +18,10 @@ namespace port_transport_socket {
 template<int capacity>
 class Ipv6EndpointIdHelper {
 public:
+  Ipv6EndpointIdHelper() {
+    m_interns.fill({});
+  }
+
   /**
    * @brief Pack IP address+port into EndpointId.
    * @param addr IP address, 4 or 16 bytes.
