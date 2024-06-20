@@ -73,7 +73,7 @@ public:
 #if MBEDTLS_VERSION_MAJOR >= 3
                                          mbedtls::P256::MaxSigLen::value,
 #endif
-                                         &sigLen, nullptr, nullptr) == 0
+                                         &sigLen, mbedtls::rng, nullptr) == 0
              ? sigLen
              : -1;
   }
