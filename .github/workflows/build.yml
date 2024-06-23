@@ -56,47 +56,40 @@ jobs:
           if ! meson test; then
             cat meson-logs/testlog.txt && false
           fi
-      - uses: coverallsapp/github-action@master
+      - uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: build.coverage/coverage.lcov
   arduino:
+    strategy:
+      matrix:
+        include:
+          - chip: ESP8266
+            fqbn: esp8266:esp8266:nodemcuv2
+            platforms: |
+              - name: esp8266:esp8266
+                source-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+          - chip: ESP32
+            fqbn: esp32:esp32:esp32wrover
+          - chip: ESP32C3
+            fqbn: esp32:esp32:esp32c3
+          - chip: nRF52
+            fqbn: adafruit:nrf52:feather52832
+            platforms: |
+              - name: adafruit:nrf52
+                source-url: https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
+            pip-deps: adafruit-nrfutil
+      fail-fast: false
+    name: ${{ matrix.chip }}
     runs-on: ubuntu-22.04
-    env:
-      ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS: |
-        https://arduino.esp8266.com/stable/package_esp8266com_index.json
-        https://espressif.github.io/arduino-esp32/package_esp32_index.json
-        https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
     steps:
-      - uses: arduino/setup-arduino-cli@v1
-      - id: cores
-        name: Refresh Arduino cores
-        run: |
-          arduino-cli version
-          arduino-cli update
-          echo d=$(sha256sum ~/.arduino15/package_*index.json | sha256sum | cut -d' ' -f1) >> $GITHUB_OUTPUT
-      - name: Cache Arduino cores
-        uses: actions/cache@v4
-        with:
-          path: ~/.arduino15/staging/packages
-          key: cores-${{ steps.cores.outputs.d }}
-      - name: Install Arduino cores
-        run: |
-          arduino-cli core install esp8266:esp8266 esp32:esp32 adafruit:nrf52
-          arduino-cli lib install ArduinoUnit
-      - name: Install dependencies
-        run: |
-          sudo pip install adafruit-nrfutil
+      - run: pip install --user ${{ matrix.pip-deps }}
+        if: ${{ matrix.pip-deps }}
       - uses: actions/checkout@v4
-      - name: Prepare Arduino libraries
-        run: |
-          mkdir -p $HOME/Arduino/libraries
-          ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/NDNph
-      - name: Compile examples
-        run: |
-          for B in esp8266:esp8266:nodemcuv2 esp32:esp32:esp32wrover esp32:esp32:esp32c3 adafruit:nrf52:feather52832; do
-            for E in $(find ./examples -name '*.ino' -printf '%h\n'); do
-              printf "\n----\033[1;35m Build %s in %s \033[0m----\n" ${E##*/} $B
-              arduino-cli compile -b $B --warnings more $E
-            done
-          done
+      - uses: arduino/compile-sketches@v1
+        with:
+          fqbn: ${{ matrix.fqbn }}
+          platforms: ${{ matrix.platforms }}
+          libraries: |
+            - source-path: ./
+            - name: ArduinoUnit
