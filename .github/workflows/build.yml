@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_dispatch:
 permissions: {}
+env:
+  esp32platforms: |
+    - name: esp32:esp32
+      source-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -89,7 +93,7 @@ jobs:
       - uses: arduino/compile-sketches@v1
         with:
           fqbn: ${{ matrix.fqbn }}
-          platforms: ${{ matrix.platforms }}
+          platforms: ${{ matrix.platforms || env.esp32platforms }}
           libraries: |
             - source-path: ./
             - name: ArduinoUnit
