@@ -15,10 +15,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends clang-15 clang-format-15 lcov libboost-dev libmbedtls-dev lld-15 llvm-15 ninja-build
+          sudo apt-get install --no-install-recommends clang-15 clang-format-15 lcov libboost-dev libboost-system-dev libmbedtls-dev lld-15 llvm-15 ninja-build
           sudo pip install meson
+        # NDNph does not use libboost-system-dev; it is for https://github.com/mesonbuild/meson/issues/15470 workaround
       - name: Download VPP
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: FDio/vpp
           ref: v23.06
@@ -31,7 +32,7 @@ jobs:
           cmake -G Ninja ../vpp/extras/libmemif
           ninja
           sudo ninja install
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check meson.build lists and code style
         run: |
           mk/update-list.sh
@@ -45,7 +46,7 @@ jobs:
             cat meson-logs/testlog.txt && false
           fi
           ninja coverage
-          lcov --extract meson-logs/coverage.info $(readlink -f ../src)'/*' > coverage.lcov
+          lcov --extract meson-logs/coverage.info $(readlink -f ../src)'/*' >coverage.lcov
       - name: Build and test with sanitizer
         run: |
           meson setup -Db_sanitize=address,undefined -Dunittest=enabled -Dprograms=enabled build.sanitize
@@ -89,7 +90,7 @@ jobs:
     steps:
       - run: pip install --user ${{ matrix.pip-deps }}
         if: ${{ matrix.pip-deps }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: arduino/compile-sketches@v1
         with:
           fqbn: ${{ matrix.fqbn }}
